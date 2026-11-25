@@ -64,3 +64,25 @@ table.t th{color:var(--muted);font-size:14px}
 .app-nav .btn-ghost{color:var(--cream);border-color:rgba(248,244,233,.6)}
 .tabs button{color:var(--text)}
 .tabs button[aria-selected="true"]{color:var(--gold)}
+
+/* ---- student home: quick links, rings, lesson cards, confirm box ---- */
+.quick{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 4px}
+.quick a{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-weight:700;transition:transform .15s,border-color .15s,box-shadow .15s}
+.quick a:hover{transform:translateY(-2px);border-color:var(--gold);box-shadow:var(--shadow)}
+.rings{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px;text-align:center}
+.ring{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink)}
+.ring svg{display:block}
+.wk{margin:18px 0 8px;color:var(--link)}
+.lgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.lcard{display:flex;align-items:center;gap:14px;padding:16px;border-radius:16px;background:var(--surface);border:1px solid var(--line);text-decoration:none;color:var(--ink);box-shadow:var(--shadow);transition:transform .15s,border-color .15s}
+.lcard:hover{transform:translateY(-2px);border-color:var(--gold)}
+.lcard .lnum{flex:0 0 52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--navy),#102A58);color:var(--gold);display:grid;place-items:center;font:800 1.5rem var(--font-display);direction:ltr}
+.lcard .lbody{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+.lcard .lchips{display:flex;gap:6px;flex-wrap:wrap}
+.lcard .go{font-size:1.8rem;color:var(--gold)}
+.kz-modal{position:fixed;inset:0;background:rgba(7,22,47,.7);display:grid;place-items:center;z-index:1000;padding:16px}
+.kz-modal .box{background:var(--surface);color:var(--ink);border:1px solid var(--gold);border-radius:18px;padding:26px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.kz-modal h2{margin-top:0}
+.kz-modal .btns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.nocopy,.nocopy *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.nocopy input,.nocopy textarea{-webkit-user-select:text;user-select:text}

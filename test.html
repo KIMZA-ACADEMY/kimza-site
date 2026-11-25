@@ -7,8 +7,8 @@
 <title>الاختبار · KIMZA Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvum8yn">
-<link rel="stylesheet" href="app.css?v=mwvum8yn">
+<link rel="stylesheet" href="site.css?v=mwvw98eq">
+<link rel="stylesheet" href="app.css?v=mwvw98eq">
 
 </head>
 <body class="app">
@@ -16,7 +16,7 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvum8yn"></script>
+<script src="app.js?v=mwvw98eq"></script>
 
 <script>
 (async function () {
@@ -43,7 +43,10 @@
     '<p><strong>المدة:</strong> ' + test.minutes + ' دقيقة. يبدأ العدّاد عند الضغط على «ابدأ» ولا يتوقف.</p>' +
     '<ul class="muted"><li>يُسلَّم الاختبار تلقائياً عند انتهاء الوقت.</li><li>لا يمكن إعادة الاختبار.</li><li>النسخ والطباعة محظوران على هذه الصفحة.</li></ul>' +
     '<button class="btn btn-primary" id="go" type="button">ابدأ الاختبار</button></div>';
-  document.getElementById("go").addEventListener("click", start);
+  document.getElementById("go").addEventListener("click", async function () {
+    var ok = await KZ.confirmBox("هل أنت جاهز؟", "<p>سيبدأ " + esc(KINDS[test.kind]) + " الآن ومدته <strong>" + test.minutes + " دقيقة</strong>.</p><p>يبدأ العدّاد فور الضغط على «نعم، ابدأ» <strong>ولا يتوقف</strong> حتى لو خرجت من الصفحة، ولا يمكن إعادة الاختبار.</p>", "نعم، ابدأ الاختبار", "ليس بعد");
+    if (ok) start();
+  });
 
   var answers = {}, timer = null, finished = false;
   var KEY = "kz-ans-" + id + "-" + KZ.user.id;

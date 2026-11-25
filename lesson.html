@@ -7,8 +7,8 @@
 <title>الدرس · KIMZA Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvum8yn">
-<link rel="stylesheet" href="app.css?v=mwvum8yn">
+<link rel="stylesheet" href="site.css?v=mwvw98eq">
+<link rel="stylesheet" href="app.css?v=mwvw98eq">
 
 </head>
 <body class="app">
@@ -16,13 +16,14 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvum8yn"></script>
+<script src="app.js?v=mwvw98eq"></script>
 
 <script>
 (async function () {
   var prof = await KZ.requireAuth("student");
   if (!prof) return;
   KZ.shell("home");
+  KZ.blockCopy();
   var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
   var id = new URLSearchParams(location.search).get("id") || "";
 
@@ -74,10 +75,20 @@
     }
     if (t === "exercises") {
       pane.innerHTML = '<div class="infobox">تمارين الحصة التفاعلية لهذا الدرس.</div><iframe class="frame" id="ex" sandbox="allow-scripts allow-same-origin allow-forms" title="Exercises"></iframe>';
-      document.getElementById("ex").srcdoc = content["class"] || "";
+      var exf = document.getElementById("ex");
+      exf.addEventListener("load", function () { try { KZ.blockCopyIn(exf.contentDocument); } catch (e) {} });
+      exf.srcdoc = content["class"] || "";
       return;
     }
-    // homework
+    // homework: ask for confirmation before the timer starts
+    var dm = /DURATION\s*=\s*(\d+)\s*\*\s*60/.exec(content.homework || ""), dmin = dm ? Number(dm[1]) : 15;
+    if (!(done && done.data)) {
+      var started = await sb.from("homework_starts").select("lesson_id").eq("lesson_id", id).maybeSingle();
+      if (!(started.data)) {
+        var ok = await KZ.confirmBox("هل أنت جاهز للواجب؟", "<p>سيبدأ الواجب الآن، ومدته <strong>" + dmin + " دقيقة</strong>.</p><p>يبدأ العدّاد فور الضغط على «نعم، ابدأ» <strong>ولا يتوقف</strong> حتى لو خرجت من الصفحة. درجتك الأولى هي التي تُحتسب.</p>", "نعم، ابدأ الواجب", "ليس بعد");
+        if (!ok) { pane.innerHTML = '<div class="tile"><h3>الواجب جاهز</h3><p class="muted">اضغط عندما تكون مستعداً. لن يبدأ العدّاد قبل ذلك.</p><p><button class="btn btn-primary" id="hwGo" type="button">ابدأ الواجب</button></p></div>'; document.getElementById("hwGo").addEventListener("click", function () { show("homework"); }); return; }
+      }
+    }
     var note = done && done.data
       ? '<div class="infobox">سلّمت هذا الواجب. درجتك الأولى المحتسبة: <strong>' + done.data.first_score + " / " + done.data.total + "</strong>. المحاولات التالية للتدريب فقط ولا تُحتسب.</div>"
       : '<div class="infobox">ادخل اسمك ثم أجب. <strong>درجتك الأولى هي التي تُحتسب</strong> وتُحفظ تلقائياً. <strong>المؤقت يبدأ من أول فتح للواجب ولا يتوقف</strong> حتى لو خرجت من الصفحة.</div>';
@@ -94,6 +105,7 @@
     hwHtml = "<script>window.__KZ_FIRST=" + (done && done.data ? "false" : "true") + ";window.__KZ_T0=" + T0 + ";<" + "/script>" + hwHtml;
     fr.addEventListener("load", function () {
       var w = fr.contentWindow;
+      try { KZ.blockCopyIn(w.document); } catch (e) {}
       // keep the typed answers if the student leaves and comes back
       try {
         var d = w.document, saved = JSON.parse(localStorage.getItem(SKEY) || "{}");

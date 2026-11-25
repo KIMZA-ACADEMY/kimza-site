@@ -95,13 +95,29 @@
   KZ.on = function (k) { return KZ.features[k] !== false; };
 
   // Copy protection helper for exam pages
-  KZ.blockCopy = function () {
-    ["copy", "cut", "paste", "contextmenu", "dragstart", "selectstart"].forEach(function (ev) { document.addEventListener(ev, function (e) { e.preventDefault(); }); });
-    document.addEventListener("keydown", function (e) {
+  // Copy protection for a document (the page itself or a lesson/homework iframe)
+  KZ.blockCopyIn = function (doc) {
+    if (!doc || doc.__kzNoCopy) return; doc.__kzNoCopy = true;
+    ["copy", "cut", "paste", "contextmenu", "dragstart", "selectstart"].forEach(function (ev) { doc.addEventListener(ev, function (e) { var t = e.target; if (ev === "selectstart" && t && t.nodeType === 1 && /^(INPUT|TEXTAREA)$/.test(t.tagName)) return; e.preventDefault(); }); });
+    doc.addEventListener("keydown", function (e) {
       var k = (e.key || "").toLowerCase();
       if ((e.ctrlKey || e.metaKey) && ["c", "x", "a", "u", "s", "p", "v"].indexOf(k) >= 0) e.preventDefault();
       if (e.key === "PrintScreen") e.preventDefault();
     });
-    document.body.classList.add("nocopy");
+    if (doc.body) doc.body.classList.add("nocopy");
+    try { var st = doc.createElement("style"); st.textContent = ".nocopy,.nocopy *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.nocopy input,.nocopy textarea{-webkit-user-select:text;user-select:text}@media print{body{display:none}}"; doc.head.appendChild(st); } catch (x) {}
+  };
+  KZ.blockCopy = function () { KZ.blockCopyIn(document); };
+  // A confirmation box: returns a promise that resolves true (yes) or false (no).
+  KZ.confirmBox = function (title, bodyHtml, yes, no) {
+    return new Promise(function (resolve) {
+      var m = document.createElement("div"); m.className = "kz-modal"; m.setAttribute("role", "dialog"); m.setAttribute("aria-modal", "true");
+      m.innerHTML = '<div class="box"><h2>' + title + '</h2><div>' + bodyHtml + '</div><div class="btns"><button class="btn btn-ghost" data-n type="button">' + (no || "ليس بعد") + '</button><button class="btn btn-primary" data-y type="button">' + (yes || "نعم، ابدأ") + '</button></div></div>';
+      document.body.appendChild(m);
+      function done(v) { m.remove(); resolve(v); }
+      m.querySelector("[data-y]").addEventListener("click", function () { done(true); });
+      m.querySelector("[data-n]").addEventListener("click", function () { done(false); });
+      m.querySelector("[data-y]").focus();
+    });
   };
 })();
