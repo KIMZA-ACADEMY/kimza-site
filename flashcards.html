@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwfgzbd">
-<link rel="stylesheet" href="app.css?v=mwwfgzbd">
+<link rel="stylesheet" href="site.css?v=mwwkfq92">
+<link rel="stylesheet" href="app.css?v=mwwkfq92">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwfgzbd"></script>
-<script src="portal-i18n.js?v=mwwfgzbd"></script>
+<script src="app.js?v=mwwkfq92"></script>
+<script src="portal-i18n.js?v=mwwkfq92"></script>
 
 <script>
 (async function () {
@@ -36,19 +36,20 @@
   var learned = {};
   try { learned = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
 
-  var ls = await sb.from("lessons").select("num,level,title,is_open").eq("level", prof.level).eq("open_words", true).order("num");
-  var open = ls.data || [];
+  var LV = KZ.levelsOf(prof), GR = await KZ.grants();
+  var ls = await sb.from("lessons").select("id,num,level,title,is_open,open_words").order("level").order("num");
+  var open = (ls.data || []).map(function (l) { return KZ.applyGrant(l, GR); }).filter(function (l) { return l.open_words; });
   if (!open.length) { app.innerHTML = '<h1>البطاقات</h1><p class="muted">لا توجد دروس مفتوحة بعد. ستظهر بطاقات كل درس عندما يفتحه المعلم.</p>'; return; }
 
   app.innerHTML = '<h1>بطاقات المفردات</h1><div class="form" style="max-width:420px"><div><label for="sel">الدرس</label><select id="sel"><option value="all">كل الدروس المفتوحة</option>' +
-    open.map(function (l) { return '<option value="' + l.num + '">الدرس ' + l.num + (l.title ? " — " + esc(l.title) : "") + "</option>"; }).join("") +
+    open.map(function (l) { return '<option value="' + l.level + "|" + l.num + '">' + (LV.length > 1 ? esc(l.level) + " — " : "") + "الدرس " + l.num + (l.title ? " — " + esc(l.title) : "") + "</option>"; }).join("") +
     '</select></div><label style="font-weight:400"><input type="checkbox" id="hide" style="width:auto;min-height:0"> أخفِ البطاقات التي عرفتها</label></div><div id="deck"></div>';
 
   var cards = [], idx = 0, flipped = false;
   async function load() {
     var v = document.getElementById("sel").value;
-    var q = sb.from("flashcards").select("id,lesson_num,english,arabic,example_en,example_ar").eq("level", prof.level).order("lesson_num").order("id");
-    if (v !== "all") q = q.eq("lesson_num", Number(v));
+    var q = sb.from("flashcards").select("id,level,lesson_num,english,arabic,example_en,example_ar").in("level", LV).order("level").order("lesson_num").order("id");
+    if (v !== "all") q = q.eq("level", v.split("|")[0]).eq("lesson_num", Number(v.split("|")[1]));
     var r = await q;
     cards = r.data || [];
     if (document.getElementById("hide").checked) cards = cards.filter(function (c) { return !learned[c.id]; });

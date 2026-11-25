@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwfgzbd">
-<link rel="stylesheet" href="app.css?v=mwwfgzbd">
+<link rel="stylesheet" href="site.css?v=mwwkfq92">
+<link rel="stylesheet" href="app.css?v=mwwkfq92">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwfgzbd"></script>
-<script src="portal-i18n.js?v=mwwfgzbd"></script>
-<script src="i18n.js?v=mwwfgzbd"></script>
+<script src="app.js?v=mwwkfq92"></script>
+<script src="portal-i18n.js?v=mwwkfq92"></script>
+<script src="i18n.js?v=mwwkfq92"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -56,7 +56,7 @@
   }
   function copy(text) { try { navigator.clipboard.writeText(text); KZ.toast("تم النسخ."); } catch (e) { KZ.toast("تعذر النسخ، انسخ يدوياً.", true); } }
   async function nameMap() {
-    var r = await sb.from("profiles").select("id,full_name,username,level,status,role").eq("role", "student").order("full_name");
+    var r = await sb.from("profiles").select("id,full_name,username,level,status,role,completed_levels").eq("role", "student").order("full_name");
     var m = {}; (r.data || []).forEach(function (p) { m[p.id] = p; }); return { list: r.data || [], map: m };
   }
 
@@ -74,6 +74,51 @@
   }
   document.querySelectorAll("#tabs button").forEach(function (b) { b.addEventListener("click", function () { go(b.getAttribute("data-tab")); }); });
 
+  // ----- per-student access: extra levels + lessons opened for this student only -----
+  async function accessDialog(p) {
+    var old = document.getElementById("acDlg"); if (old) old.remove();
+    var ov = document.createElement("div"); ov.id = "acDlg";
+    ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
+    var extra = (p.completed_levels || []).slice();
+    var grants = {}; ((await sb.from("lesson_grants").select("lesson_id").eq("user_id", p.id)).data || []).forEach(function (g) { grants[g.lesson_id] = 1; });
+    var gl = LEVELS[0];
+    ov.innerHTML = '<div class="tile" style="max-width:560px;width:100%;max-height:88vh;overflow:auto;background:var(--paper,#fff)" role="dialog" aria-label="مستويات ودروس الطالب"><h2 style="margin-top:0">' + esc(p.full_name) + '</h2>' +
+      '<h3>المستويات التي يدرسها</h3><p class="muted">مستواه الأساسي ' + esc(p.level) + ' (يتغير من الجدول). اختر المستويات الإضافية:</p><div id="acLv" style="display:flex;gap:14px;flex-wrap:wrap"></div>' +
+      '<h3 style="margin-top:20px">دروس مفتوحة له وحده</h3><p class="muted">الدرس يفتح له بكل أجزائه حتى لو كان مغلقاً على بقية الطلاب.</p>' +
+      '<div class="form"><div><label for="acL">المستوى</label><select id="acL">' + opts(LEVELS, gl) + '</select></div></div><div id="acList" style="margin-top:10px"></div>' +
+      '<div class="btns" style="margin-top:16px"><button class="btn btn-primary" id="acX" type="button">إغلاق</button></div></div>';
+    document.body.appendChild(ov);
+    $("acX").addEventListener("click", function () { ov.remove(); VIEWS.students(); });
+    ov.addEventListener("click", function (e) { if (e.target === ov) { ov.remove(); VIEWS.students(); } });
+    function drawLv() {
+      $("acLv").innerHTML = LEVELS.map(function (lv) {
+        var main = lv === p.level;
+        return '<label style="font-weight:400"><input type="checkbox" data-lv="' + lv + '"' + (main || extra.indexOf(lv) >= 0 ? " checked" : "") + (main ? " disabled" : "") + ' style="width:auto;min-height:0"> ' + lv + "</label>";
+      }).join("");
+      $("acLv").querySelectorAll("input").forEach(function (c) { c.addEventListener("change", async function () {
+        var lv = c.getAttribute("data-lv"), i = extra.indexOf(lv);
+        if (c.checked && i < 0) extra.push(lv); if (!c.checked && i >= 0) extra.splice(i, 1);
+        var r = await sb.from("profiles").update({ completed_levels: extra }).eq("id", p.id);
+        if (r.error) { KZ.toast("تعذر الحفظ.", true); } else { p.completed_levels = extra.slice(); KZ.toast("تم الحفظ."); }
+      }); });
+    }
+    async function drawLs() {
+      var lv = $("acL").value;
+      var ls = (await sb.from("lessons").select("id,num,title").eq("level", lv).order("num")).data || [];
+      $("acList").innerHTML = ls.map(function (l) {
+        return '<label style="font-weight:400;display:block;padding:3px 0"><input type="checkbox" data-ls="' + esc(l.id) + '"' + (grants[l.id] ? " checked" : "") + ' style="width:auto;min-height:0"> الدرس ' + l.num + (l.title ? " — " + esc(l.title) : "") + "</label>";
+      }).join("") || '<p class="muted">لا توجد دروس.</p>';
+      $("acList").querySelectorAll("input").forEach(function (c) { c.addEventListener("change", async function () {
+        var id = c.getAttribute("data-ls"), r;
+        if (c.checked) { r = await sb.from("lesson_grants").insert({ user_id: p.id, lesson_id: id }); if (!r.error) grants[id] = 1; }
+        else { r = await sb.from("lesson_grants").delete().eq("user_id", p.id).eq("lesson_id", id); if (!r.error) delete grants[id]; }
+        KZ.toast(r.error ? "تعذر الحفظ." : (c.checked ? "فُتح الدرس له." : "أُغلق الدرس عنه."), !!r.error);
+        if (r.error) c.checked = !c.checked;
+      }); });
+    }
+    drawLv(); $("acL").addEventListener("change", drawLs); drawLs();
+  }
+
   // ================= Students =================
   VIEWS.students = async function () {
     var nm = await nameMap();
@@ -90,13 +135,13 @@
       '<form class="tile form" id="addMany"><h3>إضافة عدة طلاب</h3><p class="muted">سطر لكل طالب: الاسم، المستوى. مثال: أحمد علي، A1</p>' +
       '<textarea id="bulk" rows="6" placeholder="أحمد علي, A1&#10;سارة محمد, B1"></textarea><div><button class="btn btn-primary" type="submit">إنشاء الحسابات</button></div></form></div>' +
       '<div id="creds"></div>';
-    h += '<h2 style="margin-top:24px">الطلاب (' + nm.list.length + ')</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>المستخدم</th><th>المستوى</th><th>الحالة</th><th>غياب</th><th></th></tr></thead><tbody>';
+    h += '<h2 style="margin-top:24px">الطلاب (' + nm.list.length + ')</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>المستخدم</th><th>المستوى</th><th>الحالة</th><th>مستويات إضافية</th><th>غياب</th><th></th></tr></thead><tbody>';
     nm.list.forEach(function (p) {
       h += '<tr><td>' + esc(p.full_name) + '</td><td class="en">' + esc(p.username || "") + '</td>' +
         '<td><select data-lv="' + p.id + '">' + opts(LEVELS, p.level) + '</select></td>' +
         '<td><select data-st="' + p.id + '">' + opts(Object.keys(ST).map(function (k) { return [k, ST[k]]; }), p.status) + '</select></td>' +
-        '<td>' + (abs[p.id] || 0) + (abs[p.id] > 3 ? ' <span class="badge bad">!</span>' : "") + '</td>' +
-        '<td><button class="btn btn-ghost sm" data-rs="' + p.id + '" type="button">كلمة مرور جديدة</button> <button class="btn danger sm" data-del="' + p.id + '" type="button">حذف</button></td></tr>';
+        '<td class="en">' + ((p.completed_levels || []).join(" ") || "—") + '</td><td>' + (abs[p.id] || 0) + (abs[p.id] > 3 ? ' <span class="badge bad">!</span>' : "") + '</td>' +
+        '<td><button class="btn btn-ghost sm" data-ac="' + p.id + '" type="button">المستويات والدروس</button> <button class="btn btn-ghost sm" data-rs="' + p.id + '" type="button">كلمة مرور جديدة</button> <button class="btn danger sm" data-del="' + p.id + '" type="button">حذف</button></td></tr>';
     });
     h += "</tbody></table></div>";
     view.innerHTML = h;
@@ -133,6 +178,7 @@
       var r = await sb.from("profiles").update({ level: s.value }).eq("id", s.getAttribute("data-lv")); KZ.toast(r.error ? "تعذر الحفظ." : "تم تغيير المستوى.", !!r.error); }); });
     view.querySelectorAll("[data-st]").forEach(function (s) { s.addEventListener("change", async function () {
       var r = await sb.from("profiles").update({ status: s.value }).eq("id", s.getAttribute("data-st")); KZ.toast(r.error ? "تعذر الحفظ." : "تم تغيير الحالة.", !!r.error); }); });
+    view.querySelectorAll("[data-ac]").forEach(function (b) { b.addEventListener("click", function () { accessDialog(nm.map[b.getAttribute("data-ac")]); }); });
     view.querySelectorAll("[data-rs]").forEach(function (b) { b.addEventListener("click", async function () {
       var id = b.getAttribute("data-rs"), pw = genPw(), p = nm.map[id];
       try { await fn({ action: "reset_password", user_id: id, password: pw }); showCreds([{ name: p.full_name, user: p.username, pw: pw }]); } catch (er) { KZ.toast("تعذر التغيير.", true); } }); });

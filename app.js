@@ -222,6 +222,21 @@
   KZ.features = {};
   // A feature is on unless the teacher switched it off.
   KZ.on = function (k) { return KZ.features[k] !== false; };
+  // every level a student can study (own level + extra levels given by the teacher)
+  KZ.levelsOf = function (p) {
+    var a = [p.level]; (p.completed_levels || []).forEach(function (x) { if (a.indexOf(x) < 0) a.push(x); });
+    return a.sort();
+  };
+  // lessons the teacher opened for this student only: all parts become open
+  KZ.grants = async function () {
+    var set = {};
+    try { ((await KZ.sb.from("lesson_grants").select("lesson_id")).data || []).forEach(function (g) { set[g.lesson_id] = 1; }); } catch (e) {}
+    return set;
+  };
+  KZ.applyGrant = function (l, set) {
+    if (l && set && set[l.id]) { l.is_open = true; l.open_words = l.open_story = l.open_audio = l.open_exercises = l.open_homework = true; }
+    return l;
+  };
 
   // Copy protection helper for exam pages
   // Copy protection for a document (the page itself or a lesson/homework iframe)
