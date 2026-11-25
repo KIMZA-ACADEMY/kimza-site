@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwope7h">
-<link rel="stylesheet" href="app.css?v=mwwope7h">
+<link rel="stylesheet" href="site.css?v=mwworgp2">
+<link rel="stylesheet" href="app.css?v=mwworgp2">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwope7h"></script>
-<script src="portal-i18n.js?v=mwwope7h"></script>
-<script src="i18n.js?v=mwwope7h"></script>
+<script src="app.js?v=mwworgp2"></script>
+<script src="portal-i18n.js?v=mwworgp2"></script>
+<script src="i18n.js?v=mwworgp2"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -999,9 +999,10 @@
   };
 
   // ================= Student groups =================
-  var grpOpen = null, grpQ = "";
+  var grpOpen = null, grpQ = "", grpSel = {}, grpLv = "A1";
   VIEWS.groups = async function () {
     var nm = await nameMap();
+    var allL = (await sb.from("lessons").select("id,level,num,title").order("level").order("num").limit(1000)).data || [];
     var groups = (await sb.from("student_groups").select("*").order("created_at")).data || [];
     var mem = (await sb.from("group_members").select("group_id,user_id")).data || [];
     var by = {}; mem.forEach(function (m) { (by[m.group_id] = by[m.group_id] || []).push(m.user_id); });
@@ -1015,7 +1016,7 @@
         h += '<h4 style="margin:14px 0 6px">الأعضاء</h4><div>' + (ids.length ? ids.map(function (u) { var p = nm.map[u]; return '<span class="badge" style="margin:2px">' + esc(p ? p.full_name : "؟") + ' <button type="button" data-grm="' + g.id + ":" + u + '" aria-label="إزالة" style="border:0;background:transparent;cursor:pointer;color:inherit">✕</button></span>'; }).join("") : '<span class="muted">لا أعضاء بعد.</span>') + '</div>' +
           '<div class="form" style="margin-top:10px"><div><label for="gSearch">🔎 ابحث عن طالب لإضافته (اكتب أول حرفين من الاسم أو الرقم)</label><input id="gSearch" dir="auto" autocomplete="off" placeholder="مثلاً: سا أو 7762"></div><div id="gRes" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div></div>' +
           '<div class="form" style="margin-top:10px"><div><label for="gAdd">أو ألصق عدة أسماء مستخدمين/أرقام دفعة واحدة (أسماء المستخدمين أو الأرقام، افصل بفاصلة أو سطر)</label><textarea id="gAdd" rows="2" dir="ltr"></textarea></div><div class="btns"><button class="btn btn-primary sm" data-gadd="' + g.id + '" type="button">إضافة</button> <select id="gLv" style="width:auto">' + opts(LEVELS) + '</select> <button class="btn btn-ghost sm" data-gaddlv="' + g.id + '" type="button">إضافة كل طلاب هذا المستوى</button></div></div>' +
-          '<h4 style="margin:16px 0 6px">فتح درس لكل المجموعة</h4><div class="form" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end"><div><label for="gl1">المستوى</label><select id="gl1">' + opts(LEVELS) + '</select></div><div style="min-width:220px"><label for="gl2">الدرس</label><select id="gl2"></select></div><div class="btns"><button class="btn btn-primary sm" data-gles="' + g.id + ':1" type="button">فتح الدرس لهم</button> <button class="btn btn-ghost sm" data-gles="' + g.id + ':0" type="button">إغلاقه عنهم</button></div></div>' +
+          '<h4 style="margin:16px 0 6px">فتح دروس لكل المجموعة (من عدة مستويات في وقت واحد)</h4><p class="muted" style="margin:0 0 8px">اختر مستوى، علّم الدروس التي تريدها، ثم انتقل إلى مستوى آخر وعلّم منه أيضاً. بضغطة واحدة تُفتح كلها لكل أعضاء المجموعة.</p><div id="gLs"></div>' +
           '<h4 style="margin:16px 0 6px">إعلان للمجموعة</h4><div class="form"><div><label for="gaT">العنوان</label><input id="gaT" maxlength="150"></div><div><label for="gaB">الرسالة</label><textarea id="gaB" rows="3"></textarea></div><div><button class="btn btn-primary sm" data-gann="' + g.id + '" type="button">إرسال الإعلان للمجموعة</button></div></div>';
       }
       h += "</div>";
@@ -1055,15 +1056,38 @@
       gs.addEventListener("input", doSearch);
       if (grpQ) { gs.value = grpQ; doSearch(); }
     }
-    if ($("gl1")) {
-      var fill = async function () { var ls = (await sb.from("lessons").select("id,num,title").eq("level", $("gl1").value).order("num")).data || []; $("gl2").innerHTML = ls.map(function (l) { return '<option value="' + esc(l.id) + '">الدرس ' + l.num + (l.title ? " — " + esc(l.title) : "") + "</option>"; }).join(""); };
-      $("gl1").addEventListener("change", fill); fill();
+    if ($("gLs")) {
+      var gidL = grpOpen, idsL = by[gidL] || [], box = $("gLs"), sel = grpSel[gidL] = grpSel[gidL] || {}, cnt = {}, byId = {};
+      allL.forEach(function (l) { byId[l.id] = l; });
+      async function drawLs(reload) {
+        if (reload) { cnt = {}; if (idsL.length) ((await sb.from("lesson_grants").select("user_id,lesson_id").in("user_id", idsL)).data || []).forEach(function (g) { cnt[g.lesson_id] = (cnt[g.lesson_id] || 0) + 1; }); }
+        var chosen = Object.keys(sel).filter(function (k) { return sel[k] && byId[k]; });
+        var perLv = {}; chosen.forEach(function (k) { perLv[byId[k].level] = (perLv[byId[k].level] || 0) + 1; });
+        var open = Object.keys(cnt).filter(function (k) { return byId[k]; }).sort(function (a, b) { return byId[a].level.localeCompare(byId[b].level) || byId[a].num - byId[b].num; });
+        box.innerHTML = '<div class="btns" style="margin-bottom:8px">' + LEVELS.map(function (lv) { return '<button type="button" data-glv="' + lv + '" class="btn ' + (lv === grpLv ? "btn-primary" : "btn-ghost") + ' sm">' + lv + (perLv[lv] ? " (" + perLv[lv] + ")" : "") + "</button>"; }).join(" ") + "</div>" +
+          '<div style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px">' + allL.filter(function (l) { return l.level === grpLv; }).map(function (l) {
+            return '<label style="display:block;font-weight:400;padding:2px 0"><input type="checkbox" data-gl="' + esc(l.id) + '"' + (sel[l.id] ? " checked" : "") + ' style="width:auto;min-height:0"> الدرس ' + l.num + (l.title ? " — " + esc(l.title) : "") + (cnt[l.id] ? ' <span class="badge ok">مفتوح لـ ' + cnt[l.id] + "/" + idsL.length + "</span>" : "") + "</label>"; }).join("") + "</div>" +
+          '<div style="margin-top:8px"><strong>المحدد:</strong> ' + (chosen.length ? chosen.sort(function (a, b) { return byId[a].level.localeCompare(byId[b].level) || byId[a].num - byId[b].num; }).map(function (k) { return '<span class="badge" style="margin:2px">' + esc(byId[k].level) + " · " + byId[k].num + ' <button type="button" data-gx="' + esc(k) + '" aria-label="إزالة" style="border:0;background:transparent;cursor:pointer;color:inherit">✕</button></span>'; }).join("") : '<span class="muted">لم تحدد دروساً بعد.</span>') + "</div>" +
+          '<div class="btns" style="margin-top:8px"><button type="button" class="btn btn-primary sm" id="gOpen"' + (chosen.length ? "" : " disabled") + '>فتح المحدد لكل المجموعة</button> <button type="button" class="btn btn-ghost sm" id="gClose"' + (chosen.length ? "" : " disabled") + '>إغلاق المحدد عنهم</button> <button type="button" class="btn btn-ghost sm" id="gClear"' + (chosen.length ? "" : " disabled") + '>مسح التحديد</button></div>' +
+          '<h5 style="margin:14px 0 4px">المفتوح حالياً لهذه المجموعة</h5>' + (open.length ? open.map(function (k) { return '<div class="row" style="padding:6px 0"><div><strong class="en">' + esc(byId[k].level) + " · " + byId[k].num + '</strong> <span class="muted en">' + esc(byId[k].title || "") + '</span> <span class="badge ok">' + cnt[k] + "/" + idsL.length + '</span></div><button type="button" class="btn danger sm" data-gcl="' + esc(k) + '">إغلاق</button></div>'; }).join("") : '<p class="muted" style="margin:0">لا توجد دروس مفتوحة للمجموعة بعد.</p>');
+        box.querySelectorAll("[data-glv]").forEach(function (b) { b.addEventListener("click", function () { grpLv = b.getAttribute("data-glv"); drawLs(false); }); });
+        box.querySelectorAll("[data-gl]").forEach(function (c) { c.addEventListener("change", function () { sel[c.getAttribute("data-gl")] = c.checked; drawLs(false); }); });
+        box.querySelectorAll("[data-gx]").forEach(function (b) { b.addEventListener("click", function () { delete sel[b.getAttribute("data-gx")]; drawLs(false); }); });
+        if ($("gClear")) $("gClear").addEventListener("click", function () { Object.keys(sel).forEach(function (k) { delete sel[k]; }); drawLs(false); });
+        async function apply(on) {
+          if (!idsL.length) { KZ.toast("المجموعة بلا أعضاء.", true); return; }
+          var lids = Object.keys(sel).filter(function (k) { return sel[k] && byId[k]; }); if (!lids.length) return;
+          var r;
+          if (on) { var rows = []; idsL.forEach(function (u) { lids.forEach(function (l) { rows.push({ user_id: u, lesson_id: l }); }); }); for (var i = 0; i < rows.length; i += 500) { r = await sb.from("lesson_grants").upsert(rows.slice(i, i + 500), { onConflict: "user_id,lesson_id" }); if (r.error) break; } }
+          else r = await sb.from("lesson_grants").delete().in("user_id", idsL).in("lesson_id", lids);
+          KZ.toast(r && r.error ? "تعذر التنفيذ." : (on ? "فُتحت " + lids.length + " دروس لـ" + idsL.length + " طالباً." : "أُغلقت عنهم."), !!(r && r.error)); drawLs(true);
+        }
+        if ($("gOpen")) $("gOpen").addEventListener("click", function () { apply(true); });
+        if ($("gClose")) $("gClose").addEventListener("click", function () { apply(false); });
+        box.querySelectorAll("[data-gcl]").forEach(function (b) { b.addEventListener("click", async function () { var r = await sb.from("lesson_grants").delete().in("user_id", idsL).eq("lesson_id", b.getAttribute("data-gcl")); KZ.toast(r.error ? "تعذر الإغلاق." : "أُغلق عن المجموعة.", !!r.error); drawLs(true); }); });
+      }
+      drawLs(true);
     }
-    view.querySelectorAll("[data-gles]").forEach(function (b) { b.addEventListener("click", async function () {
-      var p = b.getAttribute("data-gles").split(":"), gid = Number(p[0]), on = p[1] === "1", lid = $("gl2").value, ids = by[gid] || [];
-      if (!lid || !ids.length) { KZ.toast("اختر درساً وتأكد أن للمجموعة أعضاء.", true); return; }
-      var r = on ? await sb.from("lesson_grants").upsert(ids.map(function (u) { return { user_id: u, lesson_id: lid }; }), { onConflict: "user_id,lesson_id" }) : await sb.from("lesson_grants").delete().in("user_id", ids).eq("lesson_id", lid);
-      KZ.toast(r.error ? "تعذر التنفيذ." : (on ? "فُتح الدرس لـ" + ids.length + " طالباً." : "أُغلق الدرس عنهم."), !!r.error); }); });
     view.querySelectorAll("[data-gann]").forEach(function (b) { b.addEventListener("click", async function () {
       var t = $("gaT").value.trim(); if (!t) { KZ.toast("اكتب عنواناً.", true); return; }
       var r = await sb.from("announcements").insert({ title: t, body: $("gaB").value.trim(), level: null, group_id: Number(b.getAttribute("data-gann")), created_by: KZ.user.id });
