@@ -7,8 +7,8 @@
 <title>الدرس · KIMZA Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvwlcfv">
-<link rel="stylesheet" href="app.css?v=mwvwlcfv">
+<link rel="stylesheet" href="site.css?v=mwvx33oh">
+<link rel="stylesheet" href="app.css?v=mwvx33oh">
 
 </head>
 <body class="app">
@@ -16,7 +16,7 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvwlcfv"></script>
+<script src="app.js?v=mwvx33oh"></script>
 
 <script>
 (async function () {
@@ -35,8 +35,7 @@
   var L = l.data;
   var TABS = [
     ["words", "الكلمات", L.open_words],
-    ["story", "القصة", L.open_story],
-    ["audio", "الصوت", L.open_audio],
+    ["story", "القصة والصوت", L.open_story || L.open_audio],
     ["exercises", "التمارين", L.open_exercises],
     ["homework", "الواجب", L.open_homework && KZ.on("homework")]
   ];
@@ -56,27 +55,88 @@
     return '<div class="tile"><h3>🔒 ' + name + ' مغلق</h3><p class="muted">سيفتحه المعلم في الوقت المناسب.</p></div>';
   }
 
+  var mediaStop = function () {};
+  function stopMedia() { try { mediaStop(); } catch (e) {} mediaStop = function () {}; }
   async function show(t) {
     document.querySelectorAll(".tabs button").forEach(function (b) { b.setAttribute("aria-selected", b.getAttribute("data-t") === t ? "true" : "false"); });
     var pane = document.getElementById("pane");
     var tab = TABS.filter(function (x) { return x[0] === t; })[0];
     if (!tab[2]) { pane.innerHTML = locked(tab[1]); return; }
 
-    if (t === "words" || t === "story") {
-      pane.innerHTML = '<div class="tile"><pre style="white-space:pre-wrap;font-family:inherit;direction:auto;margin:0;line-height:1.9">' + esc(content[t] || "") + "</pre></div>";
+    stopMedia();
+    var SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
+    if (t === "words") {
+      pane.innerHTML = '<div class="tile"><p class="muted">جارٍ تحميل الكلمات...</p></div>';
+      var wr = await sb.from("flashcards").select("id,english,arabic,example_en,example_ar,image,audio,example_audio").eq("level", L.level).eq("lesson_num", L.num).order("id");
+      var words = wr.data || [];
+      if (!words.length) { pane.innerHTML = '<div class="tile"><pre style="white-space:pre-wrap;font-family:inherit;direction:auto;margin:0;line-height:1.9">' + esc(content.words || "") + "</pre></div>"; return; }
+      var MB = window.KIMZA_SUPABASE.url + "/storage/v1/object/public/card-media/";
+      var bar = '<div class="audiobar"><label for="wSpd">سرعة الصوت</label><select id="wSpd">' + SPEEDS.map(function (v) { return '<option value="' + v + '"' + (v === 1 ? " selected" : "") + ">" + v + "x</option>"; }).join("") + '</select><label class="wloop"><input type="checkbox" id="wLoop"> 🔁 كرّر الصوت الذي أضغط عليه حتى أضغط عليه مرة أخرى</label></div>';
+      pane.innerHTML = bar + '<div class="wgrid">' + words.map(function (w, i) {
+        return '<article class="wcard"><button class="wimg" type="button" data-a="' + esc(w.audio || "") + '" data-tx="' + esc(w.english) + '" data-k="w' + i + '" aria-label="استمع إلى ' + esc(w.english) + '">' +
+          (w.image ? '<img src="' + esc(MB + w.image) + '" alt="" loading="lazy">' : '<span class="wnone" aria-hidden="true">🔊</span>') + '<span class="wplay" aria-hidden="true">🔊</span></button>' +
+          '<div class="wtxt"><div class="wen" dir="ltr">' + esc(w.english) + '</div><div class="war">' + esc(w.arabic || "") + '</div>' +
+          (w.example_en ? '<button class="wex" type="button" data-a="' + esc(w.example_audio || "") + '" data-tx="' + esc(w.example_en) + '" data-k="e' + i + '"><span class="wen2" dir="ltr">' + esc(w.example_en) + '</span><span class="war2">' + esc(w.example_ar || "") + '</span><span class="wplay2" aria-hidden="true">🔊</span></button>' : "") + "</div></article>";
+      }).join("") + "</div>";
+      var wSpeed = 1, wLoop = false, wKey = null, wAudio = null;
+      function wStop() { wKey = null; if (wAudio) { try { wAudio.pause(); } catch (e) {} wAudio = null; } try { speechSynthesis.cancel(); } catch (e) {} pane.querySelectorAll(".playing").forEach(function (x) { x.classList.remove("playing"); }); }
+      mediaStop = wStop;
+      function wPlay(btn) {
+        var key = btn.getAttribute("data-k");
+        if (wKey === key) { wStop(); return; }
+        wStop(); wKey = key; btn.classList.add("playing");
+        var file = btn.getAttribute("data-a"), tx = btn.getAttribute("data-tx");
+        (function run() {
+          if (wKey !== key) return;
+          function again() { if (wKey === key && wLoop) setTimeout(run, 700); else if (wKey === key) wStop(); }
+          if (file) { wAudio = new Audio(MB + file); wAudio.playbackRate = wSpeed; wAudio.addEventListener("ended", again); wAudio.play().catch(function () { wStop(); }); }
+          else if ("speechSynthesis" in window) { var u = new SpeechSynthesisUtterance(tx); u.lang = "en-GB"; u.rate = Math.min(2, 0.9 * wSpeed); u.onend = again; speechSynthesis.speak(u); }
+        })();
+      }
+      pane.querySelectorAll("[data-k]").forEach(function (b2) { b2.addEventListener("click", function () { wPlay(b2); }); });
+      document.getElementById("wSpd").addEventListener("change", function (ev) { wSpeed = Number(ev.target.value); if (wAudio) wAudio.playbackRate = wSpeed; });
+      document.getElementById("wLoop").addEventListener("change", function (ev) { wLoop = ev.target.checked; });
       return;
     }
-    if (t === "audio") {
-      pane.innerHTML = '<div class="tile"><p class="muted">جارٍ تحميل الصوت...</p></div>';
+    if (t === "story") {
+      var h = "";
+      if (L.open_story) {
+        h += '<div id="simgs" class="simgs"></div>';
+        h += '<div class="tile"><pre class="story" style="white-space:pre-wrap;font-family:inherit;direction:auto;margin:0;line-height:2;font-size:1.1rem">' + esc(content.story || "") + "</pre></div>";
+      }
+      h += '<div id="saudio"></div>';
+      pane.innerHTML = h;
+      if (L.open_story) {
+        // story pictures: A1-L01-story-1.jpg, -2 ... in the public lesson-images bucket (shown in order)
+        var IB = window.KIMZA_SUPABASE.url + "/storage/v1/object/public/lesson-images/" + id + "-story-";
+        (async function () {
+          var box = document.getElementById("simgs");
+          for (var n = 1; n <= 20 && box; n++) {
+            var okUrl = null;
+            var exts = ["jpg", "jpeg", "png", "webp"];
+            for (var q = 0; q < exts.length; q++) {
+              var u = IB + n + "." + exts[q];
+              var ok = await new Promise(function (res) { var im = new Image(); im.onload = function () { res(true); }; im.onerror = function () { res(false); }; im.src = u; });
+              if (ok) { okUrl = u; break; }
+            }
+            if (!okUrl) break;
+            box.insertAdjacentHTML("beforeend", '<img src="' + esc(okUrl) + '" alt="" loading="lazy">');
+          }
+        })();
+      }
+      var sa = document.getElementById("saudio");
+      if (!L.open_audio) { if (!L.open_story) sa.innerHTML = locked("الصوت"); return; }
+      sa.innerHTML = '<div class="tile"><p class="muted">جارٍ تحميل الصوت...</p></div>';
       var s = await sb.storage.from("lesson-audio").createSignedUrl(id + ".mp3", 3600);
-      if (s.error || !s.data) { pane.innerHTML = '<div class="tile"><p class="muted">لم يرفع المعلم ملف الصوت لهذا الدرس بعد.</p></div>'; return; }
+      if (s.error || !s.data) { sa.innerHTML = '<div class="tile"><p class="muted">لم يرفع المعلم ملف الصوت لهذا الدرس بعد.</p></div>'; return; }
       var dl = await sb.storage.from("lesson-audio").createSignedUrl(id + ".mp3", 3600, { download: id + ".mp3" });
-      pane.innerHTML = '<div class="tile"><h3>استمع وكرّر</h3><audio id="au" controls controlsList="nodownload" preload="none" style="width:100%" src="' + esc(s.data.signedUrl) + '"></audio>' +
-        '<div class="audiobar"><label for="auSpd">السرعة</label><select id="auSpd">' + [0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4].map(function (v) { return '<option value="' + v + '"' + (v === 1 ? " selected" : "") + ">" + v + "x</option>"; }).join("") + '</select>' +
+      sa.innerHTML = '<div class="tile"><h3>🎧 استمع إلى القصة</h3><audio id="au" controls controlsList="nodownload" preload="none" style="width:100%" src="' + esc(s.data.signedUrl) + '"></audio>' +
+        '<div class="audiobar"><label for="auSpd">السرعة</label><select id="auSpd">' + SPEEDS.map(function (v) { return '<option value="' + v + '"' + (v === 1 ? " selected" : "") + ">" + v + "x</option>"; }).join("") + '</select>' +
         '<button class="btn btn-ghost sm" id="auLoop" type="button" aria-pressed="false">🔁 تكرار تلقائي</button>' +
         (dl.data ? '<a class="btn btn-primary sm" href="' + esc(dl.data.signedUrl) + '" download>⬇ تحميل الصوت</a>' : "") + '</div>' +
-        '<p class="muted">استمع إلى القصة ثم أعدها جملة جملة. غيّر السرعة وفعّل التكرار ليعيد الصوت نفسه دون أن تضغط كل مرة.</p></div>';
+        '<p class="muted">استمع ثم أعد القصة جملة جملة. غيّر السرعة وفعّل التكرار ليعيد الصوت دون أن تضغط كل مرة.</p></div>';
       var au = document.getElementById("au");
+      mediaStop = function () { try { au.pause(); } catch (e) {} };
       document.getElementById("auSpd").addEventListener("change", function (ev) { au.playbackRate = Number(ev.target.value); });
       au.addEventListener("play", function () { au.playbackRate = Number(document.getElementById("auSpd").value); });
       document.getElementById("auLoop").addEventListener("click", function (ev) { au.loop = !au.loop; ev.target.setAttribute("aria-pressed", String(au.loop)); ev.target.className = "btn " + (au.loop ? "btn-primary" : "btn-ghost") + " sm"; ev.target.textContent = au.loop ? "⏹ إيقاف التكرار" : "🔁 تكرار تلقائي"; });

@@ -7,8 +7,8 @@
 <title>لوحة المعلم · KIMZA Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvum8yn">
-<link rel="stylesheet" href="app.css?v=mwvum8yn">
+<link rel="stylesheet" href="site.css?v=mwvx33oh">
+<link rel="stylesheet" href="app.css?v=mwvx33oh">
 
 </head>
 <body class="app">
@@ -16,7 +16,7 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvum8yn"></script>
+<script src="app.js?v=mwvx33oh"></script>
 
 <script>
 (async function () {
@@ -160,7 +160,8 @@
         });
         h += '</div></div><div style="text-align:end"><a class="btn btn-ghost sm" href="class.html?id=' + esc(l.id) + '">صفحة الحصة</a>' +
           '<div style="margin-top:8px"><label class="btn btn-ghost sm" style="display:inline-flex;margin:0;cursor:pointer">' + (audioSet[l.id + ".mp3"] ? "استبدال الصوت" : "رفع الصوت") +
-          '<input type="file" accept="audio/*" data-au="' + esc(l.id) + '" style="display:none"></label> ' + (audioSet[l.id + ".mp3"] ? '<span class="badge ok">الصوت مرفوع</span>' : '<span class="badge">لا صوت</span>') + "</div></div></div>";
+          '<input type="file" accept="audio/*" data-au="' + esc(l.id) + '" style="display:none"></label> ' + (audioSet[l.id + ".mp3"] ? '<span class="badge ok">الصوت مرفوع</span>' : '<span class="badge">لا صوت</span>') + "</div>" +
+          '<div style="margin-top:8px"><label class="btn btn-ghost sm" style="display:inline-flex;margin:0;cursor:pointer">رفع صور القصة<input type="file" accept="image/*" multiple data-im="' + esc(l.id) + '" style="display:none"></label> <span class="muted" style="font-size:.85rem">تظهر مرتّبة حسب أسماء الملفات</span></div></div></div>';
       });
       h += "</div>";
     });
@@ -174,6 +175,17 @@
       var p = b.getAttribute("data-wk").split("|"), ids = (weeks[Number(p[0])] || []).map(function (l) { return l.id; }), patch = {}; patch["open_" + p[1]] = p[2] === "1";
       var r2 = await sb.from("lessons").update(patch).in("id", ids);
       if (r2.error) KZ.toast("تعذر الحفظ.", true); VIEWS.lessons(); }); });
+    view.querySelectorAll("[data-im]").forEach(function (inp) { inp.addEventListener("change", async function () {
+      var fs_ = Array.prototype.slice.call(inp.files || []).sort(function (a, b) { return a.name.localeCompare(b.name, undefined, { numeric: true }); });
+      if (!fs_.length) return;
+      var lid = inp.getAttribute("data-im"), bad = 0;
+      KZ.toast("جارٍ رفع الصور...");
+      for (var k = 0; k < fs_.length; k++) {
+        var ext = (fs_[k].name.split(".").pop() || "jpg").toLowerCase().replace("jpeg", "jpg");
+        var up = await sb.storage.from("lesson-images").upload(lid + "-story-" + (k + 1) + "." + ext, fs_[k], { upsert: true, contentType: fs_[k].type || "image/jpeg" });
+        if (up.error) bad++;
+      }
+      KZ.toast(bad ? "تعذر رفع بعض الصور." : "تم رفع " + fs_.length + " صورة.", !!bad); }); });
     view.querySelectorAll("[data-au]").forEach(function (inp) { inp.addEventListener("change", async function () {
       var f = inp.files[0]; if (!f) return;
       KZ.toast("جارٍ رفع الصوت...");
