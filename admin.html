@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwnpt35">
-<link rel="stylesheet" href="app.css?v=mwwnpt35">
+<link rel="stylesheet" href="site.css?v=mwwnyi31">
+<link rel="stylesheet" href="app.css?v=mwwnyi31">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwnpt35"></script>
-<script src="portal-i18n.js?v=mwwnpt35"></script>
-<script src="i18n.js?v=mwwnpt35"></script>
+<script src="app.js?v=mwwnyi31"></script>
+<script src="portal-i18n.js?v=mwwnyi31"></script>
+<script src="i18n.js?v=mwwnyi31"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -41,6 +41,14 @@
 
   function $(id) { return document.getElementById(id); }
   function opts(list, sel) { return list.map(function (x) { var v = Array.isArray(x) ? x[0] : x, t = Array.isArray(x) ? x[1] : x; return '<option value="' + esc(v) + '"' + (v === sel ? " selected" : "") + ">" + esc(t) + "</option>"; }).join(""); }
+  var DEFAULT_PW = "Kimza2026Demo";
+  function normPhone(raw) {
+    var d = String(raw || "").replace(/[^0-9]/g, "");
+    if (d.indexOf("00") === 0) d = d.slice(2);
+    if (d.length >= 12 && (d.indexOf("967") === 0 || d.indexOf("225") === 0)) d = d.slice(3);
+    return d;
+  }
+  function isPhone(raw) { return /^\+?[0-9][0-9\s\-]{6,}$/.test(String(raw || "").trim()); }
   function genPw() { var a = "abcdefghjkmnpqrstuvwxyz23456789", s = ""; var r = new Uint32Array(10); crypto.getRandomValues(r); for (var i = 0; i < 10; i++) s += a[r[i] % a.length]; return s; }
   function genUser() { var a = "abcdefghjkmnpqrstuvwxyz23456789", s = "kz."; var r = new Uint32Array(5); crypto.getRandomValues(r); for (var i = 0; i < 5; i++) s += a[r[i] % a.length]; return s; }
   async function fn(payload) {
@@ -147,10 +155,11 @@
       '<div><label for="aUser">اسم المستخدم (حروف إنجليزية)</label><input id="aUser" dir="ltr" required value="' + esc(genUser()) + '"></div>' +
       '<div><label for="aLevel">المستوى</label><select id="aLevel">' + opts(LEVELS, pf.level || "A1") + "</select></div>" +
       '<div><label for="aIg">إنستغرام (اختياري)</label><input id="aIg" dir="ltr" value="' + esc(pf.ig || "") + '"></div>' +
-      '<div><label for="aPw">كلمة مرور مؤقتة</label><input id="aPw" dir="ltr" value="' + genPw() + '"></div>' +
+      '<div><label for="aPw">كلمة مرور مؤقتة</label><input id="aPw" dir="ltr" value="' + DEFAULT_PW + '"></div>' +
       '<div><button class="btn btn-primary" type="submit">إنشاء الحساب</button></div></form>' +
-      '<form class="tile form" id="addMany"><h3>إضافة عدة طلاب</h3><p class="muted">سطر لكل طالب: الاسم، المستوى. مثال: أحمد علي، A1</p>' +
-      '<textarea id="bulk" rows="6" placeholder="أحمد علي, A1&#10;سارة محمد, B1"></textarea><div><button class="btn btn-primary" type="submit">إنشاء الحسابات</button></div></form></div>' +
+      '<form class="tile form" id="addMany"><h3>إضافة عدة طلاب</h3><p class="muted">اكتب لكل طالب: <strong dir="ltr">الرقم/المستوى</strong> مثل <span dir="ltr">776258366/A1</span>. افصل بين الطلاب بفاصلة أو بسطر جديد. الرقم يكون اسم الطالب واسم دخوله (بدون رمز الدولة). لمستويات إضافية: <span dir="ltr">776258366/A1/A2</span>. ويمكن كتابة اسم بدل الرقم: <span dir="ltr">سارة علي/B1</span>.</p>' +
+      '<div><label for="bPw">كلمة المرور المؤقتة لكل هؤلاء</label><input id="bPw" dir="ltr" value="' + DEFAULT_PW + '"></div>' +
+      '<textarea id="bulk" rows="6" placeholder="776258366/A1, 784979244/A2&#10;774172469/A1/A2"></textarea><div><button class="btn btn-primary" type="submit">إنشاء الحسابات</button></div></form></div>' +
       '<div id="creds"></div>';
     h += '<h2 style="margin-top:24px">الطلاب (' + nm.list.length + ')</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>المستخدم</th><th>المستوى</th><th>الحالة</th><th>مستويات إضافية</th><th>غياب</th><th></th></tr></thead><tbody>';
     nm.list.forEach(function (p) {
@@ -168,6 +177,7 @@
       $("creds").innerHTML = '<div class="infobox"><strong>بيانات الدخول (تظهر مرة واحدة، أعطها للطلاب)</strong><pre class="en" style="white-space:pre-wrap;direction:ltr;text-align:left;margin:8px 0">' + esc(txt) + '</pre><button class="btn btn-primary sm" id="cp" type="button">نسخ</button></div>';
       $("cp").addEventListener("click", function () { copy(txt); });
     }
+    $("aName").addEventListener("input", function () { if (isPhone($("aName").value)) $("aUser").value = normPhone($("aName").value); });
     $("addOne").addEventListener("submit", async function (e) {
       e.preventDefault();
       var row = { name: $("aName").value.trim(), user: $("aUser").value.trim().toLowerCase(), pw: $("aPw").value };
@@ -179,17 +189,27 @@
     });
     $("addMany").addEventListener("submit", async function (e) {
       e.preventDefault();
-      var lines = $("bulk").value.split(/\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+      var items = $("bulk").value.split(/[\n,،;؛]+/).map(function (x) { return x.trim(); }).filter(Boolean);
+      var pw = ($("bPw").value || "").trim() || DEFAULT_PW;
+      if (pw.length < 8) { KZ.toast("كلمة المرور يجب أن تكون 8 أحرف على الأقل.", true); return; }
       var done = [], failed = [];
-      for (var i = 0; i < lines.length; i++) {
-        var parts = lines[i].split(/[,،;|]/).map(function (x) { return x.trim(); });
-        var lvl = (parts[1] || "A1").toUpperCase();
-        var row = { name: parts[0], user: genUser(), pw: genPw() };
-        try { await fn({ action: "create", full_name: row.name, username: row.user, password: row.pw, level: LEVELS.indexOf(lvl) >= 0 ? lvl : "A1" }); done.push(row); }
-        catch (er) { failed.push(parts[0] + " (" + er.message + ")"); }
+      for (var i = 0; i < items.length; i++) {
+        var parts = items[i].split(/[\/\\|]/).map(function (x) { return x.trim(); }).filter(Boolean);
+        var first = parts[0] || "", lv = parts.slice(1).map(function (x) { return x.toUpperCase(); }).filter(function (x) { return LEVELS.indexOf(x) >= 0; });
+        var m = !lv.length && /^(.+?)\s+(A1|A2|B1|B2|C1)$/i.exec(first);   // old style: "name A1"
+        if (m) { first = m[1]; lv = [m[2].toUpperCase()]; }
+        if (!lv.length) lv = ["A1"];
+        var phone = isPhone(first);
+        var row = phone ? { name: normPhone(first), user: normPhone(first), pw: pw } : { name: first, user: genUser(), pw: pw };
+        if (!row.user || (phone && row.user.length < 6)) { failed.push(items[i] + " (رقم غير صالح)"); continue; }
+        try {
+          await fn({ action: "create", full_name: row.name, username: row.user, password: row.pw, level: lv[0] });
+          if (lv.length > 1) await sb.from("profiles").update({ completed_levels: lv.slice(1) }).eq("username", row.user);
+          row.name += "  [" + lv.join("+") + "]"; done.push(row);
+        } catch (er) { failed.push(first + " (" + (/exist|already|duplicate|registered/i.test(er.message) ? "موجود مسبقاً" : er.message) + ")"); }
       }
-      await VIEWS.students(); showCreds(done);
-      if (failed.length) KZ.toast("فشل: " + failed.join("، "), true); else KZ.toast("تم إنشاء " + done.length + " حساباً.");
+      await VIEWS.students(); if (done.length) showCreds(done);
+      if (failed.length) KZ.toast("لم يُنشأ: " + failed.join("، "), true); else KZ.toast("تم إنشاء " + done.length + " حساباً.");
     });
     view.querySelectorAll("[data-lv]").forEach(function (s) { s.addEventListener("change", async function () {
       var r = await sb.from("profiles").update({ level: s.value }).eq("id", s.getAttribute("data-lv")); KZ.toast(r.error ? "تعذر الحفظ." : "تم تغيير المستوى.", !!r.error); }); });

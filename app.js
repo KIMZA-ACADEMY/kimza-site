@@ -172,11 +172,28 @@
     var fab = document.getElementById("kzbFab"); if (fab) fab.style.display = "";
   };
   // ---- temporary voice recorder (stays on the student's device; nothing is uploaded) ----
+  KZ.dragFab = function (b, key, defX, defY) {
+    var pos = null; try { pos = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) {}
+    function place(x, y) {
+      var w = b.offsetWidth || 44, h = b.offsetHeight || 44;
+      x = Math.max(4, Math.min(innerWidth - w - 4, x)); y = Math.max(4, Math.min(innerHeight - h - 4, y));
+      b.style.left = x + "px"; b.style.top = y + "px"; b.style.right = "auto"; b.style.bottom = "auto"; b.style.insetInlineStart = "auto"; b.style.insetInlineEnd = "auto";
+    }
+    place(pos && isFinite(pos.x) ? pos.x : defX, pos && isFinite(pos.y) ? pos.y : defY());
+    var sx = 0, sy = 0, ox = 0, oy = 0, moved = false, down = false;
+    b.style.touchAction = "none";
+    b.addEventListener("pointerdown", function (e) { down = true; moved = false; sx = e.clientX; sy = e.clientY; ox = b.offsetLeft; oy = b.offsetTop; try { b.setPointerCapture(e.pointerId); } catch (x) {} });
+    b.addEventListener("pointermove", function (e) { if (!down) return; var dx = e.clientX - sx, dy = e.clientY - sy; if (!moved && Math.hypot(dx, dy) < 6) return; moved = true; place(ox + dx, oy + dy); });
+    b.addEventListener("pointerup", function () { down = false; if (moved) { try { localStorage.setItem(key, JSON.stringify({ x: b.offsetLeft, y: b.offsetTop })); } catch (x) {} } });
+    b.addEventListener("click", function (e) { if (moved) { e.stopImmediatePropagation(); e.preventDefault(); moved = false; } }, true);
+    addEventListener("resize", function () { place(b.offsetLeft, b.offsetTop); });
+  };
   KZ.mountRecorderButton = function () {
     if (document.getElementById("kzrFab")) return;
     var b = document.createElement("button"); b.id = "kzrFab"; b.type = "button"; b.title = "سجّل صوتك واسمعه";
-    b.style.cssText = "position:fixed;bottom:16px;inset-inline-start:148px;z-index:900;font:inherit;font-weight:700;border:2px solid #D4AF37;background:#0B1F44;color:#F8F4E9;border-radius:30px;padding:10px 16px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4);display:flex;gap:6px;align-items:center";
-    b.innerHTML = "🎙 <span>سجّل صوتك</span>";
+    b.style.cssText = "position:fixed;z-index:900;width:44px;height:44px;font-size:20px;line-height:1;border:2px solid #D4AF37;background:#0B1F44;color:#F8F4E9;border-radius:50%;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:0;opacity:.92";
+    b.setAttribute("aria-label", "سجّل صوتك (اسحب الزر لتحريكه)"); b.title = "سجّل صوتك (اسحب الزر لتحريكه)";
+    b.textContent = "🎙";
     var panel = null, mr = null, chunks = [], stream = null, url = null, t0 = 0, tm = null, mime = "";
     function cleanup() { if (url) { URL.revokeObjectURL(url); url = null; } chunks = []; }
     function stopStream() { if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; } if (tm) { clearInterval(tm); tm = null; } }
@@ -210,14 +227,22 @@
     b.addEventListener("click", function () {
       if (!panel) { panel = document.createElement("div"); panel.style.cssText = "position:fixed;bottom:70px;inset-inline-start:16px;z-index:901;width:min(320px,calc(100vw - 32px));background:#0B1F44;color:#F8F4E9;border:2px solid #D4AF37;border-radius:14px;padding:12px;box-shadow:0 10px 36px rgba(0,0,0,.5);display:none"; document.body.appendChild(panel); draw("idle"); }
       panel.style.display = panel.style.display === "none" ? "block" : "none";
+      if (panel.style.display === "block") {
+        var r = b.getBoundingClientRect(), pw = panel.offsetWidth || 300, ph = panel.offsetHeight || 160;
+        var px = Math.max(8, Math.min(innerWidth - pw - 8, r.left)), py = r.top > innerHeight / 2 ? r.top - ph - 8 : r.bottom + 8;
+        panel.style.left = px + "px"; panel.style.top = Math.max(8, Math.min(innerHeight - ph - 8, py)) + "px"; panel.style.bottom = "auto"; panel.style.right = "auto"; panel.style.insetInlineStart = "auto";
+      }
     });
     document.body.appendChild(b);
+    KZ.dragFab(b, "kz-fab-rec", 8, function () { return Math.round(innerHeight * 0.42) + 52; });
   };
   KZ.mountBoardButton = function () {
     if (document.getElementById("kzbFab")) return;
     var b = document.createElement("button"); b.id = "kzbFab"; b.type = "button"; b.title = "افتح سبورتي للكتابة والتدرب";
-    b.style.cssText = "position:fixed;bottom:16px;inset-inline-start:16px;z-index:900;font:inherit;font-weight:700;border:2px solid #D4AF37;background:#0B1F44;color:#F8F4E9;border-radius:30px;padding:10px 16px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4);display:flex;gap:6px;align-items:center";
-    b.innerHTML = "🧑‍🏫 <span>السبورة</span>"; b.addEventListener("click", KZ.openBoard); document.body.appendChild(b);
+    b.style.cssText = "position:fixed;z-index:900;width:44px;height:44px;font-size:20px;line-height:1;border:2px solid #D4AF37;background:#0B1F44;color:#F8F4E9;border-radius:50%;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:0;opacity:.92";
+    b.setAttribute("aria-label", "السبورة (اسحب الزر لتحريكه)"); b.title = "السبورة (اسحب الزر لتحريكه)";
+    b.textContent = "🧑‍🏫"; b.addEventListener("click", KZ.openBoard); document.body.appendChild(b);
+    KZ.dragFab(b, "kz-fab-board", 8, function () { return Math.round(innerHeight * 0.42); });
   };
   KZ.features = {};
   // A feature is on unless the teacher switched it off.
