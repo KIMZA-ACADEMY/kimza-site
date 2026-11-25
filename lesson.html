@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwnpt35">
-<link rel="stylesheet" href="app.css?v=mwwnpt35">
+<link rel="stylesheet" href="site.css?v=mwwnthk0">
+<link rel="stylesheet" href="app.css?v=mwwnthk0">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwnpt35"></script>
-<script src="portal-i18n.js?v=mwwnpt35"></script>
+<script src="app.js?v=mwwnthk0"></script>
+<script src="portal-i18n.js?v=mwwnthk0"></script>
 
 <script>
 (async function () {
@@ -179,7 +179,7 @@
           draw();
         }
         function draw(msg, bad) {
-          box.innerHTML = '<h3 style="margin-top:0">🔁 تكرار القصة</h3><p class="muted" style="margin-top:0">كلما أعدت قراءة القصة أو الاستماع إليها مع التكرار بصوتك، سجّل ذلك. التكرار يحسّن طلاقتك.</p>' +
+          box.innerHTML = '<h3 style="margin-top:0">🔁 تكرار القصة</h3><p class="muted" style="margin-top:0">يُحسب الاستماع الكامل للقصة تلقائياً بأي سرعة. وإن أعدت قراءتها بصوتك فاضغط الزر. كلما كرّرت أكثر تحسّنت طلاقتك ولهجتك.</p>' +
             '<div class="btns"><button class="btn btn-primary" id="repBtn" type="button">🔁 كرّرتُ القصة مرة أخرى</button> <span class="muted">اليوم: <strong>' + tc + '</strong> · المجموع: <strong>' + tt + '</strong></span></div>' +
             '<p id="repMsg" class="muted" style="min-height:1.4em;' + (bad ? "color:#c62828" : "") + '">' + (msg || "") + '</p>' +
             '<details><summary class="muted" style="cursor:pointer">اللقب الخاص بي</summary><div class="form" style="margin-top:8px;max-width:360px"><div><label for="nkIn">لقب لنفسك (2 إلى 20 حرفاً)</label><input id="nkIn" maxlength="20" value="' + esc(nk ? nk.nickname : "") + '"></div>' +
@@ -201,6 +201,16 @@
             await refresh();
           });
         }
+        var MSGS = ["أحسنت! استمعت للقصة كاملة 🎧 كلما كررت أكثر اقترب نطقك من النطق الطبيعي.", "رائع! أنت تبني لهجة سلسة مع كل تكرار 🌟", "استمر! التكرار هو سرّ الطلاقة 💪", "ممتاز! أذنك تتعوّد على النطق الصحيح 👂", "كل مرة تسمع فيها القصة تقرّبك من لهجة إنجليزية طلقة 🚀", "جميل جداً! كرّر مرة أخرى، فكل تكرار يصنع فرقاً ✨"];
+        window.__kzAutoRep = async function (secs) {
+          var r = await sb.rpc("log_story_rep", { p_lesson: id, p_audio_seconds: secs ? Math.round(secs) : null, p_auto: true });
+          var d = r && r.data;
+          if (!d || !d.ok) { if (d && d.reason === "daily_cap") draw("سجّلت اليوم ما يكفي. أحسنت، عُد غداً لتكمل رحلتك نحو الطلاقة! 🌙"); return; }
+          tc = d.today; tt = d.total;
+          var m = (d.today % 5 === 0) ? "🔥 " + d.today + " تكرارات اليوم! أنت على الطريق لتتحدث الإنجليزية بطلاقة." : MSGS[(d.total * 7 + d.today) % MSGS.length];
+          draw("✅ " + m);
+          try { KZ.toast(m); } catch (e) {}
+        };
         refresh();
       })();
       if (IS_T && document.getElementById("stEdit")) document.getElementById("stEdit").addEventListener("click", function () {
@@ -253,6 +263,22 @@
         '<p class="muted">استمع ثم أعد القصة جملة جملة. غيّر السرعة وفعّل التكرار ليعيد الصوت دون أن تضغط كل مرة.</p></div>';
       var au = document.getElementById("au");
       mediaStop = function () { try { au.pause(); } catch (e) {} };
+      (function () {
+        var lastT = 0, acc = 0;
+        function done() {
+          var d = au.duration;
+          if (isFinite(d) && d > 0 && acc >= 0.8 * d) { acc = 0; if (window.__kzAutoRep) window.__kzAutoRep(d); } else acc = 0;
+        }
+        au.addEventListener("timeupdate", function () {
+          var t = au.currentTime, d = au.duration, dt = t - lastT;
+          if (dt > 0 && dt < 1.5 * Math.max(1, au.playbackRate)) acc += dt;
+          else if (isFinite(d) && lastT > d * 0.85 && t < d * 0.3 && au.loop) done();   // auto-loop wrapped around
+          else if (dt < 0 || dt >= 1.5 * Math.max(1, au.playbackRate)) { /* seek: the played time so far stays */ }
+          lastT = t;
+        });
+        au.addEventListener("ended", function () { if (!au.loop) { lastT = 0; done(); } });
+        au.addEventListener("seeking", function () { lastT = au.currentTime; });
+      })();
       document.getElementById("auSpd").addEventListener("change", function (ev) { au.playbackRate = Number(ev.target.value); });
       au.addEventListener("play", function () { au.playbackRate = Number(document.getElementById("auSpd").value); });
       document.getElementById("auLoop").addEventListener("click", function (ev) { au.loop = !au.loop; ev.target.setAttribute("aria-pressed", String(au.loop)); ev.target.className = "btn " + (au.loop ? "btn-primary" : "btn-ghost") + " sm"; ev.target.textContent = au.loop ? "⏹ إيقاف التكرار" : "🔁 تكرار تلقائي"; });
