@@ -286,3 +286,24 @@
     });
   };
 })();
+
+
+/* polish v3: header shadow on scroll + gentle scroll reveal */
+(function () {
+  var hd = document.querySelector(".nav,.app-nav");
+  function sc() { if (hd) hd.classList.toggle("scrolled", window.scrollY > 8); }
+  window.addEventListener("scroll", sc, { passive: true }); sc();
+  if (!("IntersectionObserver" in window) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  var targets = [];
+  if (!targets.length) return;
+  document.documentElement.classList.add("js-rv");
+  var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }); }, { rootMargin: "0px 0px -8% 0px", threshold: 0.06 });
+  var n = 0;
+  Array.prototype.forEach.call(targets, function (t) {
+    var r = t.getBoundingClientRect();
+    t.classList.add("rv");
+    t.style.setProperty("--rvd", (Math.min(n++ % 5, 4) * 70) + "ms");
+    if (r.top < window.innerHeight * 0.92) requestAnimationFrame(function () { t.classList.add("in"); }); else io.observe(t);
+  });
+  setTimeout(function () { document.querySelectorAll(".rv:not(.in)").forEach(function (t) { var r = t.getBoundingClientRect(); if (r.top < window.innerHeight) t.classList.add("in"); }); }, 1800);
+})();
