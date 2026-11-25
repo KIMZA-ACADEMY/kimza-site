@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>البطاقات · KIMZA Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="app.css">
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("student");
+  if (!prof) return;
+  KZ.shell("cards");
+  var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
+  var KEY = "kz-fc-" + KZ.user.id;
+  var learned = {};
+  try { learned = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+
+  var ls = await sb.from("lessons").select("num,level,title,is_open").eq("level", prof.level).eq("is_open", true).order("num");
+  var open = ls.data || [];
+  if (!open.length) { app.innerHTML = '<h1>البطاقات</h1><p class="muted">لا توجد دروس مفتوحة بعد. ستظهر بطاقات كل درس عندما يفتحه المعلم.</p>'; return; }
+
+  app.innerHTML = '<h1>بطاقات المفردات</h1><div class="form" style="max-width:420px"><div><label for="sel">الدرس</label><select id="sel"><option value="all">كل الدروس المفتوحة</option>' +
+    open.map(function (l) { return '<option value="' + l.num + '">الدرس ' + l.num + (l.title ? " — " + esc(l.title) : "") + "</option>"; }).join("") +
+    '</select></div><label style="font-weight:400"><input type="checkbox" id="hide" style="width:auto;min-height:0"> أخفِ البطاقات التي عرفتها</label></div><div id="deck"></div>';
+
+  var cards = [], idx = 0, flipped = false;
+  async function load() {
+    var v = document.getElementById("sel").value;
+    var q = sb.from("flashcards").select("id,lesson_num,english,arabic,example_en,example_ar").eq("level", prof.level).order("lesson_num").order("id");
+    if (v !== "all") q = q.eq("lesson_num", Number(v));
+    var r = await q;
+    cards = r.data || [];
+    if (document.getElementById("hide").checked) cards = cards.filter(function (c) { return !learned[c.id]; });
+    idx = 0; flipped = false; draw();
+  }
+  function draw() {
+    var d = document.getElementById("deck");
+    if (!cards.length) { d.innerHTML = '<p class="muted" style="margin-top:20px">لا توجد بطاقات للمراجعة هنا. أحسنت!</p>'; return; }
+    var c = cards[idx];
+    var back = flipped
+      ? '<div><div style="font-size:1.5rem;font-weight:700">' + esc(c.arabic || "") + '</div><p class="en muted" style="margin-top:14px">' + esc(c.example_en || "") + '</p><p class="muted">' + esc(c.example_ar || "") + "</p></div>"
+      : '<div class="en">' + esc(c.english) + '</div>';
+    d.innerHTML = '<p class="muted" style="text-align:center">' + (idx + 1) + " / " + cards.length + '</p><div class="flash"><div class="face" id="face" tabindex="0" role="button" aria-label="اقلب البطاقة">' + back + '</div></div>' +
+      '<div class="btns" style="justify-content:center"><button class="btn btn-ghost sm" id="prev" type="button">السابقة</button><button class="btn btn-primary sm" id="know" type="button">عرفتها ✓</button><button class="btn btn-ghost sm" id="next" type="button">التالية</button></div>' +
+      '<p class="muted" style="text-align:center;margin-top:10px">اضغط على البطاقة لتقلبها.</p>';
+    document.getElementById("face").addEventListener("click", function () { flipped = !flipped; draw(); });
+    document.getElementById("next").addEventListener("click", function () { idx = (idx + 1) % cards.length; flipped = false; draw(); });
+    document.getElementById("prev").addEventListener("click", function () { idx = (idx - 1 + cards.length) % cards.length; flipped = false; draw(); });
+    document.getElementById("know").addEventListener("click", function () {
+      learned[c.id] = 1; try { localStorage.setItem(KEY, JSON.stringify(learned)); } catch (e) {}
+      idx = (idx + 1) % cards.length; flipped = false; draw();
+    });
+  }
+  document.getElementById("sel").addEventListener("change", load);
+  document.getElementById("hide").addEventListener("change", load);
+  load();
+})();
+
+</script>
+</body>
+</html>

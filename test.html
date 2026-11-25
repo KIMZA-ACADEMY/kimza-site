@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>الاختبار · KIMZA Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="app.css">
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("student");
+  if (!prof) return;
+  KZ.shell("home");
+  KZ.blockCopy();
+  var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
+  var id = new URLSearchParams(location.search).get("id") || "";
+  var KINDS = { weekly: "اختبار أسبوعي", monthly: "امتحان شهري", final: "امتحان نهاية المستوى" };
+
+  var t = await sb.from("tests").select("id,kind,minutes,is_open,level").eq("id", id).maybeSingle();
+  if (!t.data) { app.innerHTML = '<h1>الاختبار غير موجود</h1><p><a href="dashboard.html">العودة</a></p>'; return; }
+  var test = t.data;
+  var a = await sb.from("test_attempts").select("submitted_at,score,total").eq("test_id", id).maybeSingle();
+
+  function resultView(score, total, note) {
+    app.innerHTML = '<div class="tile" style="text-align:center"><h1>' + esc(KINDS[test.kind]) + '</h1><p class="result" style="font-size:2rem">النتيجة: ' + score + ' من ' + total + '</p>' + (note ? '<p class="muted">' + note + "</p>" : "") + '<p><a class="btn btn-primary" href="dashboard.html">العودة</a></p></div>';
+  }
+  if (a.data && a.data.submitted_at) { resultView(a.data.score, a.data.total, "تم تسليم هذا الاختبار."); return; }
+  if (!test.is_open && !(a.data)) { app.innerHTML = '<h1>الاختبار مغلق</h1><p class="muted">سيفتحه المعلم في وقته.</p><p><a href="dashboard.html">العودة</a></p>'; return; }
+
+  app.innerHTML = '<div class="tile"><h1>' + esc(KINDS[test.kind]) + ' <span class="en muted" style="font-size:.6em">' + esc(test.id) + '</span></h1>' +
+    '<p><strong>المدة:</strong> ' + test.minutes + ' دقيقة. يبدأ العدّاد عند الضغط على «ابدأ» ولا يتوقف.</p>' +
+    '<ul class="muted"><li>يُسلَّم الاختبار تلقائياً عند انتهاء الوقت.</li><li>لا يمكن إعادة الاختبار.</li><li>النسخ والطباعة محظوران على هذه الصفحة.</li></ul>' +
+    '<button class="btn btn-primary" id="go" type="button">ابدأ الاختبار</button></div>';
+  document.getElementById("go").addEventListener("click", start);
+
+  var answers = {}, timer = null, finished = false;
+  var KEY = "kz-ans-" + id + "-" + KZ.user.id;
+  try { answers = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+
+  async function start() {
+    var r = await sb.rpc("get_test", { p_test_id: id });
+    if (r.error || !r.data) { KZ.toast("تعذر فتح الاختبار.", true); return; }
+    var d = r.data;
+    if (d.status === "submitted") return resultView(d.score, d.total);
+    if (d.status === "expired") return resultView(0, "—", "انتهى وقت الاختبار قبل تسليمه.");
+    if (d.status !== "running") { app.innerHTML = '<h1>الاختبار غير متاح</h1><p><a href="dashboard.html">العودة</a></p>'; return; }
+    render(d);
+  }
+
+  function render(d) {
+    var qs = d.questions || [];
+    var html = '<div class="timer"><div>' + esc(KINDS[test.kind]) + ' · <span id="count">0</span> / ' + qs.length + '</div><div class="clock" id="clock">--:--</div></div>';
+    html += qs.map(function (q, i) {
+      var opts = (q.options || []).map(function (o, j) {
+        return '<label class="opt"><input type="radio" name="q' + q.idx + '" value="' + j + '"' + (answers[q.idx] === j ? " checked" : "") + "> <span>" + esc(o) + "</span></label>";
+      }).join("");
+      return '<div class="tile" style="margin:14px 0"><p class="muted" style="margin:0">' + (i + 1) + '</p><p dir="auto" style="font-weight:700;margin:6px 0 10px">' + esc(q.q) + "</p>" + opts + "</div>";
+    }).join("");
+    html += '<p><button class="btn btn-primary" id="submit" type="button">تسليم الاختبار</button></p>';
+    app.innerHTML = html;
+    var end = Date.now() + d.seconds_left * 1000;
+    function upd() {
+      var left = Math.max(0, Math.round((end - Date.now()) / 1000));
+      var m = Math.floor(left / 60), s = left % 60;
+      var el = document.getElementById("clock");
+      if (el) { el.textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0"); el.classList.toggle("warn", left <= 300); }
+      if (left <= 0) submit(true);
+    }
+    upd(); timer = setInterval(upd, 1000);
+    function counter() { var c = document.getElementById("count"); if (c) c.textContent = Object.keys(answers).length; }
+    counter();
+    app.querySelectorAll("input[type=radio]").forEach(function (r) {
+      r.addEventListener("change", function (e) {
+        answers[e.target.name.slice(1)] = Number(e.target.value);
+        try { localStorage.setItem(KEY, JSON.stringify(answers)); } catch (x) {}
+        counter();
+      });
+    });
+    document.getElementById("submit").addEventListener("click", function () { submit(false); });
+  }
+
+  async function submit(auto) {
+    if (finished) return;
+    finished = true; clearInterval(timer);
+    var r = await sb.rpc("submit_test", { p_test_id: id, p_answers: answers });
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    if (r.error || !r.data) { finished = false; KZ.toast("تعذر التسليم. تحقق من الاتصال وحاول مجدداً.", true); return; }
+    resultView(r.data.score, r.data.total, auto ? "سُلّم الاختبار تلقائياً عند انتهاء الوقت." : "تم تسليم الاختبار.");
+  }
+})();
+
+</script>
+</body>
+</html>

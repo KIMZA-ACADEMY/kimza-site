@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>تسجيل الدخول · KIMZA Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="app.css">
+
+</head>
+<body class="app">
+<main class="app-main" style="max-width:440px;margin-top:6vh">
+  <div class="tile" style="text-align:center">
+    <img src="kimza-logo-gold.png" alt="KIMZA Academy" style="height:64px;background:#0B1F44;padding:8px 18px;border-radius:10px;margin-bottom:14px">
+    <h1 style="font-size:1.6rem">تسجيل الدخول</h1>
+    <form id="form" class="form" style="margin:auto;text-align:start">
+      <div><label for="u">اسم المستخدم</label><input id="u" autocomplete="username" dir="ltr" required></div>
+      <div><label for="p">كلمة المرور</label><input id="p" type="password" autocomplete="current-password" dir="ltr" required></div>
+      <div id="err" class="msg bad" hidden></div>
+      <button class="btn btn-primary" id="btn" type="submit">دخول</button>
+    </form>
+    <p class="muted" style="font-size:15px">الحسابات تُنشأ من المعلم فقط. نسيت كلمة المرور؟ تواصل مع المعلم على إنستغرام.</p>
+    <p><a href="index.html">العودة إلى الموقع</a></p>
+  </div></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+
+<script>
+(function () {
+  var sb = KZ.sb;
+  function $(id) { return document.getElementById(id); }
+  async function go() {
+    var u = await sb.auth.getUser();
+    if (!u.data.user) return;
+    var p = await sb.from("profiles").select("role").eq("id", u.data.user.id).maybeSingle();
+    location.href = p.data && p.data.role === "teacher" ? "admin.html" : "dashboard.html";
+  }
+  sb.auth.getSession().then(function (s) { if (s.data.session) go(); });
+  $("form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var id = $("u").value.trim().toLowerCase();
+    var email = id.indexOf("@") >= 0 ? id : id + KZ.DOMAIN;
+    $("btn").disabled = true; $("err").hidden = true;
+    var r = await sb.auth.signInWithPassword({ email: email, password: $("p").value });
+    $("btn").disabled = false;
+    if (r.error) { $("err").hidden = false; $("err").textContent = "اسم المستخدم أو كلمة المرور غير صحيحة."; return; }
+    go();
+  });
+})();
+
+</script>
+</body>
+</html>

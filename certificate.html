@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>الشهادة · KIMZA Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="app.css">
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(async function () {
+  var prof = await KZ.requireAuth();
+  if (!prof) return;
+  KZ.shell(prof.role === "teacher" ? "admin" : "cert");
+  var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
+  var num = (new URLSearchParams(location.search).get("c") || "").trim();
+  var r = await sb.from("certificates").select("number,level,issued_on,status,holder_name").eq("number", num).maybeSingle();
+  if (!r.data) { app.innerHTML = '<h1>الشهادة غير موجودة</h1><p><a href="certificates.html">العودة</a></p>'; return; }
+  var c = r.data;
+  var LV = { A1: "A1 · Beginner", A2: "A2 · Elementary", B1: "B1 · Intermediate", B2: "B2 · Upper-intermediate", C1: "C1 · Advanced" };
+  var verifyUrl = new URL("verify.html?c=" + encodeURIComponent(c.number), location.href).href;
+  app.innerHTML =
+    '<div class="noprint btns" style="margin-bottom:10px"><button class="btn btn-primary" id="pr" type="button">طباعة / حفظ PDF</button></div>' +
+    '<div class="cert" dir="ltr"><img class="logo" src="kimza-logo-gold.png" alt="KIMZA Academy">' +
+    '<p style="letter-spacing:.3em;margin-top:22px;color:#7A0F2D;font-weight:700">CERTIFICATE OF COMPLETION</p>' +
+    '<p>This is to certify that</p><div class="name">' + esc(c.holder_name) + '</div>' +
+    '<p>has successfully completed the English course level</p><h1>' + esc(LV[c.level] || c.level) + '</h1>' +
+    '<p>Issued on ' + esc(c.issued_on) + '</p><div id="qr" style="display:inline-block;margin:14px 0"></div>' +
+    '<p class="no">Certificate No. ' + esc(c.number) + '</p><p class="no">Verify: ' + esc(verifyUrl) + '</p>' +
+    (c.status !== "valid" ? '<p style="color:#9B1C1C;font-weight:700">REVOKED</p>' : "") + "</div>";
+  try { new QRCode(document.getElementById("qr"), { text: verifyUrl, width: 120, height: 120 }); } catch (e) {}
+  document.getElementById("pr").addEventListener("click", function () { window.print(); });
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>التحقق من شهادة · KIMZA Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="app.css">
+
+</head>
+<body class="app">
+<header class="app-nav"><div class="wrap"><a href="index.html"><img src="kimza-logo-gold.png" alt="KIMZA Academy"></a></div></header>
+<main class="app-main" id="app" style="max-width:640px"></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+
+<script>
+(async function () {
+  var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
+  var num = (new URLSearchParams(location.search).get("c") || "").trim();
+  function form(msg) {
+    app.innerHTML = '<h1>التحقق من شهادة</h1><form class="form" id="f"><div><label for="n">رقم الشهادة</label><input id="n" dir="ltr" placeholder="KMZ-B1-2026-XXXXXX" value="' + esc(num) + '"></div><button class="btn btn-primary" type="submit">تحقق</button></form>' + (msg || "");
+    document.getElementById("f").addEventListener("submit", function (e) {
+      e.preventDefault();
+      location.search = "?c=" + encodeURIComponent(document.getElementById("n").value.trim());
+    });
+  }
+  if (!num) { form(""); return; }
+  var r = await sb.rpc("verify_certificate", { p_number: num });
+  var d = r.data;
+  if (r.error || !d || !d.found) { form('<div class="warnbox" style="margin-top:16px">لم نجد شهادة بهذا الرقم. تأكد من الرقم وحاول مرة أخرى.</div>'); return; }
+  var ok = d.status === "valid";
+  app.innerHTML = '<h1>التحقق من شهادة</h1><div class="tile"><p><span class="badge ' + (ok ? "ok" : "bad") + '">' + (ok ? "✓ شهادة صحيحة وسارية" : "شهادة ملغاة") + "</span></p>" +
+    '<div class="row"><span class="muted">اسم الحاصل عليها</span><strong>' + esc(d.holder_name) + "</strong></div>" +
+    '<div class="row"><span class="muted">رقم الشهادة</span><strong class="en">' + esc(d.number) + "</strong></div>" +
+    '<div class="row"><span class="muted">المستوى</span><strong class="en">' + esc(d.level) + "</strong></div>" +
+    '<div class="row"><span class="muted">تاريخ الإصدار</span><strong>' + esc(d.issued_on) + "</strong></div>" +
+    '<div class="row"><span class="muted">الجهة</span><strong class="en">' + esc(d.academy) + "</strong></div></div>" +
+    '<p class="muted" style="margin-top:14px">تعرض هذه الصفحة البيانات المعتمدة للتحقق فقط.</p>';
+})();
+
+</script>
+</body>
+</html>

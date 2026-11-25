@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>التسجيل · KIMZA Academy</title>
+<meta name="description" content="KIMZA Academy: Your English. Your Future. Learn. Practise. Progress.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")||"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="ar"?"rtl":"ltr")}catch(e){}</script>
+</head>
+<body data-title="title.register">
+<a class="skip" href="#main"><span data-i18n="a11y.skip">تخطَّ إلى المحتوى</span></a>
+<header class="nav">
+  <div class="wrap">
+    <a href="index.html" aria-label="KIMZA Academy"><img class="logo" src="kimza-logo-gold.png" alt="KIMZA Academy"></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main"><a href="index.html"><span data-i18n="nav.home">الرئيسية</span></a><a href="about.html"><span data-i18n="nav.about">عن الأكاديمية</span></a><a href="levels.html"><span data-i18n="nav.levels">المستويات</span></a><a href="how-it-works.html"><span data-i18n="nav.how">كيف نتعلم</span></a><a href="placement.html"><span data-i18n="nav.placement">اختبار المستوى</span></a><a href="faq.html"><span data-i18n="nav.faq">الأسئلة الشائعة</span></a><a href="contact.html"><span data-i18n="nav.contact">تواصل معنا</span></a><a href="login.html"><span data-i18n="nav.login">دخول الطلاب</span></a></nav>
+    <div class="nav-tools">
+      <button class="icon-btn" id="langBtn" type="button" aria-label="Language">English</button>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Theme">&#9790;</button>
+      <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    </div>
+  </div>
+</header>
+<main id="main">
+<section class="hero" style="padding:56px 0"><div class="wrap"><span class="eyebrow"><span data-i18n="reg.eye">التسجيل</span></span>
+  <h1><span data-i18n="reg.h1">سجّل بياناتك</span></h1>
+  <p class="lead"><span data-i18n="reg.lead">نطلب فقط ما نحتاجه لدراسة طلبك. سنتواصل معك عبر إنستغرام.</span></p></div></section>
+<section class="sec sec-cream"><div class="wrap">
+  <form class="form" id="regForm" novalidate>
+    <div><label for="fName"><span data-i18n="reg.name">الاسم الكامل</span> *</label><input id="fName" required maxlength="120" autocomplete="name"></div>
+    <div><label for="fIg"><span data-i18n="reg.ig">حسابك على إنستغرام</span></label><input id="fIg" maxlength="80" placeholder="@" dir="ltr"></div>
+    <div><label for="fPhone"><span data-i18n="reg.phone">رقم الهاتف (اختياري)</span></label><input id="fPhone" maxlength="40" inputmode="tel" dir="ltr"></div>
+    <div><label for="fLevel"><span data-i18n="reg.level">مستواك الحالي إن كنت تعرفه</span></label>
+      <select id="fLevel"><option value="">لا أعرف</option><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option></select></div>
+    <div><label for="fTimes"><span data-i18n="reg.times">الأوقات المناسبة لك للدراسة</span></label><input id="fTimes" maxlength="300"></div>
+    <div><label for="fReason"><span data-i18n="reg.reason">لماذا تريد تعلّم الإنجليزية؟</span></label><textarea id="fReason" maxlength="600"></textarea></div>
+    <div class="hp" aria-hidden="true"><label for="fWeb">Website</label><input id="fWeb" tabindex="-1" autocomplete="off"></div>
+    <div id="regMsg" class="msg" role="status" hidden></div>
+    <div class="btns"><button class="btn btn-primary" id="regBtn" type="submit"><span data-i18n="reg.submit">أرسل الطلب</span></button></div>
+  </form>
+  <div class="card" id="regDone" hidden style="max-width:620px">
+    <h3><span data-i18n="reg.done.h">تم استلام طلبك</span></h3>
+    <p class="muted"><span data-i18n="reg.done.p">شكراً لك. تواصل معنا الآن على إنستغرام لإكمال التسجيل.</span></p>
+    <a class="btn btn-primary" href="https://www.instagram.com/kimza_academy/" target="_blank" rel="noopener"><span data-i18n="reg.done.c">افتح إنستغرام</span></a>
+  </div>
+</div></section>
+</main>
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <img src="kimza-logo-gold.png" alt="KIMZA Academy">
+        <p><span data-i18n="foot.tag">Your English. Your Future.</span><br><span data-i18n="foot.tag2">Learn. Practise. Progress.</span></p>
+      </div>
+      <div>
+        <strong><span data-i18n="foot.links">روابط سريعة</span></strong><br>
+        <a href="levels.html"><span data-i18n="nav.levels2">المستويات</span></a><br>
+        <a href="placement.html"><span data-i18n="nav.placement2">اختبار المستوى</span></a><br>
+        <a href="register.html"><span data-i18n="nav.register">سجّل الآن</span></a><br>
+        <a href="faq.html"><span data-i18n="nav.faq2">الأسئلة الشائعة</span></a>
+      </div>
+      <div>
+        <strong><span data-i18n="foot.contact">تواصل معنا</span></strong><br>
+        <a href="https://www.instagram.com/kimza_academy/" rel="noopener" target="_blank">Instagram @kimza_academy</a>
+      </div>
+    </div>
+    <p class="copy">&copy; KIMZA Academy</p>
+  </div>
+</footer>
+<script src="i18n.js"></script>
+<script src="site-config.js"></script>
+<script src="site.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var sb = null;
+  try { if (window.supabase && window.KIMZA_SUPABASE) sb = window.supabase.createClient(window.KIMZA_SUPABASE.url, window.KIMZA_SUPABASE.publishableKey); } catch (e) {}
+  var level = (new URLSearchParams(location.search).get("level") || "").toUpperCase();
+  if (["A1", "A2", "B1", "B2", "C1"].indexOf(level) < 0) level = "";
+  if (level) $("fLevel").value = level;
+
+  function show(kind, text) { var m = $("regMsg"); m.hidden = false; m.className = "msg " + kind; m.textContent = text; }
+
+  $("regForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if ($("fWeb").value) return; // honeypot: bots fill this field
+    var name = $("fName").value.trim();
+    if (name.length < 2) { show("bad", window.KIMZA_T("js.req")); return; }
+    if (!sb) { show("bad", window.KIMZA_T("js.err")); return; }
+    var btn = $("regBtn"); btn.disabled = true; show("", window.KIMZA_T("js.sending"));
+    sb.from("applications").insert({
+      full_name: name,
+      instagram: $("fIg").value.trim() || null,
+      phone: $("fPhone").value.trim() || null,
+      current_level: $("fLevel").value || null,
+      preferred_times: $("fTimes").value.trim() || null,
+      reason: $("fReason").value.trim() || null,
+      placement_level: level || null
+    }).then(function (res) {
+      btn.disabled = false;
+      if (res.error) { show("bad", window.KIMZA_T("js.err")); return; }
+      $("regForm").hidden = true; $("regDone").hidden = false;
+    });
+  });
+})();
+
+</script>
+</body>
+</html>

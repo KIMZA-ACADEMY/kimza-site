@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>لوحة الطالب · KIMZA Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="app.css">
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("student");
+  if (!prof) return;
+  KZ.shell("home");
+  var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
+  var STATUS = { active: "نشط", paused: "متوقف مؤقتاً", graduated: "خريج", stopped: "موقوف" };
+  var KINDS = { weekly: "اختبار أسبوعي", monthly: "امتحان شهري", final: "امتحان نهاية المستوى" };
+
+  var res = await Promise.all([
+    sb.from("lessons").select("id,level,num,title,is_open").eq("level", prof.level).order("num"),
+    sb.from("tests").select("id,level,kind,minutes,is_open").eq("level", prof.level),
+    sb.from("test_attempts").select("test_id,score,total,submitted_at"),
+    sb.from("homework_submissions").select("lesson_id,first_score,total"),
+    sb.from("announcements").select("title,body,created_at,level").order("created_at", { ascending: false }).limit(5),
+    sb.from("level_info").select("*").eq("level", prof.level).maybeSingle(),
+    sb.from("attendance").select("status"),
+  ]);
+  var lessons = res[0].data || [], tests = res[1].data || [], attempts = res[2].data || [], hw = res[3].data || [];
+  var news = res[4].data || [], info = res[5].data, att = res[6].data || [];
+  var hwMap = {}; hw.forEach(function (h) { hwMap[h.lesson_id] = h; });
+  var atMap = {}; attempts.forEach(function (a) { atMap[a.test_id] = a; });
+
+  var absences = att.filter(function (a) { return a.status === "absent"; }).length;
+  var openLessons = lessons.filter(function (l) { return l.is_open; });
+  var doneHw = openLessons.filter(function (l) { return hwMap[l.id]; }).length;
+  var pct = openLessons.length ? Math.round(doneHw / openLessons.length * 100) : 0;
+
+  var html = "";
+  html += '<h1>مرحباً ' + esc(prof.full_name) + '</h1>';
+  html += '<p><span class="badge gold">المستوى ' + esc(prof.level) + '</span> <span class="badge ' + (prof.status === "active" ? "ok" : "bad") + '">' + esc(STATUS[prof.status] || prof.status) + '</span></p>';
+
+  if (prof.must_change_password) {
+    html += '<div class="infobox"><strong>غيّر كلمة المرور المؤقتة الآن</strong><div class="form" style="margin-top:10px"><div><label for="np">كلمة مرور جديدة (8 أحرف على الأقل)</label><input id="np" type="password" dir="ltr" autocomplete="new-password"></div><div><button class="btn btn-primary sm" id="npBtn" type="button">حفظ كلمة المرور</button></div></div></div>';
+  }
+  if (prof.status !== "active") html += '<div class="warnbox">حسابك ليس نشطاً حالياً، لذلك قد لا تظهر بعض المواد. تواصل مع المعلم.</div>';
+  if (absences > 3) html += '<div class="warnbox">لديك ' + absences + ' غيابات. أكثر من 3 غيابات قد تعرّضك لعدم اجتياز الاختبار النهائي. تواصل مع المعلم، ويمكنك متابعة مواد الدروس وحل الواجبات لتعويض ما فاتك.</div>';
+
+  html += '<div class="cards" style="margin:18px 0">';
+  html += '<div class="tile"><h3>تقدمك</h3><div class="bar"><i style="width:' + pct + '%"></i></div><p class="muted" style="margin-top:8px">' + doneHw + ' من ' + openLessons.length + ' واجباً مفتوحاً تم تسليمه</p>';
+  html += '<p class="muted">الحضور: غياب ' + absences + '</p></div>';
+  if (info && (info.meeting_url || info.community_url || info.schedule_note)) {
+    html += '<div class="tile"><h3>حصصك المباشرة</h3>';
+    if (info.schedule_note) html += '<p>' + esc(info.schedule_note) + '</p>';
+    if (info.meeting_url) html += '<p><a class="btn btn-primary sm" href="' + esc(info.meeting_url) + '" target="_blank" rel="noopener">رابط الحصة</a></p>';
+    if (info.community_url) html += '<p><a class="btn btn-ghost sm" href="' + esc(info.community_url) + '" target="_blank" rel="noopener">مجتمع المستوى</a></p>';
+    html += '</div>';
+  }
+  html += '<a class="tile link" href="flashcards.html"><h3>بطاقات المفردات</h3><p class="muted">راجع كلمات دروسك المفتوحة.</p></a>';
+  html += '<a class="tile link" href="speaking.html"><h3>المحادثة</h3><p class="muted">احجز جلسة محادثة مع زميل أو مع المعلم.</p></a>';
+  html += '</div>';
+
+  if (news.length) {
+    html += '<h2>إعلانات</h2><div class="tile">' + news.map(function (n) {
+      return '<div class="row"><div><strong>' + esc(n.title) + '</strong><div class="muted">' + esc(n.body || "") + '</div></div><span class="muted">' + KZ.fmtDate(n.created_at) + '</span></div>';
+    }).join("") + '</div>';
+  }
+
+  html += '<h2 style="margin-top:28px">اختباراتك</h2><div class="tile">';
+  var order = { weekly: 1, monthly: 2, final: 3 };
+  tests.sort(function (a, b) { return (order[a.kind] - order[b.kind]) || a.id.localeCompare(b.id); });
+  if (!tests.length) html += '<p class="muted">لا توجد اختبارات بعد.</p>';
+  tests.forEach(function (t) {
+    var a = atMap[t.id];
+    var state, action = "";
+    if (a && a.submitted_at) state = '<span class="badge ok">النتيجة ' + a.score + " / " + a.total + "</span>";
+    else if (a) { state = '<span class="badge gold">قيد التنفيذ</span>'; action = '<a class="btn btn-primary sm" href="test.html?id=' + esc(t.id) + '">تابع</a>'; }
+    else if (t.is_open) { state = '<span class="badge ok">مفتوح</span>'; action = '<a class="btn btn-primary sm" href="test.html?id=' + esc(t.id) + '">ابدأ</a>'; }
+    else state = '<span class="badge">مغلق</span>';
+    html += '<div class="row"><div><strong>' + esc(KINDS[t.kind]) + '</strong> <span class="muted en">' + esc(t.id) + '</span><div class="muted">' + t.minutes + ' دقيقة</div></div><div>' + state + " " + action + "</div></div>";
+  });
+  html += '</div>';
+
+  html += '<h2 style="margin-top:28px">دروسك</h2>';
+  var weeks = {};
+  lessons.forEach(function (l) { var w = Math.ceil(l.num / 4); (weeks[w] = weeks[w] || []).push(l); });
+  Object.keys(weeks).forEach(function (w) {
+    html += '<div class="tile" style="margin-bottom:12px"><h3>الأسبوع ' + w + '</h3>';
+    weeks[w].forEach(function (l) {
+      var h = hwMap[l.id];
+      var state = l.is_open ? (h ? '<span class="badge ok">الواجب ' + h.first_score + "/" + h.total + "</span>" : '<span class="badge gold">مفتوح</span>') : '<span class="badge">🔒 مغلق</span>';
+      var act = l.is_open ? '<a class="btn btn-primary sm" href="lesson.html?id=' + esc(l.id) + '">افتح</a>' : "";
+      html += '<div class="row"><div><strong>الدرس ' + l.num + '</strong> <span class="muted en">' + esc(l.title || "") + "</span></div><div>" + state + " " + act + "</div></div>";
+    });
+    html += "</div>";
+  });
+  app.innerHTML = html;
+
+  var btn = document.getElementById("npBtn");
+  if (btn) btn.addEventListener("click", async function () {
+    var pw = document.getElementById("np").value;
+    if (pw.length < 8) { KZ.toast("كلمة المرور قصيرة. استخدم 8 أحرف على الأقل.", true); return; }
+    var r = await sb.auth.updateUser({ password: pw });
+    if (r.error) { KZ.toast("تعذر تغيير كلمة المرور.", true); return; }
+    await sb.rpc("mark_password_changed");
+    KZ.toast("تم تغيير كلمة المرور.");
+    setTimeout(function () { location.reload(); }, 800);
+  });
+})();
+
+</script>
+</body>
+</html>

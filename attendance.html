@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>الحضور · KIMZA Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="app.css">
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("student");
+  if (!prof) return;
+  KZ.shell("att");
+  var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
+  var L = { present: "حاضر", absent: "غائب", late: "متأخر", excused: "غياب بعذر" };
+  var C = { present: "ok", absent: "bad", late: "gold", excused: "gold" };
+  var r = await sb.from("attendance").select("session_date,status,note").order("session_date", { ascending: false });
+  var rows = r.data || [];
+  var absent = rows.filter(function (x) { return x.status === "absent"; }).length;
+  var html = "<h1>سجل الحضور</h1>";
+  if (absent > 3) html += '<div class="warnbox">لديك ' + absent + ' غيابات. أكثر من 3 غيابات قد تعرّضك لعدم اجتياز الاختبار النهائي. تواصل مع المعلم لمراجعة حالتك.</div>';
+  html += '<div class="infobox">إذا فاتتك حصة: افتح مواد الدرس وحلّ الواجب، وسيراجع المعلم عملك.</div>';
+  html += '<div class="tile">';
+  if (!rows.length) html += '<p class="muted">لا توجد سجلات حضور بعد.</p>';
+  rows.forEach(function (x) {
+    html += '<div class="row"><div>' + KZ.fmtDate(x.session_date) + (x.note ? ' <span class="muted">' + esc(x.note) + "</span>" : "") + '</div><span class="badge ' + C[x.status] + '">' + L[x.status] + "</span></div>";
+  });
+  html += "</div>";
+  app.innerHTML = html;
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>الدرس · KIMZA Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="app.css">
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("student");
+  if (!prof) return;
+  KZ.shell("home");
+  var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
+  var id = new URLSearchParams(location.search).get("id") || "";
+
+  var l = await sb.from("lessons").select("id,num,level,title,is_open").eq("id", id).maybeSingle();
+  var c = await sb.from("lesson_content").select("kind,body").eq("lesson_id", id);
+  if (!l.data || !c.data || !c.data.length) {
+    app.innerHTML = '<h1>الدرس غير متاح</h1><p class="muted">هذا الدرس مغلق الآن. سيفتحه المعلم في وقته.</p><p><a class="btn btn-primary" href="dashboard.html">العودة</a></p>';
+    return;
+  }
+  var content = {}; c.data.forEach(function (x) { content[x.kind] = x.body; });
+  var done = await sb.from("homework_submissions").select("first_score,total").eq("lesson_id", id).maybeSingle();
+
+  var html = '<p><a href="dashboard.html">&larr; العودة</a></p><h1>الدرس ' + l.data.num + ' <span class="en muted" style="font-size:.6em">' + esc(l.data.title || "") + "</span></h1>";
+  html += '<div class="tabs" role="tablist"><button data-t="words" aria-selected="true">الكلمات</button><button data-t="story" aria-selected="false">القصة</button><button data-t="homework" aria-selected="false">الواجب</button></div><div id="pane"></div>';
+  app.innerHTML = html;
+
+  function show(t) {
+    document.querySelectorAll(".tabs button").forEach(function (b) { b.setAttribute("aria-selected", b.getAttribute("data-t") === t ? "true" : "false"); });
+    var pane = document.getElementById("pane");
+    if (t === "words" || t === "story") {
+      pane.innerHTML = '<div class="tile"><pre style="white-space:pre-wrap;font-family:inherit;direction:auto;margin:0;line-height:1.9">' + esc(content[t] || "") + "</pre></div>";
+      return;
+    }
+    var note = done && done.data
+      ? '<div class="infobox">سلّمت هذا الواجب. درجتك الأولى المحتسبة: <strong>' + done.data.first_score + " / " + done.data.total + "</strong>. المحاولات التالية للتدريب فقط ولا تُحتسب.</div>"
+      : '<div class="infobox">ادخل اسمك ثم أجب. <strong>درجتك الأولى هي التي تُحتسب</strong> وتُحفظ تلقائياً.</div>';
+    pane.innerHTML = note + '<iframe class="frame" id="hw" sandbox="allow-scripts allow-same-origin allow-forms" title="Homework"></iframe>';
+    var fr = document.getElementById("hw");
+    fr.addEventListener("load", function () {
+      var w = fr.contentWindow;
+      // The homework page "sends" its result with fetch. Here we save it to the student's own record instead.
+      w.fetch = async function (url, opts) {
+        try {
+          var p = JSON.parse(opts.body);
+          var r = await sb.from("homework_submissions").insert({
+            user_id: KZ.user.id, lesson_id: id, first_score: Number(p.first_score) || 0, total: Number(p.total) || 0,
+            answers: { final_score: p.final_score, self_corrections: p.self_corrections, mistakes: p.mistakes, answers: p.answers, name: p.name }
+          });
+          if (!r.error) KZ.toast("تم حفظ درجتك الأولى.");
+        } catch (e) {}
+        return { ok: true };
+      };
+    });
+    fr.srcdoc = content.homework || "";
+  }
+  document.querySelectorAll(".tabs button").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-t")); }); });
+  show("words");
+})();
+
+</script>
+</body>
+</html>

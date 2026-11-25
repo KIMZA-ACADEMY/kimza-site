@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>المحادثة · KIMZA Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="app.css">
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("student");
+  if (!prof) return;
+  KZ.shell("speak");
+  var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
+  var TOPICS = ["Introducing myself", "My daily routine", "Family and friends", "Food and cooking", "Travel and places", "Work and study", "Hobbies and free time", "Technology and phones", "Health and fitness", "Shopping", "Weather and seasons", "My city", "Plans for the future", "Books and movies"];
+  var blocked = prof.booking_blocked_until && new Date(prof.booking_blocked_until) > new Date();
+
+  async function load() {
+    var r = await sb.rpc("list_speaking");
+    var list = r.data || [];
+    var html = "<h1>جلسات المحادثة</h1>";
+    html += '<div class="infobox"><strong>القواعد</strong><ul style="margin:8px 0 0">' +
+      "<li>مدة الجلسة: 30 أو 45 أو 60 دقيقة.</li>" +
+      "<li>يمكنك الإلغاء قبل الموعد بـ 24 ساعة على الأقل.</li>" +
+      "<li>عدم الحضور دون إلغاء يمنعك من إنشاء حجوزات جديدة لمدة أسبوع.</li>" +
+      "<li>لكل طالب جلسة خاصة واحدة (30 دقيقة) مع المعلم في الشهر.</li>" +
+      "<li>مواضيع الجلسات من القائمة المعتمدة فقط، ولا تشمل السياسة.</li></ul></div>";
+    if (blocked) html += '<div class="warnbox">لديك إيقاف مؤقت عن الحجز حتى ' + KZ.fmtDate(prof.booking_blocked_until, true) + ".</div>";
+
+    html += '<h2>جلسات متاحة</h2><div class="tile">';
+    if (!list.length) html += '<p class="muted">لا توجد جلسات متاحة الآن. أنشئ جلسة جديدة أدناه.</p>';
+    list.forEach(function (s) {
+      var teacher = s.kind === "teacher";
+      var act = s.joined
+        ? '<button class="btn btn-ghost sm" data-cancel="' + s.id + '" type="button">إلغاء الحجز</button>'
+        : (s.status === "open" && !blocked ? '<button class="btn btn-primary sm" data-join="' + s.id + '" type="button">احجز</button>' : '<span class="badge">ممتلئة</span>');
+      html += '<div class="row"><div><strong class="en">' + esc(s.topic) + "</strong>" + (teacher ? ' <span class="badge gold">مع المعلم</span>' : "") +
+        '<div class="muted">' + KZ.fmtDate(s.starts_at, true) + " · " + s.minutes + " دقيقة · " + s.participants + "/" + s.max_participants + "</div>" +
+        (s.joined && s.meeting_url ? '<div><a href="' + esc(s.meeting_url) + '" target="_blank" rel="noopener">رابط الجلسة</a></div>' : "") + "</div><div>" + act + "</div></div>";
+    });
+    html += "</div>";
+
+    html += '<h2 style="margin-top:28px">إنشاء جلسة مع زملائك</h2><form class="form tile" id="mk">' +
+      '<div><label for="topic">الموضوع</label><select id="topic">' + TOPICS.map(function (t) { return "<option>" + esc(t) + "</option>"; }).join("") + "</select></div>" +
+      '<div><label for="when">التاريخ والوقت</label><input type="datetime-local" id="when" required></div>' +
+      '<div><label for="mins">المدة</label><select id="mins"><option value="30">30 دقيقة</option><option value="45">45 دقيقة</option><option value="60">60 دقيقة</option></select></div>' +
+      '<div><label for="url">رابط الاجتماع (اختياري)</label><input id="url" dir="ltr" placeholder="https://"></div>' +
+      '<label style="font-weight:400"><input type="checkbox" id="ok" style="width:auto;min-height:0"> قرأت القواعد أعلاه وأوافق عليها</label>' +
+      '<div><button class="btn btn-primary" type="submit"' + (blocked ? " disabled" : "") + ">إنشاء الجلسة</button></div></form>";
+    app.innerHTML = html;
+
+    app.querySelectorAll("[data-join]").forEach(function (b) { b.addEventListener("click", async function () {
+      var e = (await sb.rpc("join_session", { p_id: Number(b.getAttribute("data-join")) })).error;
+      if (e) KZ.toast(KZ.errMsg(e), true); else { KZ.toast("تم الحجز."); load(); }
+    }); });
+    app.querySelectorAll("[data-cancel]").forEach(function (b) { b.addEventListener("click", async function () {
+      var e = (await sb.rpc("cancel_booking", { p_id: Number(b.getAttribute("data-cancel")) })).error;
+      if (e) KZ.toast(KZ.errMsg(e), true); else { KZ.toast("تم إلغاء الحجز."); load(); }
+    }); });
+    document.getElementById("mk").addEventListener("submit", async function (ev) {
+      ev.preventDefault();
+      if (!document.getElementById("ok").checked) { KZ.toast("وافق على القواعد أولاً.", true); return; }
+      var e = (await sb.rpc("create_peer_session", {
+        p_topic: document.getElementById("topic").value,
+        p_starts: new Date(document.getElementById("when").value).toISOString(),
+        p_minutes: Number(document.getElementById("mins").value),
+        p_meeting_url: document.getElementById("url").value
+      })).error;
+      if (e) KZ.toast(KZ.errMsg(e), true); else { KZ.toast("تم إنشاء الجلسة."); load(); }
+    });
+  }
+  load();
+})();
+
+</script>
+</body>
+</html>

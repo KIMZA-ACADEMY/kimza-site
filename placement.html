@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>اختبار تحديد المستوى · KIMZA Academy</title>
+<meta name="description" content="KIMZA Academy: Your English. Your Future. Learn. Practise. Progress.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")||"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="ar"?"rtl":"ltr")}catch(e){}</script>
+</head>
+<body data-title="title.placement">
+<a class="skip" href="#main"><span data-i18n="a11y.skip">تخطَّ إلى المحتوى</span></a>
+<header class="nav">
+  <div class="wrap">
+    <a href="index.html" aria-label="KIMZA Academy"><img class="logo" src="kimza-logo-gold.png" alt="KIMZA Academy"></a>
+    <nav class="nav-links" id="navLinks" aria-label="Main"><a href="index.html"><span data-i18n="nav.home">الرئيسية</span></a><a href="about.html"><span data-i18n="nav.about">عن الأكاديمية</span></a><a href="levels.html"><span data-i18n="nav.levels">المستويات</span></a><a href="how-it-works.html"><span data-i18n="nav.how">كيف نتعلم</span></a><a href="placement.html" aria-current="page"><span data-i18n="nav.placement">اختبار المستوى</span></a><a href="faq.html"><span data-i18n="nav.faq">الأسئلة الشائعة</span></a><a href="contact.html"><span data-i18n="nav.contact">تواصل معنا</span></a><a href="login.html"><span data-i18n="nav.login">دخول الطلاب</span></a></nav>
+    <div class="nav-tools">
+      <button class="icon-btn" id="langBtn" type="button" aria-label="Language">English</button>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Theme">&#9790;</button>
+      <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    </div>
+  </div>
+</header>
+<main id="main">
+<section class="hero" style="padding:56px 0"><div class="wrap"><span class="eyebrow"><span data-i18n="pt.eye">مجاني</span></span>
+  <h1><span data-i18n="pt.h1">اختبار تحديد المستوى</span></h1>
+  <p class="lead"><span data-i18n="pt.lead">اختبار قصير في القراءة والمفردات والقواعد يساعدنا على اقتراح مستوى البداية المناسب لك.</span></p></div></section>
+<section class="sec sec-cream"><div class="wrap" style="max-width:780px">
+  <div class="card" id="ptIntro">
+    <h3><span data-i18n="pt.i.h">قبل أن تبدأ</span></h3>
+    <ul class="muted">
+      <li><span data-i18n="pt.i.1">الأسئلة بالإنجليزية، والتعليمات بالعربية.</span></li>
+      <li><span data-i18n="pt.i.2">إذا لم تعرف الإجابة اختر «لا أعرف» أو اترك السؤال. لا بأس بذلك، فنحن نريد معرفة مستواك الحقيقي.</span></li>
+      <li><span data-i18n="pt.i.3">نتيجتك توصية فقط، ويراجعها المعلم. وهي لا تعني قبولاً تلقائياً.</span></li>
+    </ul>
+    <div class="form"><div><label for="ptName"><span data-i18n="pt.name">اسمك (اختياري)</span></label><input id="ptName" autocomplete="name" maxlength="120"></div>
+    <div><label for="ptContact"><span data-i18n="pt.contact">حسابك على إنستغرام أو رقم هاتفك (اختياري)</span></label><input id="ptContact" maxlength="120"></div>
+    <button class="btn btn-primary" id="ptStart" type="button"><span data-i18n="pt.start">ابدأ الاختبار</span></button></div>
+  </div>
+  <div id="ptTest" hidden>
+    <div class="pt-top"><div class="muted" id="ptCount"></div><div class="bar"><i id="ptBar"></i></div></div>
+    <div id="ptQs"></div>
+    <p><button class="btn btn-primary" id="ptSubmit" type="button"><span data-i18n="pt.submit">أنهِ الاختبار</span></button></p>
+  </div>
+  <div class="card result" id="ptResult" hidden>
+    <p class="muted"><span data-i18n="pt.r.rec">المستوى الموصى به</span></p>
+    <div class="big" id="ptLevel">A1</div>
+    <p id="ptWhy" class="muted"></p>
+    <p class="muted"><span data-i18n="pt.r.note">هذه توصية أولية، وسيراجعها المعلم. تواصل معنا لتأكيد مستواك.</span></p>
+    <div class="btns" style="justify-content:center">
+      <a class="btn btn-primary" id="ptReg" href="register.html"><span data-i18n="pt.r.reg">سجّل بهذا المستوى</span></a>
+      <a class="btn btn-ghost" href="https://www.instagram.com/kimza_academy/" target="_blank" rel="noopener"><span data-i18n="pt.r.ig">تواصل عبر إنستغرام</span></a>
+    </div>
+    <p id="ptSave" class="hint"></p>
+  </div>
+</div></section>
+</main>
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <img src="kimza-logo-gold.png" alt="KIMZA Academy">
+        <p><span data-i18n="foot.tag">Your English. Your Future.</span><br><span data-i18n="foot.tag2">Learn. Practise. Progress.</span></p>
+      </div>
+      <div>
+        <strong><span data-i18n="foot.links">روابط سريعة</span></strong><br>
+        <a href="levels.html"><span data-i18n="nav.levels2">المستويات</span></a><br>
+        <a href="placement.html"><span data-i18n="nav.placement2">اختبار المستوى</span></a><br>
+        <a href="register.html"><span data-i18n="nav.register">سجّل الآن</span></a><br>
+        <a href="faq.html"><span data-i18n="nav.faq2">الأسئلة الشائعة</span></a>
+      </div>
+      <div>
+        <strong><span data-i18n="foot.contact">تواصل معنا</span></strong><br>
+        <a href="https://www.instagram.com/kimza_academy/" rel="noopener" target="_blank">Instagram @kimza_academy</a>
+      </div>
+    </div>
+    <p class="copy">&copy; KIMZA Academy</p>
+  </div>
+</footer>
+<script src="i18n.js"></script>
+<script src="site-config.js"></script>
+<script src="site.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="placement-data.js"></script>
+<script>
+(function () {
+  var Q = window.PLACEMENT || [];
+  var CFG = (window.KIMZA_SITE && window.KIMZA_SITE.placement) || { passMark: 0.6, order: ["A1", "A2", "B1", "B2", "C1"] };
+  var $ = function (id) { return document.getElementById(id); };
+  var answers = {};
+  var sb = null;
+  try { if (window.supabase && window.KIMZA_SUPABASE) sb = window.supabase.createClient(window.KIMZA_SUPABASE.url, window.KIMZA_SUPABASE.publishableKey); } catch (e) {}
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  function render() {
+    $("ptQs").innerHTML = Q.map(function (q, i) {
+      var opts = q.o.map(function (o, j) {
+        return '<label class="opt"><input type="radio" name="q' + i + '" value="' + j + '"> <span>' + esc(o) + "</span></label>";
+      }).join("");
+      var dk = '<label class="opt dk"><input type="radio" name="q' + i + '" value="-1"> <span data-i18n="js.dk">' + esc(window.KIMZA_T("js.dk")) + "</span></label>";
+      return '<div class="card q-card"><div class="muted">' + esc(window.KIMZA_T("js.q")) + " " + (i + 1) + " " + esc(window.KIMZA_T("js.of")) + " " + Q.length +
+        '</div><div class="qt">' + esc(q.q) + "</div>" + opts + dk + "</div>";
+    }).join("");
+    $("ptQs").addEventListener("change", function (e) {
+      var m = /^q(\d+)$/.exec(e.target.name || "");
+      if (m) { answers[m[1]] = Number(e.target.value); progress(); }
+    });
+    progress();
+  }
+  function progress() {
+    var n = Object.keys(answers).length;
+    $("ptBar").style.width = (n / Q.length * 100) + "%";
+    $("ptCount").textContent = window.KIMZA_T("js.answered") + " " + n + " / " + Q.length;
+  }
+
+  function analyse() {
+    var by = {}, correct = 0, skipped = 0;
+    CFG.order.forEach(function (l) { by[l] = { correct: 0, total: 0 }; });
+    Q.forEach(function (q, i) {
+      by[q.level].total++;
+      var a = answers[i];
+      if (a === undefined || a === -1) skipped++;
+      else if (a === q.a) { by[q.level].correct++; correct++; }
+    });
+    var rec = CFG.order[CFG.order.length - 1], strongest = "—", chain = true;
+    for (var k = 0; k < CFG.order.length; k++) {
+      var l = CFG.order[k], b = by[l];
+      var acc = b.total ? b.correct / b.total : 0;
+      if (acc >= CFG.passMark && chain) strongest = l;
+      else { chain = false; if (rec === CFG.order[CFG.order.length - 1] && acc < CFG.passMark) { rec = l; break; } }
+    }
+    return { by: by, correct: correct, skipped: skipped, level: rec, strongest: strongest };
+  }
+
+  function finish() {
+    var r = analyse();
+    $("ptTest").hidden = true;
+    $("ptResult").hidden = false;
+    $("ptLevel").textContent = r.level;
+    $("ptWhy").textContent = window.KIMZA_T("js.why").replace("{c}", r.correct).replace("{t}", Q.length).replace("{s}", r.strongest);
+    $("ptReg").setAttribute("href", "register.html?level=" + encodeURIComponent(r.level));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    var payload = {
+      full_name: $("ptName").value.trim() || null, contact: $("ptContact").value.trim() || null,
+      recommended_level: r.level, correct: r.correct, skipped: r.skipped, total: Q.length, by_level: r.by,
+      answers: Q.map(function (q, i) { return { level: q.level, q: q.q, given: answers[i] === undefined ? null : answers[i], correct: q.a }; })
+    };
+    if (!sb) { $("ptSave").textContent = window.KIMZA_T("js.notsaved"); return; }
+    sb.from("placement_attempts").insert(payload).then(function (res) {
+      $("ptSave").textContent = res.error ? window.KIMZA_T("js.notsaved") : window.KIMZA_T("js.saved");
+    });
+  }
+
+  $("ptStart").addEventListener("click", function () {
+    $("ptIntro").hidden = true; $("ptTest").hidden = false; render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  $("ptSubmit").addEventListener("click", finish);
+})();
+
+</script>
+</body>
+</html>

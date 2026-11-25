@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>لوحة المعلم · KIMZA Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="app.css">
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("teacher");
+  if (!prof) return;
+  KZ.shell("admin");
+  var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
+  var LEVELS = ["A1", "A2", "B1", "B2", "C1"];
+  var TABS = [["students", "الطلاب"], ["lessons", "الدروس"], ["tests", "الاختبارات"], ["results", "النتائج"], ["attendance", "الحضور"], ["payments", "المدفوعات"], ["applications", "الطلبات"], ["speaking", "المحادثة"], ["certs", "الشهادات"], ["news", "الإعلانات"], ["settings", "المستويات"]];
+  var KIND = { weekly: "أسبوعي", monthly: "شهري", final: "نهاية المستوى" };
+  var ST = { active: "نشط", paused: "متوقف مؤقتاً", graduated: "خريج", stopped: "موقوف" };
+  var AT = { present: "حاضر", absent: "غائب", late: "متأخر", excused: "بعذر" };
+  var pendingPrefill = null;
+
+  function $(id) { return document.getElementById(id); }
+  function opts(list, sel) { return list.map(function (x) { var v = Array.isArray(x) ? x[0] : x, t = Array.isArray(x) ? x[1] : x; return '<option value="' + esc(v) + '"' + (v === sel ? " selected" : "") + ">" + esc(t) + "</option>"; }).join(""); }
+  function genPw() { var a = "abcdefghjkmnpqrstuvwxyz23456789", s = ""; var r = new Uint32Array(10); crypto.getRandomValues(r); for (var i = 0; i < 10; i++) s += a[r[i] % a.length]; return s; }
+  function genUser() { var a = "abcdefghjkmnpqrstuvwxyz23456789", s = "kz."; var r = new Uint32Array(5); crypto.getRandomValues(r); for (var i = 0; i < 5; i++) s += a[r[i] % a.length]; return s; }
+  async function fn(payload) {
+    var s = await sb.auth.getSession();
+    var res = await fetch(window.KIMZA_SUPABASE.url + "/functions/v1/admin-users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + s.data.session.access_token, apikey: window.KIMZA_SUPABASE.publishableKey },
+      body: JSON.stringify(payload)
+    });
+    var j = {}; try { j = await res.json(); } catch (e) {}
+    if (!res.ok) throw new Error(j.error || "failed");
+    return j;
+  }
+  function copy(text) { try { navigator.clipboard.writeText(text); KZ.toast("تم النسخ."); } catch (e) { KZ.toast("تعذر النسخ، انسخ يدوياً.", true); } }
+  async function nameMap() {
+    var r = await sb.from("profiles").select("id,full_name,username,level,status,role").eq("role", "student").order("full_name");
+    var m = {}; (r.data || []).forEach(function (p) { m[p.id] = p; }); return { list: r.data || [], map: m };
+  }
+
+  // ----- shell with tabs -----
+  app.innerHTML = '<h1>لوحة المعلم</h1><div class="tabs" role="tablist" id="tabs">' +
+    TABS.map(function (t) { return '<button data-tab="' + t[0] + '" aria-selected="false">' + t[1] + "</button>"; }).join("") + '</div><div id="view"></div>';
+  var view = $("view");
+  var VIEWS = {};
+  function go(name) {
+    if (!VIEWS[name]) name = "students";
+    location.hash = name;
+    document.querySelectorAll("#tabs button").forEach(function (b) { b.setAttribute("aria-selected", b.getAttribute("data-tab") === name ? "true" : "false"); });
+    view.innerHTML = '<p class="muted">جارٍ التحميل...</p>';
+    VIEWS[name]().catch(function (e) { view.innerHTML = '<div class="warnbox">حدث خطأ في تحميل هذا القسم.</div>'; console.error(e); });
+  }
+  document.querySelectorAll("#tabs button").forEach(function (b) { b.addEventListener("click", function () { go(b.getAttribute("data-tab")); }); });
+
+  // ================= Students =================
+  VIEWS.students = async function () {
+    var nm = await nameMap();
+    var abs = {};
+    (await sb.from("attendance").select("user_id").eq("status", "absent")).data.forEach(function (a) { abs[a.user_id] = (abs[a.user_id] || 0) + 1; });
+    var pf = pendingPrefill || {}; pendingPrefill = null;
+    var h = '<div class="cards"><form class="tile form" id="addOne"><h3>إضافة طالب</h3>' +
+      '<div><label for="aName">الاسم الكامل</label><input id="aName" required maxlength="120" value="' + esc(pf.name || "") + '"></div>' +
+      '<div><label for="aUser">اسم المستخدم (حروف إنجليزية)</label><input id="aUser" dir="ltr" required value="' + esc(genUser()) + '"></div>' +
+      '<div><label for="aLevel">المستوى</label><select id="aLevel">' + opts(LEVELS, pf.level || "A1") + "</select></div>" +
+      '<div><label for="aIg">إنستغرام (اختياري)</label><input id="aIg" dir="ltr" value="' + esc(pf.ig || "") + '"></div>' +
+      '<div><label for="aPw">كلمة مرور مؤقتة</label><input id="aPw" dir="ltr" value="' + genPw() + '"></div>' +
+      '<div><button class="btn btn-primary" type="submit">إنشاء الحساب</button></div></form>' +
+      '<form class="tile form" id="addMany"><h3>إضافة عدة طلاب</h3><p class="muted">سطر لكل طالب: الاسم، المستوى. مثال: أحمد علي، A1</p>' +
+      '<textarea id="bulk" rows="6" placeholder="أحمد علي, A1&#10;سارة محمد, B1"></textarea><div><button class="btn btn-primary" type="submit">إنشاء الحسابات</button></div></form></div>' +
+      '<div id="creds"></div>';
+    h += '<h2 style="margin-top:24px">الطلاب (' + nm.list.length + ')</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>المستخدم</th><th>المستوى</th><th>الحالة</th><th>غياب</th><th></th></tr></thead><tbody>';
+    nm.list.forEach(function (p) {
+      h += '<tr><td>' + esc(p.full_name) + '</td><td class="en">' + esc(p.username || "") + '</td>' +
+        '<td><select data-lv="' + p.id + '">' + opts(LEVELS, p.level) + '</select></td>' +
+        '<td><select data-st="' + p.id + '">' + opts(Object.keys(ST).map(function (k) { return [k, ST[k]]; }), p.status) + '</select></td>' +
+        '<td>' + (abs[p.id] || 0) + (abs[p.id] > 3 ? ' <span class="badge bad">!</span>' : "") + '</td>' +
+        '<td><button class="btn btn-ghost sm" data-rs="' + p.id + '" type="button">كلمة مرور جديدة</button> <button class="btn danger sm" data-del="' + p.id + '" type="button">حذف</button></td></tr>';
+    });
+    h += "</tbody></table></div>";
+    view.innerHTML = h;
+
+    function showCreds(rows) {
+      var txt = rows.map(function (r) { return r.name + " | " + r.user + " | " + r.pw; }).join("\n");
+      $("creds").innerHTML = '<div class="infobox"><strong>بيانات الدخول (تظهر مرة واحدة، أعطها للطلاب)</strong><pre class="en" style="white-space:pre-wrap;direction:ltr;text-align:left;margin:8px 0">' + esc(txt) + '</pre><button class="btn btn-primary sm" id="cp" type="button">نسخ</button></div>';
+      $("cp").addEventListener("click", function () { copy(txt); });
+    }
+    $("addOne").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var row = { name: $("aName").value.trim(), user: $("aUser").value.trim().toLowerCase(), pw: $("aPw").value };
+      try {
+        await fn({ action: "create", full_name: row.name, username: row.user, password: row.pw, level: $("aLevel").value, instagram: $("aIg").value.trim() });
+        showCreds([row]); KZ.toast("تم إنشاء الحساب.");
+        var keep = $("creds").innerHTML; await VIEWS.students(); $("creds").innerHTML = keep; $("cp") && $("cp").addEventListener("click", function () { copy(row.name + " | " + row.user + " | " + row.pw); });
+      } catch (er) { KZ.toast("تعذر إنشاء الحساب: " + er.message, true); }
+    });
+    $("addMany").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var lines = $("bulk").value.split(/\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+      var done = [], failed = [];
+      for (var i = 0; i < lines.length; i++) {
+        var parts = lines[i].split(/[,،;|]/).map(function (x) { return x.trim(); });
+        var lvl = (parts[1] || "A1").toUpperCase();
+        var row = { name: parts[0], user: genUser(), pw: genPw() };
+        try { await fn({ action: "create", full_name: row.name, username: row.user, password: row.pw, level: LEVELS.indexOf(lvl) >= 0 ? lvl : "A1" }); done.push(row); }
+        catch (er) { failed.push(parts[0] + " (" + er.message + ")"); }
+      }
+      await VIEWS.students(); showCreds(done);
+      if (failed.length) KZ.toast("فشل: " + failed.join("، "), true); else KZ.toast("تم إنشاء " + done.length + " حساباً.");
+    });
+    view.querySelectorAll("[data-lv]").forEach(function (s) { s.addEventListener("change", async function () {
+      var r = await sb.from("profiles").update({ level: s.value }).eq("id", s.getAttribute("data-lv")); KZ.toast(r.error ? "تعذر الحفظ." : "تم تغيير المستوى.", !!r.error); }); });
+    view.querySelectorAll("[data-st]").forEach(function (s) { s.addEventListener("change", async function () {
+      var r = await sb.from("profiles").update({ status: s.value }).eq("id", s.getAttribute("data-st")); KZ.toast(r.error ? "تعذر الحفظ." : "تم تغيير الحالة.", !!r.error); }); });
+    view.querySelectorAll("[data-rs]").forEach(function (b) { b.addEventListener("click", async function () {
+      var id = b.getAttribute("data-rs"), pw = genPw(), p = nm.map[id];
+      try { await fn({ action: "reset_password", user_id: id, password: pw }); showCreds([{ name: p.full_name, user: p.username, pw: pw }]); } catch (er) { KZ.toast("تعذر التغيير.", true); } }); });
+    view.querySelectorAll("[data-del]").forEach(function (b) { b.addEventListener("click", async function () {
+      var id = b.getAttribute("data-del"), p = nm.map[id];
+      if (!confirm("حذف حساب " + p.full_name + " نهائياً مع كل بياناته؟ لا يمكن التراجع.")) return;
+      try { await fn({ action: "delete", user_id: id }); KZ.toast("تم الحذف."); VIEWS.students(); } catch (er) { KZ.toast("تعذر الحذف.", true); } }); });
+  };
+
+  // ================= Lessons =================
+  var lessonLevel = "A1";
+  VIEWS.lessons = async function () {
+    var r = await sb.from("lessons").select("id,num,title,is_open").eq("level", lessonLevel).order("num");
+    var ls = r.data || [];
+    var h = '<div class="form" style="max-width:240px"><label for="lv">المستوى</label><select id="lv">' + opts(LEVELS, lessonLevel) + "</select></div>";
+    h += '<p class="muted">افتح الدرس ليظهر للطلاب (الكلمات والقصة والواجب والبطاقات). صفحة الحصة للمعلم فقط.</p>';
+    var weeks = {}; ls.forEach(function (l) { var w = Math.ceil(l.num / 4); (weeks[w] = weeks[w] || []).push(l); });
+    Object.keys(weeks).forEach(function (w) {
+      var all = weeks[w].every(function (l) { return l.is_open; });
+      h += '<div class="tile" style="margin:12px 0"><div class="row" style="padding-top:0"><h3 style="margin:0">الأسبوع ' + w + '</h3><button class="btn btn-ghost sm" data-wk="' + w + '" data-to="' + (all ? "0" : "1") + '" type="button">' + (all ? "إغلاق الأسبوع" : "فتح الأسبوع") + "</button></div>";
+      weeks[w].forEach(function (l) {
+        h += '<div class="row"><div><strong>الدرس ' + l.num + '</strong> <span class="muted en">' + esc(l.title || "") + '</span></div><div>' +
+          '<a class="btn btn-ghost sm" href="class.html?id=' + esc(l.id) + '">صفحة الحصة</a> ' +
+          '<button class="btn ' + (l.is_open ? "btn-primary" : "btn-ghost") + ' sm" data-tg="' + esc(l.id) + '" data-to="' + (l.is_open ? "0" : "1") + '" type="button">' + (l.is_open ? "مفتوح ✓" : "🔒 مغلق") + "</button></div></div>";
+      });
+      h += "</div>";
+    });
+    view.innerHTML = h;
+    $("lv").addEventListener("change", function () { lessonLevel = $("lv").value; VIEWS.lessons(); });
+    view.querySelectorAll("[data-tg]").forEach(function (b) { b.addEventListener("click", async function () {
+      var r2 = await sb.from("lessons").update({ is_open: b.getAttribute("data-to") === "1" }).eq("id", b.getAttribute("data-tg"));
+      if (r2.error) KZ.toast("تعذر الحفظ.", true); VIEWS.lessons(); }); });
+    view.querySelectorAll("[data-wk]").forEach(function (b) { b.addEventListener("click", async function () {
+      var w = Number(b.getAttribute("data-wk")), ids = (weeks[w] || []).map(function (l) { return l.id; });
+      var r2 = await sb.from("lessons").update({ is_open: b.getAttribute("data-to") === "1" }).in("id", ids);
+      if (r2.error) KZ.toast("تعذر الحفظ.", true); VIEWS.lessons(); }); });
+  };
+
+  // ================= Tests =================
+  var testLevel = "A1";
+  VIEWS.tests = async function () {
+    var r = await sb.from("tests").select("id,kind,minutes,is_open").eq("level", testLevel);
+    var ts = (r.data || []).sort(function (a, b) { var o = { weekly: 1, monthly: 2, final: 3 }; return (o[a.kind] - o[b.kind]) || a.id.localeCompare(b.id); });
+    var h = '<div class="form" style="max-width:240px"><label for="lv">المستوى</label><select id="lv">' + opts(LEVELS, testLevel) + "</select></div>";
+    h += '<p class="muted">افتح الاختبار في وقته. العدّاد يبدأ للطالب عندما يضغط «ابدأ»، ويُصحَّح الاختبار على الخادم.</p><div class="tile">';
+    ts.forEach(function (t) {
+      h += '<div class="row"><div><strong>' + KIND[t.kind] + '</strong> <span class="muted en">' + esc(t.id) + "</span> · " + t.minutes + " دقيقة</div>" +
+        '<button class="btn ' + (t.is_open ? "btn-primary" : "btn-ghost") + ' sm" data-tg="' + esc(t.id) + '" data-to="' + (t.is_open ? "0" : "1") + '" type="button">' + (t.is_open ? "مفتوح ✓" : "🔒 مغلق") + "</button></div>";
+    });
+    h += "</div>";
+    view.innerHTML = h;
+    $("lv").addEventListener("change", function () { testLevel = $("lv").value; VIEWS.tests(); });
+    view.querySelectorAll("[data-tg]").forEach(function (b) { b.addEventListener("click", async function () {
+      var r2 = await sb.from("tests").update({ is_open: b.getAttribute("data-to") === "1" }).eq("id", b.getAttribute("data-tg"));
+      if (r2.error) KZ.toast("تعذر الحفظ.", true); VIEWS.tests(); }); });
+  };
+
+  // ================= Results (homework and tests) =================
+  var resLevel = "A1";
+  VIEWS.results = async function () {
+    var nm = await nameMap();
+    var ls = (await sb.from("lessons").select("id,num").eq("level", resLevel).order("num")).data || [];
+    var ts = (await sb.from("tests").select("id,kind").eq("level", resLevel)).data || [];
+    var h = '<div class="form" style="max-width:360px"><div><label for="lv">المستوى</label><select id="lv">' + opts(LEVELS, resLevel) + '</select></div><div><label for="item">العنصر</label><select id="item">' +
+      "<optgroup label=\"الواجبات\">" + ls.map(function (l) { return '<option value="h:' + l.id + '">واجب الدرس ' + l.num + "</option>"; }).join("") + "</optgroup>" +
+      "<optgroup label=\"الاختبارات\">" + ts.map(function (t) { return '<option value="t:' + t.id + '">' + KIND[t.kind] + " " + esc(t.id) + "</option>"; }).join("") + "</optgroup></select></div></div><div id=\"out\" class=\"tile tablewrap\" style=\"margin-top:16px\"></div>";
+    view.innerHTML = h;
+    $("lv").addEventListener("change", function () { resLevel = $("lv").value; VIEWS.results(); });
+    async function show() {
+      var v = $("item").value, kind = v.slice(0, 1), id = v.slice(2), out = $("out");
+      if (kind === "h") {
+        var r = await sb.from("homework_submissions").select("user_id,first_score,total,submitted_at").eq("lesson_id", id).order("submitted_at");
+        var done = {}; (r.data || []).forEach(function (x) { done[x.user_id] = x; });
+        var lvStudents = nm.list.filter(function (p) { return p.level === resLevel; });
+        out.innerHTML = '<table class="t"><thead><tr><th>الطالب</th><th>الدرجة الأولى</th><th>وقت التسليم</th></tr></thead><tbody>' + lvStudents.map(function (p) {
+          var x = done[p.id]; return "<tr><td>" + esc(p.full_name) + "</td><td>" + (x ? x.first_score + " / " + x.total : '<span class="badge bad">لم يسلّم</span>') + "</td><td>" + (x ? KZ.fmtDate(x.submitted_at, true) : "—") + "</td></tr>"; }).join("") + "</tbody></table>";
+      } else {
+        var r2 = await sb.from("test_attempts").select("user_id,score,total,late,submitted_at,started_at").eq("test_id", id);
+        var d2 = {}; (r2.data || []).forEach(function (x) { d2[x.user_id] = x; });
+        var st = nm.list.filter(function (p) { return p.level === resLevel; });
+        out.innerHTML = '<table class="t"><thead><tr><th>الطالب</th><th>النتيجة</th><th>وقت التسليم</th><th></th></tr></thead><tbody>' + st.map(function (p) {
+          var x = d2[p.id]; var s = x ? (x.submitted_at ? x.score + " / " + x.total : '<span class="badge gold">قيد التنفيذ</span>') : '<span class="badge">لم يبدأ</span>';
+          return "<tr><td>" + esc(p.full_name) + "</td><td>" + s + "</td><td>" + (x && x.submitted_at ? KZ.fmtDate(x.submitted_at, true) : "—") + "</td><td>" + (x && x.late ? '<span class="badge bad">متأخر</span>' : "") + "</td></tr>"; }).join("") + "</tbody></table>";
+      }
+    }
+    $("item").addEventListener("change", show); show();
+  };
+
+  // ================= Attendance =================
+  var attLevel = "A1", attDate = new Date().toISOString().slice(0, 10);
+  VIEWS.attendance = async function () {
+    var nm = await nameMap();
+    var st = nm.list.filter(function (p) { return p.level === attLevel && p.status === "active"; });
+    var ex = (await sb.from("attendance").select("user_id,status,note").eq("session_date", attDate)).data || [];
+    var map = {}; ex.forEach(function (x) { map[x.user_id] = x; });
+    var allAbs = {}; ((await sb.from("attendance").select("user_id").eq("status", "absent")).data || []).forEach(function (a) { allAbs[a.user_id] = (allAbs[a.user_id] || 0) + 1; });
+    var h = '<div class="cards"><div class="form"><div><label for="lv">المستوى</label><select id="lv">' + opts(LEVELS, attLevel) + '</select></div></div><div class="form"><div><label for="dt">تاريخ الحصة</label><input type="date" id="dt" value="' + attDate + '"></div></div></div>';
+    h += '<div class="tile" style="margin-top:14px">';
+    if (!st.length) h += '<p class="muted">لا يوجد طلاب نشطون في هذا المستوى.</p>';
+    st.forEach(function (p) {
+      var cur = map[p.id] ? map[p.id].status : "present";
+      h += '<div class="row"><div><strong>' + esc(p.full_name) + '</strong> <span class="muted">غياب: ' + (allAbs[p.id] || 0) + "</span>" + ((allAbs[p.id] || 0) > 3 ? ' <span class="badge bad">أكثر من 3</span>' : "") + "</div><div><select data-u=\"" + p.id + "\">" + opts(Object.keys(AT).map(function (k) { return [k, AT[k]]; }), cur) + "</select></div></div>";
+    });
+    h += '<p style="margin-top:12px"><button class="btn btn-primary" id="save" type="button">حفظ الحضور</button></p></div>';
+    view.innerHTML = h;
+    $("lv").addEventListener("change", function () { attLevel = $("lv").value; VIEWS.attendance(); });
+    $("dt").addEventListener("change", function () { attDate = $("dt").value; VIEWS.attendance(); });
+    $("save").addEventListener("click", async function () {
+      var rows = [].slice.call(view.querySelectorAll("[data-u]")).map(function (s) { return { user_id: s.getAttribute("data-u"), session_date: attDate, status: s.value, marked_by: KZ.user.id }; });
+      var r = await sb.from("attendance").upsert(rows, { onConflict: "user_id,session_date" });
+      KZ.toast(r.error ? "تعذر الحفظ." : "تم حفظ الحضور.", !!r.error); if (!r.error) VIEWS.attendance();
+    });
+  };
+
+  // ================= Payments =================
+  VIEWS.payments = async function () {
+    var nm = await nameMap();
+    var ps = (await sb.from("payments").select("*").order("created_at", { ascending: false }).limit(100)).data || [];
+    var h = '<p class="muted">سجّل الدفعات بعد التحقق منها بنفسك. تفعيل حساب الطالب أو إيقافه يتم من تبويب الطلاب، ولا يتغير شيء تلقائياً.</p>' +
+      '<form class="tile form" id="pf"><h3>تسجيل دفعة</h3><div><label for="pu">الطالب</label><select id="pu">' + opts(nm.list.map(function (p) { return [p.id, p.full_name]; })) + "</select></div>" +
+      '<div><label for="pa">المبلغ</label><input id="pa" type="number" min="0" step="any" required></div>' +
+      '<div><label for="pc">العملة</label><input id="pc" value="YER" maxlength="5" dir="ltr"></div>' +
+      '<div><label for="pm">الشهر الذي تغطيه (مثال 2026-12)</label><input id="pm" dir="ltr" maxlength="10"></div>' +
+      '<div><label for="pd">تاريخ الدفع</label><input id="pd" type="date" value="' + new Date().toISOString().slice(0, 10) + '"></div>' +
+      '<div><label for="ps">الحالة</label><select id="ps">' + opts([["confirmed", "مؤكدة"], ["pending", "قيد التحقق"], ["rejected", "مرفوضة"]], "confirmed") + "</select></div>" +
+      '<div><button class="btn btn-primary" type="submit">حفظ</button></div></form><h2 style="margin-top:24px">السجل</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الطالب</th><th>المبلغ</th><th>الشهر</th><th>التاريخ</th><th>الحالة</th><th></th></tr></thead><tbody>';
+    ps.forEach(function (p) {
+      var n = nm.map[p.user_id];
+      h += "<tr><td>" + esc(n ? n.full_name : "—") + "</td><td>" + esc(p.amount) + " " + esc(p.currency) + "</td><td>" + esc(p.covers_month || "") + "</td><td>" + esc(p.paid_on || "") + '</td><td><span class="badge ' + (p.status === "confirmed" ? "ok" : p.status === "rejected" ? "bad" : "gold") + '">' + esc(p.status) + "</span></td><td>" +
+        (p.status !== "confirmed" ? '<button class="btn btn-ghost sm" data-cf="' + p.id + '" type="button">تأكيد</button> ' : "") + '<button class="btn danger sm" data-rm="' + p.id + '" type="button">حذف</button></td></tr>';
+    });
+    h += "</tbody></table></div>";
+    view.innerHTML = h;
+    $("pf").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var r = await sb.from("payments").insert({ user_id: $("pu").value, amount: Number($("pa").value), currency: $("pc").value || "YER", covers_month: $("pm").value || null, paid_on: $("pd").value || null, status: $("ps").value, confirmed_by: $("ps").value === "confirmed" ? KZ.user.id : null });
+      KZ.toast(r.error ? "تعذر الحفظ." : "تم الحفظ.", !!r.error); if (!r.error) VIEWS.payments();
+    });
+    view.querySelectorAll("[data-cf]").forEach(function (b) { b.addEventListener("click", async function () {
+      await sb.from("payments").update({ status: "confirmed", confirmed_by: KZ.user.id }).eq("id", b.getAttribute("data-cf")); VIEWS.payments(); }); });
+    view.querySelectorAll("[data-rm]").forEach(function (b) { b.addEventListener("click", async function () {
+      if (confirm("حذف هذه الدفعة؟")) { await sb.from("payments").delete().eq("id", b.getAttribute("data-rm")); VIEWS.payments(); } }); });
+  };
+
+  // ================= Applications and placement =================
+  VIEWS.applications = async function () {
+    var apps = (await sb.from("applications").select("*").order("created_at", { ascending: false }).limit(100)).data || [];
+    var pls = (await sb.from("placement_attempts").select("*").order("created_at", { ascending: false }).limit(100)).data || [];
+    var h = "<h2>طلبات التسجيل (" + apps.length + ')</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>إنستغرام</th><th>المستوى</th><th>الأوقات / السبب</th><th>الحالة</th><th></th></tr></thead><tbody>';
+    apps.forEach(function (a) {
+      h += "<tr><td>" + esc(a.full_name) + '<div class="muted">' + KZ.fmtDate(a.created_at) + '</div></td><td class="en">' + esc(a.instagram || "") + "</td><td class=\"en\">" + esc(a.placement_level || a.current_level || "") + "</td><td>" + esc(a.preferred_times || "") + "<div class=\"muted\">" + esc(a.reason || "") + "</div></td><td><select data-as=\"" + a.id + "\">" + opts([["new", "جديد"], ["approved", "مقبول"], ["rejected", "مرفوض"]], a.status) + "</select></td>" +
+        '<td><button class="btn btn-ghost sm" data-mk="' + a.id + '" type="button">إنشاء حساب</button></td></tr>';
+    });
+    h += "</tbody></table></div>";
+    h += '<h2 style="margin-top:24px">نتائج اختبار المستوى (' + pls.length + ')</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>التواصل</th><th>الموصى به</th><th>تعديل المعلم</th><th>الإجابات</th></tr></thead><tbody>';
+    pls.forEach(function (p) {
+      var by = p.by_level ? Object.keys(p.by_level).map(function (k) { return k + ":" + p.by_level[k].correct + "/" + p.by_level[k].total; }).join(" ") : "";
+      h += "<tr><td>" + esc(p.full_name || "—") + '<div class="muted">' + KZ.fmtDate(p.created_at) + '</div></td><td class="en">' + esc(p.contact || "") + '</td><td><span class="badge gold en">' + esc(p.recommended_level) + '</span></td><td><select data-pl="' + p.id + '"><option value="">—</option>' + opts(LEVELS, p.adjusted_level) + '</select></td><td class="en muted">' + esc(by) + " (" + p.correct + "/" + p.total + ", skipped " + p.skipped + ")</td></tr>";
+    });
+    h += "</tbody></table></div>";
+    view.innerHTML = h;
+    view.querySelectorAll("[data-as]").forEach(function (s) { s.addEventListener("change", async function () {
+      var r = await sb.from("applications").update({ status: s.value }).eq("id", s.getAttribute("data-as")); KZ.toast(r.error ? "تعذر الحفظ." : "تم الحفظ.", !!r.error); }); });
+    view.querySelectorAll("[data-pl]").forEach(function (s) { s.addEventListener("change", async function () {
+      var r = await sb.from("placement_attempts").update({ adjusted_level: s.value || null }).eq("id", s.getAttribute("data-pl")); KZ.toast(r.error ? "تعذر الحفظ." : "تم الحفظ.", !!r.error); }); });
+    view.querySelectorAll("[data-mk]").forEach(function (b) { b.addEventListener("click", function () {
+      var a = apps.filter(function (x) { return String(x.id) === b.getAttribute("data-mk"); })[0];
+      pendingPrefill = { name: a.full_name, level: a.placement_level || a.current_level, ig: a.instagram }; go("students"); }); });
+  };
+
+  // ================= Speaking =================
+  VIEWS.speaking = async function () {
+    var nm = await nameMap();
+    var ss = (await sb.from("speaking_sessions").select("*").in("status", ["open", "full"]).order("starts_at")).data || [];
+    var ps = (await sb.from("speaking_participants").select("*")).data || [];
+    var blocked = nm.list.filter(function (p) { return false; });
+    var bl = (await sb.from("profiles").select("id,full_name,booking_blocked_until").gt("booking_blocked_until", new Date().toISOString())).data || [];
+    var h = '<form class="tile form" id="sf"><h3>إضافة موعد جلسة خاصة مع المعلم</h3><div><label for="sw">التاريخ والوقت</label><input id="sw" type="datetime-local" required></div>' +
+      '<div><label for="sm">المدة</label><select id="sm"><option value="30">30</option><option value="45">45</option><option value="60">60</option></select></div>' +
+      '<div><label for="su">رابط الاجتماع</label><input id="su" dir="ltr"></div><div><button class="btn btn-primary" type="submit">إضافة</button></div></form>';
+    h += '<h2 style="margin-top:24px">الجلسات القادمة</h2><div class="tile">';
+    if (!ss.length) h += '<p class="muted">لا توجد جلسات.</p>';
+    ss.forEach(function (s) {
+      var parts = ps.filter(function (p) { return p.session_id === s.id; });
+      h += '<div class="row" style="align-items:flex-start"><div><strong class="en">' + esc(s.topic) + "</strong> " + (s.kind === "teacher" ? '<span class="badge gold">معلم</span>' : '<span class="badge en">' + esc(s.level || "") + "</span>") +
+        '<div class="muted">' + KZ.fmtDate(s.starts_at, true) + " · " + s.minutes + " د</div>" +
+        parts.map(function (p) { var n = nm.map[p.user_id];
+          return '<div style="margin-top:6px">' + esc(n ? n.full_name : "—") + ' <span class="badge">' + esc(p.status) + '</span> <button class="btn btn-ghost sm" data-ps="' + s.id + "|" + p.user_id + '|attended" type="button">حضر</button> <button class="btn danger sm" data-ps="' + s.id + "|" + p.user_id + '|no_show" type="button">لم يحضر</button></div>'; }).join("") +
+        '</div><div><button class="btn danger sm" data-cs="' + s.id + '" type="button">إلغاء الجلسة</button></div></div>';
+    });
+    h += "</div>";
+    h += '<h2 style="margin-top:24px">إيقافات الحجز الحالية</h2><div class="tile">' + (bl.length ? bl.map(function (p) { return '<div class="row"><span>' + esc(p.full_name) + " حتى " + KZ.fmtDate(p.booking_blocked_until, true) + '</span><button class="btn btn-ghost sm" data-ub="' + p.id + '" type="button">رفع الإيقاف</button></div>'; }).join("") : '<p class="muted">لا توجد إيقافات.</p>') + "</div>";
+    view.innerHTML = h;
+    $("sf").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var r = await sb.rpc("teacher_create_slot", { p_starts: new Date($("sw").value).toISOString(), p_minutes: Number($("sm").value), p_meeting_url: $("su").value });
+      KZ.toast(r.error ? "تعذر الإضافة." : "تمت الإضافة.", !!r.error); if (!r.error) VIEWS.speaking();
+    });
+    view.querySelectorAll("[data-ps]").forEach(function (b) { b.addEventListener("click", async function () {
+      var p = b.getAttribute("data-ps").split("|");
+      var r = await sb.rpc("teacher_set_participant", { p_session: Number(p[0]), p_user: p[1], p_status: p[2] });
+      KZ.toast(r.error ? "تعذر الحفظ." : (p[2] === "no_show" ? "سُجّل عدم الحضور وأُوقف الحجز أسبوعاً." : "تم التسجيل."), !!r.error); VIEWS.speaking(); }); });
+    view.querySelectorAll("[data-cs]").forEach(function (b) { b.addEventListener("click", async function () {
+      if (!confirm("إلغاء هذه الجلسة؟")) return;
+      await sb.from("speaking_sessions").update({ status: "cancelled" }).eq("id", Number(b.getAttribute("data-cs"))); VIEWS.speaking(); }); });
+    view.querySelectorAll("[data-ub]").forEach(function (b) { b.addEventListener("click", async function () {
+      await sb.from("profiles").update({ booking_blocked_until: null }).eq("id", b.getAttribute("data-ub")); VIEWS.speaking(); }); });
+  };
+
+  // ================= Certificates =================
+  VIEWS.certs = async function () {
+    var nm = await nameMap();
+    var cs = (await sb.from("certificates").select("*").order("created_at", { ascending: false }).limit(100)).data || [];
+    var h = '<form class="tile form" id="cf"><h3>إصدار شهادة</h3><p class="muted">تُصدر بعد نجاح الطالب في المستوى وفق التقييم. يُولَّد رقم فريد ورمز QR تلقائياً.</p><div><label for="cu">الطالب</label><select id="cu">' +
+      opts(nm.list.map(function (p) { return [p.id, p.full_name + " (" + p.level + ")"]; })) + '</select></div><div><label for="cl">المستوى المكتمل</label><select id="cl">' + opts(LEVELS) + '</select></div><div><button class="btn btn-primary" type="submit">إصدار</button></div></form>';
+    h += '<h2 style="margin-top:24px">الشهادات الصادرة</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>المستوى</th><th>الرقم</th><th>التاريخ</th><th>الحالة</th><th></th></tr></thead><tbody>';
+    cs.forEach(function (c) {
+      h += "<tr><td>" + esc(c.holder_name) + '</td><td class="en">' + esc(c.level) + '</td><td class="en">' + esc(c.number) + "</td><td>" + esc(c.issued_on) + '</td><td><span class="badge ' + (c.status === "valid" ? "ok" : "bad") + '">' + (c.status === "valid" ? "سارية" : "ملغاة") + "</span></td><td>" +
+        '<a class="btn btn-ghost sm" href="certificate.html?c=' + encodeURIComponent(c.number) + '">عرض</a> ' + (c.status === "valid" ? '<button class="btn danger sm" data-rv="' + c.id + '" type="button">إلغاء</button>' : "") + "</td></tr>";
+    });
+    h += "</tbody></table></div>";
+    view.innerHTML = h;
+    $("cf").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      if (!confirm("إصدار شهادة المستوى " + $("cl").value + " لهذا الطالب؟")) return;
+      var r = await sb.rpc("issue_certificate", { p_user: $("cu").value, p_level: $("cl").value });
+      KZ.toast(r.error ? "تعذر الإصدار." : "تم الإصدار: " + r.data.number, !!r.error); if (!r.error) VIEWS.certs();
+    });
+    view.querySelectorAll("[data-rv]").forEach(function (b) { b.addEventListener("click", async function () {
+      var why = prompt("سبب إلغاء الشهادة؟"); if (why === null) return;
+      var r = await sb.rpc("revoke_certificate", { p_id: b.getAttribute("data-rv"), p_reason: why });
+      KZ.toast(r.error ? "تعذر الإلغاء." : "تم الإلغاء.", !!r.error); VIEWS.certs(); }); });
+  };
+
+  // ================= Announcements =================
+  VIEWS.news = async function () {
+    var ns = (await sb.from("announcements").select("*").order("created_at", { ascending: false }).limit(50)).data || [];
+    var h = '<form class="tile form" id="nf"><h3>إعلان جديد</h3><div><label for="nt">العنوان</label><input id="nt" required maxlength="150"></div><div><label for="nb">التفاصيل</label><textarea id="nb"></textarea></div><div><label for="nl">لمن؟</label><select id="nl"><option value="">كل المستويات</option>' + opts(LEVELS) + '</select></div><div><button class="btn btn-primary" type="submit">نشر</button></div></form><h2 style="margin-top:24px">الإعلانات</h2><div class="tile">';
+    ns.forEach(function (n) { h += '<div class="row"><div><strong>' + esc(n.title) + '</strong> <span class="badge en">' + esc(n.level || "الكل") + '</span><div class="muted">' + esc(n.body || "") + '</div></div><button class="btn danger sm" data-dn="' + n.id + '" type="button">حذف</button></div>'; });
+    h += "</div>";
+    view.innerHTML = h;
+    $("nf").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var r = await sb.from("announcements").insert({ title: $("nt").value, body: $("nb").value, level: $("nl").value || null, created_by: KZ.user.id });
+      KZ.toast(r.error ? "تعذر النشر." : "تم النشر.", !!r.error); if (!r.error) VIEWS.news();
+    });
+    view.querySelectorAll("[data-dn]").forEach(function (b) { b.addEventListener("click", async function () { await sb.from("announcements").delete().eq("id", Number(b.getAttribute("data-dn"))); VIEWS.news(); }); });
+  };
+
+  // ================= Level settings =================
+  VIEWS.settings = async function () {
+    var li = (await sb.from("level_info").select("*").order("level")).data || [];
+    var h = '<p class="muted">رابط الحصة المباشرة ورابط مجتمع كل مستوى وملاحظة الجدول. تظهر لطلاب المستوى فقط.</p>';
+    li.forEach(function (l) {
+      h += '<form class="tile form" data-lf="' + l.level + '" style="margin-bottom:14px"><h3 class="en">' + l.level + '</h3>' +
+        '<div><label>رابط الحصة</label><input name="meeting_url" dir="ltr" value="' + esc(l.meeting_url || "") + '"></div>' +
+        '<div><label>رابط مجتمع المستوى</label><input name="community_url" dir="ltr" value="' + esc(l.community_url || "") + '"></div>' +
+        '<div><label>ملاحظة الجدول (أيام وأوقات الحصص)</label><input name="schedule_note" value="' + esc(l.schedule_note || "") + '"></div>' +
+        '<div><button class="btn btn-primary sm" type="submit">حفظ</button></div></form>';
+    });
+    view.innerHTML = h;
+    view.querySelectorAll("[data-lf]").forEach(function (f) { f.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var r = await sb.from("level_info").update({ meeting_url: f.meeting_url.value || null, community_url: f.community_url.value || null, schedule_note: f.schedule_note.value || null }).eq("level", f.getAttribute("data-lf"));
+      KZ.toast(r.error ? "تعذر الحفظ." : "تم الحفظ.", !!r.error); }); });
+  };
+
+  go((location.hash || "#students").slice(1));
+})();
+
+</script>
+</body>
+</html>
