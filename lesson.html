@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mww8iyal">
-<link rel="stylesheet" href="app.css?v=mww8iyal">
+<link rel="stylesheet" href="site.css?v=mww8mg2n">
+<link rel="stylesheet" href="app.css?v=mww8mg2n">
 
 </head>
 <body class="app">
@@ -17,8 +17,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mww8iyal"></script>
-<script src="portal-i18n.js?v=mww8iyal"></script>
+<script src="app.js?v=mww8mg2n"></script>
+<script src="portal-i18n.js?v=mww8mg2n"></script>
 
 <script>
 /* KZBoard: infinite whiteboard (pan / pinch-zoom, smooth pens, shapes, tables, notes, undo, autosave, PNG export). Teacher tool. */
@@ -188,10 +188,8 @@ var KZBoard = (function () {
     }
     function redraw() { if (raf) return; raf = requestAnimationFrame(function () { raf = 0; render(); }); }
     function render() {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       var v = { x: view.x, y: view.y, k: view.k };
-      ctx.save(); ctx.scale(dpr, dpr); drawScene(ctx, v, W, H, true); ctx.restore();
-      ctx.setTransform(dpr * v.k, 0, 0, dpr * v.k, dpr * v.x, dpr * v.y);
+      drawScene(ctx, { x: view.x * dpr, y: view.y * dpr, k: view.k * dpr }, cv.width, cv.height, true);
       objs.forEach(function (o) { drawObj(ctx, o); });
       if (cur) drawObj(ctx, cur);
       var so = byId(selId);
@@ -238,7 +236,7 @@ var KZBoard = (function () {
         return;
       }
       if (!cur) return;
-      if (cur.t === "s") { var evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e]; evs.forEach(function (ev) { var q = toWorld(ev.clientX - cv.getBoundingClientRect().left, ev.clientY - cv.getBoundingClientRect().top), l = cur.p[cur.p.length - 1]; if (Math.hypot(q.x - l[0], q.y - l[1]) * view.k > 1.2) cur.p.push([q.x, q.y]); }); }
+      if (cur.t === "s") { var evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e]; if (!evs || !evs.length) evs = [e]; evs.forEach(function (ev) { var q = toWorld(ev.clientX - cv.getBoundingClientRect().left, ev.clientY - cv.getBoundingClientRect().top), l = cur.p[cur.p.length - 1]; if (Math.hypot(q.x - l[0], q.y - l[1]) * view.k > 1.2) cur.p.push([q.x, q.y]); }); }
       else if (cur.t === "r" || cur.t === "e") { var x1 = Math.min(cur._x0, w.x), y1 = Math.min(cur._y0, w.y); cur.x = x1; cur.y = y1; cur.w = Math.abs(w.x - cur._x0); cur.h = Math.abs(w.y - cur._y0); }
       else { cur.x2 = w.x; cur.y2 = w.y; if (e.shiftKey) { var dx = cur.x2 - cur.x, dy = cur.y2 - cur.y; if (Math.abs(dx) > Math.abs(dy)) cur.y2 = cur.y; else cur.x2 = cur.x; } }
       redraw();
