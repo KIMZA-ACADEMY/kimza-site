@@ -7,8 +7,9 @@
 <title>لوحة المعلم · KIMZA Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvx33oh">
-<link rel="stylesheet" href="app.css?v=mwvx33oh">
+<script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
+<link rel="stylesheet" href="site.css?v=mwvxuz7f">
+<link rel="stylesheet" href="app.css?v=mwvxuz7f">
 
 </head>
 <body class="app">
@@ -16,7 +17,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvx33oh"></script>
+<script src="app.js?v=mwvxuz7f"></script>
+<script src="portal-i18n.js?v=mwvxuz7f"></script>
 
 <script>
 (async function () {
@@ -25,7 +27,7 @@
   KZ.shell("admin");
   var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
   var LEVELS = ["A1", "A2", "B1", "B2", "C1"];
-  var TABS = [["students", "الطلاب"], ["lessons", "الدروس"], ["tests", "الاختبارات"], ["results", "النتائج"], ["attendance", "الحضور"], ["payments", "المدفوعات"], ["applications", "الطلبات"], ["speaking", "المحادثة"], ["certs", "الشهادات"], ["news", "الإعلانات"], ["features", "الميزات"], ["settings", "المستويات"]];
+  var TABS = [["students", "الطلاب"], ["lessons", "الدروس"], ["tests", "الاختبارات"], ["results", "النتائج"], ["attendance", "الحضور"], ["payments", "المدفوعات"], ["applications", "الطلبات"], ["speaking", "المحادثة"], ["certs", "الشهادات"], ["news", "الإعلانات"], ["courses", "الدورات والإعلانات"], ["features", "الميزات"], ["settings", "المستويات"]];
   var KIND = { weekly: "أسبوعي", monthly: "شهري", final: "نهاية المستوى" };
   var ST = { active: "نشط", paused: "متوقف مؤقتاً", graduated: "خريج", stopped: "موقوف" };
   var AT = { present: "حاضر", absent: "غائب", late: "متأخر", excused: "بعذر" };
@@ -158,7 +160,7 @@
           var on = l["open_" + p[0]];
           h += '<button class="btn ' + (on ? "btn-primary" : "btn-ghost") + ' sm" data-tg="' + esc(l.id) + "|" + p[0] + "|" + (on ? "0" : "1") + '" type="button">' + (on ? "✓ " : "🔒 ") + p[1] + "</button>";
         });
-        h += '</div></div><div style="text-align:end"><a class="btn btn-ghost sm" href="class.html?id=' + esc(l.id) + '">صفحة الحصة</a>' +
+        h += '</div></div><div style="text-align:end"><a class="btn btn-primary sm" href="lesson.html?id=' + esc(l.id) + '">معاينة الدرس والواجب</a> <a class="btn btn-ghost sm" href="class.html?id=' + esc(l.id) + '">صفحة الحصة</a>' +
           '<div style="margin-top:8px"><label class="btn btn-ghost sm" style="display:inline-flex;margin:0;cursor:pointer">' + (audioSet[l.id + ".mp3"] ? "استبدال الصوت" : "رفع الصوت") +
           '<input type="file" accept="audio/*" data-au="' + esc(l.id) + '" style="display:none"></label> ' + (audioSet[l.id + ".mp3"] ? '<span class="badge ok">الصوت مرفوع</span>' : '<span class="badge">لا صوت</span>') + "</div>" +
           '<div style="margin-top:8px"><label class="btn btn-ghost sm" style="display:inline-flex;margin:0;cursor:pointer">رفع صور القصة<input type="file" accept="image/*" multiple data-im="' + esc(l.id) + '" style="display:none"></label> <span class="muted" style="font-size:.85rem">تظهر مرتّبة حسب أسماء الملفات</span></div></div></div>';
@@ -303,9 +305,9 @@
   VIEWS.applications = async function () {
     var apps = (await sb.from("applications").select("*").order("created_at", { ascending: false }).limit(100)).data || [];
     var pls = (await sb.from("placement_attempts").select("*").order("created_at", { ascending: false }).limit(100)).data || [];
-    var h = "<h2>طلبات التسجيل (" + apps.length + ')</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>إنستغرام</th><th>المستوى</th><th>الأوقات / السبب</th><th>الحالة</th><th></th></tr></thead><tbody>';
+    var h = "<h2>الطلاب الجدد (" + apps.length + ')</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>واتساب / إنستغرام</th><th>المستوى</th><th>الأوقات / السبب</th><th>الحالة</th><th></th></tr></thead><tbody>';
     apps.forEach(function (a) {
-      h += "<tr><td>" + esc(a.full_name) + '<div class="muted">' + KZ.fmtDate(a.created_at) + '</div></td><td class="en">' + esc(a.instagram || "") + "</td><td class=\"en\">" + esc(a.placement_level || a.current_level || "") + "</td><td>" + esc(a.preferred_times || "") + "<div class=\"muted\">" + esc(a.reason || "") + "</div></td><td><select data-as=\"" + a.id + "\">" + opts([["new", "جديد"], ["approved", "مقبول"], ["rejected", "مرفوض"]], a.status) + "</select></td>" +
+      h += "<tr><td>" + esc(a.full_name) + '<div class="muted">' + KZ.fmtDate(a.created_at) + '</div></td><td class="en">' + (a.phone ? '<a href="https://wa.me/' + esc(String(a.phone).replace(/\D/g, "")) + '" target="_blank" rel="noopener">' + esc(a.phone) + "</a>" : "") + (a.instagram ? "<div>" + esc(a.instagram) + "</div>" : "") + "</td><td class=\"en\">" + esc(a.placement_level || a.current_level || "") + "</td><td>" + esc(a.preferred_times || "") + "<div class=\"muted\">" + esc(a.reason || "") + "</div></td><td><select data-as=\"" + a.id + "\">" + opts([["new", "جديد"], ["approved", "مقبول"], ["rejected", "مرفوض"]], a.status) + "</select></td>" +
         '<td><button class="btn btn-ghost sm" data-mk="' + a.id + '" type="button">إنشاء حساب</button></td></tr>';
     });
     h += "</tbody></table></div>";
@@ -313,9 +315,9 @@
     pls.forEach(function (p) {
       var by = p.by_level ? Object.keys(p.by_level).map(function (k) { return k + ":" + p.by_level[k].correct + "/" + p.by_level[k].total; }).join(" ") : "";
       var sk = p.skill_scores ? Object.keys(p.skill_scores).map(function (k) { var x = p.skill_scores[k]; return k + " " + x.correct + "/" + x.total; }).join(" · ") : "";
-      h += "<tr><td>" + esc(p.full_name || "—") + '<div class="muted">' + KZ.fmtDate(p.created_at) + '</div></td><td class="en">' + esc(p.contact || "") + '</td><td><span class="badge gold en">' + esc(p.recommended_level) + '</span></td><td><select data-pl="' + p.id + '"><option value="">—</option>' + opts(LEVELS, p.adjusted_level) + '</select></td><td class="en muted">' + esc(by) + " (" + p.correct + "/" + p.total + ", skipped " + p.skipped + ")<br>" + esc(sk) + "</td>" +
+      h += "<tr><td>" + esc(p.full_name || "—") + '<div class="muted">' + KZ.fmtDate(p.created_at) + '</div></td><td class="en">' + (p.contact ? '<a href="https://wa.me/' + esc(String(p.contact).replace(/\D/g, "")) + '" target="_blank" rel="noopener">' + esc(p.contact) + "</a>" : "") + '</td><td><span class="badge gold en">' + esc(p.recommended_level) + '</span></td><td><select data-pl="' + p.id + '"><option value="">—</option>' + opts(LEVELS, p.adjusted_level) + '</select></td><td class="en muted">' + esc(by) + " (" + p.correct + "/" + p.total + ", skipped " + p.skipped + ")<br>" + esc(sk) + "</td>" +
         '<td style="min-width:220px">' + (p.writing ? '<div class="en" style="white-space:pre-wrap">' + esc(p.writing) + "</div>" : '<span class="muted">—</span>') +
-        (p.audio_path ? '<div style="margin-top:8px"><button class="btn btn-ghost sm" data-ap="' + esc(p.audio_path) + '" type="button">استمع للتسجيل</button></div>' : "") + "</td></tr>";
+        (p.typed && p.typed.length ? '<details style="margin-top:8px"><summary>إجابات الإكمال والترجمة</summary>' + p.typed.map(function (t) { return '<div class="en" style="margin:6px 0"><div class="muted">' + esc(t.q) + '</div>' + (t.dont_know ? '<em>لا أعرف</em>' : esc(t.given || '—')) + '</div>'; }).join('') + '</details>' : '') + (p.audio_path ? '<div style="margin-top:8px"><button class="btn btn-ghost sm" data-ap="' + esc(p.audio_path) + '" type="button">استمع للتسجيل</button></div>' : "") + "</td></tr>";
     });
     h += "</tbody></table></div>";
     view.innerHTML = h;
@@ -409,6 +411,67 @@
       KZ.toast(r.error ? "تعذر النشر." : "تم النشر.", !!r.error); if (!r.error) VIEWS.news();
     });
     view.querySelectorAll("[data-dn]").forEach(function (b) { b.addEventListener("click", async function () { await sb.from("announcements").delete().eq("id", Number(b.getAttribute("data-dn"))); VIEWS.news(); }); });
+  };
+
+  // ================= Courses and advertisements =================
+  var CTA = [["placement", "اختبار تحديد المستوى"], ["whatsapp", "واتساب (ضع الرقم في خانة الرابط)"], ["instagram", "إنستغرام"], ["contact", "صفحة تواصل معنا"], ["link", "رابط خارجي (ضعه في خانة الرابط)"]];
+  function cField(name, label, val, type, hint) {
+    var v = val == null ? "" : val;
+    if (type === "area") return '<div><label>' + label + '</label><textarea name="' + name + '" rows="3">' + esc(v) + "</textarea></div>";
+    if (type === "cta") return '<div><label>' + label + '</label><select name="' + name + '">' + CTA.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === (v || "placement") ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></div>";
+    if (type === "check") return '<div><label style="display:inline-flex;gap:8px;align-items:center;font-weight:700"><input type="checkbox" name="' + name + '" style="width:auto;min-height:0"' + (v ? " checked" : "") + "> " + label + "</label></div>";
+    return '<div><label>' + label + '</label><input name="' + name + '" value="' + esc(v) + '"' + (type === "num" ? ' type="number" dir="ltr"' : "") + (hint ? ' placeholder="' + esc(hint) + '"' : "") + "></div>";
+  }
+  function courseForm(c) {
+    c = c || {};
+    return '<form class="tile form" data-cf="' + (c.id || "new") + '" style="margin-bottom:14px"><h3>' + (c.id ? esc(c.title) : "دورة جديدة") + "</h3>" +
+      cField("title", "اسم الدورة *", c.title) + cField("summary", "وصف مختصر (سطر)", c.summary) + cField("price", "السعر (كما يظهر، مثل: 25$ شهرياً)", c.price) + cField("price_note", "ملاحظة على السعر", c.price_note) +
+      cField("level", "المستوى (مثل A1 أو A1–A2)", c.level) + cField("duration", "المدة", c.duration) + cField("schedule", "المواعيد", c.schedule) + cField("audience", "لمن هذه الدورة؟", c.audience) +
+      cField("description", "وصف الدورة", c.description, "area") + cField("goals", "أهداف الدورة (كل هدف في سطر)", c.goals, "area") +
+      cField("cta_type", "زر الإجراء يوجّه إلى", c.cta_type, "cta") + cField("cta_label", "نص الزر (اختياري)", c.cta_label) + cField("cta_url", "الرابط أو رقم واتساب", c.cta_url, "text", "https://... أو +967...") +
+      cField("sort", "الترتيب (الأصغر أولاً)", c.sort || 0, "num") + cField("is_published", "منشورة على الموقع", c.is_published, "check") +
+      '<div class="btns"><button class="btn btn-primary" type="submit">حفظ</button>' + (c.id ? '<button class="btn danger sm" type="button" data-cd="' + c.id + '">حذف</button>' : "") + "</div></form>";
+  }
+  function adForm(a) {
+    a = a || {};
+    return '<form class="tile form" data-af="' + (a.id || "new") + '" style="margin-bottom:14px"><h3>' + (a.id ? esc(a.title) : "إعلان جديد") + "</h3>" +
+      cField("title", "عنوان الإعلان *", a.title) + cField("body", "نص الإعلان", a.body, "area") + cField("badge", "شارة قصيرة (مثل: خصم 20% أو دفعة جديدة)", a.badge) +
+      cField("cta_type", "زر الإجراء يوجّه إلى", a.cta_type, "cta") + cField("cta_label", "نص الزر (اختياري)", a.cta_label) + cField("cta_url", "الرابط أو رقم واتساب", a.cta_url, "text", "https://... أو +967...") +
+      cField("sort", "الترتيب (الأصغر أولاً)", a.sort || 0, "num") + cField("is_active", "ظاهر في الصفحة الرئيسية", a.is_active, "check") +
+      '<div class="btns"><button class="btn btn-primary" type="submit">حفظ</button>' + (a.id ? '<button class="btn danger sm" type="button" data-ad="' + a.id + '">حذف</button>' : "") + "</div></form>";
+  }
+  function formData(f) {
+    var o = {};
+    f.querySelectorAll("input,select,textarea").forEach(function (el) {
+      if (el.type === "checkbox") o[el.name] = el.checked;
+      else if (el.type === "number") o[el.name] = Number(el.value) || 0;
+      else o[el.name] = el.value.trim() === "" ? null : el.value.trim();
+    });
+    return o;
+  }
+  VIEWS.courses = async function () {
+    var cs = (await sb.from("courses").select("*").order("sort").order("id")).data || [];
+    var ads = (await sb.from("ads").select("*").order("sort").order("id", { ascending: false })).data || [];
+    var h = '<p class="muted">اكتب دوراتك وإعلاناتك هنا، فتظهر في صفحة «الدورات» وفي الصفحة الرئيسية. ما تحفظه كمنشور/ظاهر يراه الزوار فوراً. زر كل دورة أو إعلان يوجّه الزائر إلى اختبار المستوى أو إلى واتساب أو إنستغرام أو رابط تختاره.</p>';
+    h += "<h2>الدورات</h2>" + courseForm(null) + cs.map(courseForm).join("");
+    h += '<h2 style="margin-top:26px">الإعلانات</h2>' + adForm(null) + ads.map(adForm).join("");
+    view.innerHTML = h;
+    view.querySelectorAll("[data-cf]").forEach(function (f) { f.addEventListener("submit", async function (e) {
+      e.preventDefault(); var d = formData(f);
+      if (!d.title) { KZ.toast("اكتب اسم الدورة.", true); return; }
+      var id = f.getAttribute("data-cf");
+      var r = id === "new" ? await sb.from("courses").insert(d) : await sb.from("courses").update(d).eq("id", Number(id));
+      KZ.toast(r.error ? "تعذر الحفظ." : "تم الحفظ.", !!r.error); if (!r.error) VIEWS.courses(); }); });
+    view.querySelectorAll("[data-af]").forEach(function (f) { f.addEventListener("submit", async function (e) {
+      e.preventDefault(); var d = formData(f);
+      if (!d.title) { KZ.toast("اكتب عنوان الإعلان.", true); return; }
+      var id = f.getAttribute("data-af");
+      var r = id === "new" ? await sb.from("ads").insert(d) : await sb.from("ads").update(d).eq("id", Number(id));
+      KZ.toast(r.error ? "تعذر الحفظ." : "تم الحفظ.", !!r.error); if (!r.error) VIEWS.courses(); }); });
+    view.querySelectorAll("[data-cd]").forEach(function (b) { b.addEventListener("click", async function () {
+      if (!confirm("حذف هذه الدورة نهائياً؟")) return; await sb.from("courses").delete().eq("id", Number(b.getAttribute("data-cd"))); VIEWS.courses(); }); });
+    view.querySelectorAll("[data-ad]").forEach(function (b) { b.addEventListener("click", async function () {
+      if (!confirm("حذف هذا الإعلان نهائياً؟")) return; await sb.from("ads").delete().eq("id", Number(b.getAttribute("data-ad"))); VIEWS.courses(); }); });
   };
 
   // ================= Feature switches =================

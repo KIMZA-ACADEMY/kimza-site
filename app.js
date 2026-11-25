@@ -86,6 +86,7 @@
     if (el) el.innerHTML = h;
     var lb = document.getElementById("logoutBtn");
     if (lb) lb.addEventListener("click", async function () { await sb.auth.signOut(); location.href = "login.html"; });
+    if (window.KZ_PORTAL) window.KZ_PORTAL.mount();
   }
 
   var KZ = { sb: sb, esc: esc, fmtDate: fmtDate, toast: toast, errMsg: errMsg, requireAuth: requireAuth, shell: shell, DOMAIN: DOMAIN, profile: null, user: null };

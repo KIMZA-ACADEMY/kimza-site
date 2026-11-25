@@ -7,8 +7,9 @@
 <title>الدرس · KIMZA Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvx33oh">
-<link rel="stylesheet" href="app.css?v=mwvx33oh">
+<script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
+<link rel="stylesheet" href="site.css?v=mwvxuz7f">
+<link rel="stylesheet" href="app.css?v=mwvxuz7f">
 
 </head>
 <body class="app">
@@ -16,16 +17,19 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvx33oh"></script>
+<script src="app.js?v=mwvxuz7f"></script>
+<script src="portal-i18n.js?v=mwvxuz7f"></script>
 
 <script>
 (async function () {
-  var prof = await KZ.requireAuth("student");
+  var prof = await KZ.requireAuth("any");
   if (!prof) return;
   KZ.shell("home");
   KZ.blockCopy();
   var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
   var id = new URLSearchParams(location.search).get("id") || "";
+  var IS_T = prof.role === "teacher"; // the teacher previews the lesson exactly as the student sees it (nothing is saved)
+  var BACK = IS_T ? "admin.html#lessons" : "dashboard.html";
 
   var l = await sb.from("lessons").select("id,num,level,title,open_words,open_story,open_audio,open_exercises,open_homework").eq("id", id).maybeSingle();
   if (!l.data) {
@@ -34,18 +38,18 @@
   }
   var L = l.data;
   var TABS = [
-    ["words", "الكلمات", L.open_words],
-    ["story", "القصة والصوت", L.open_story || L.open_audio],
-    ["exercises", "التمارين", L.open_exercises],
-    ["homework", "الواجب", L.open_homework && KZ.on("homework")]
+    ["words", "الكلمات", L.open_words || IS_T],
+    ["story", "القصة والصوت", L.open_story || L.open_audio || IS_T],
+    ["exercises", "التمارين", L.open_exercises || IS_T],
+    ["homework", "الواجب", (L.open_homework && KZ.on("homework")) || IS_T]
   ];
   var first = (TABS.filter(function (t) { return t[2]; })[0] || TABS[0])[0];
   var content = {};
   var c = await sb.from("lesson_content").select("kind,body").eq("lesson_id", id);
   (c.data || []).forEach(function (x) { content[x.kind] = x.body; });
-  var done = await sb.from("homework_submissions").select("first_score,total").eq("lesson_id", id).maybeSingle();
+  var done = IS_T ? { data: null } : await sb.from("homework_submissions").select("first_score,total").eq("lesson_id", id).maybeSingle();
 
-  var html = '<p><a href="dashboard.html">&larr; العودة</a></p><h1>الدرس ' + L.num + ' <span class="en muted" style="font-size:.6em">' + esc(L.title || "") + "</span></h1>";
+  var html = '<p><a href="' + BACK + '">&larr; العودة</a></p><h1>الدرس ' + L.num + ' <span class="en muted" style="font-size:.6em">' + esc(L.title || "") + "</span></h1>";
   html += '<div class="tabs" role="tablist">' + TABS.map(function (t) {
     return '<button data-t="' + t[0] + '" aria-selected="' + (t[0] === first ? "true" : "false") + '">' + (t[2] ? "" : "🔒 ") + t[1] + "</button>";
   }).join("") + '</div><div id="pane"></div>';
@@ -55,6 +59,19 @@
     return '<div class="tile"><h3>🔒 ' + name + ' مغلق</h3><p class="muted">سيفتحه المعلم في الوقت المناسب.</p></div>';
   }
 
+  function wireFs() {
+    document.querySelectorAll("[data-fs]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var w = document.getElementById(b.getAttribute("data-fs")), on = !w.classList.contains("fs");
+        w.classList.toggle("fs", on); document.body.classList.toggle("fs-open", on);
+        b.textContent = on ? "✕ إغلاق" : "⛶ ملء الشاشة";
+        try { if (on && w.requestFullscreen) w.requestFullscreen(); else if (!on && document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
+      });
+    });
+    document.addEventListener("fullscreenchange", function () {
+      if (!document.fullscreenElement) { document.querySelectorAll(".fswrap.fs").forEach(function (w) { w.classList.remove("fs"); var bb = w.querySelector("[data-fs]"); if (bb) bb.textContent = "⛶ ملء الشاشة"; }); document.body.classList.remove("fs-open"); }
+    });
+  }
   var mediaStop = function () {};
   function stopMedia() { try { mediaStop(); } catch (e) {} mediaStop = function () {}; }
   async function show(t) {
@@ -100,13 +117,13 @@
     }
     if (t === "story") {
       var h = "";
-      if (L.open_story) {
+      if (L.open_story || IS_T) {
         h += '<div id="simgs" class="simgs"></div>';
         h += '<div class="tile"><pre class="story" style="white-space:pre-wrap;font-family:inherit;direction:auto;margin:0;line-height:2;font-size:1.1rem">' + esc(content.story || "") + "</pre></div>";
       }
       h += '<div id="saudio"></div>';
       pane.innerHTML = h;
-      if (L.open_story) {
+      if (L.open_story || IS_T) {
         // story pictures: A1-L01-story-1.jpg, -2 ... in the public lesson-images bucket (shown in order)
         var IB = window.KIMZA_SUPABASE.url + "/storage/v1/object/public/lesson-images/" + id + "-story-";
         (async function () {
@@ -125,7 +142,7 @@
         })();
       }
       var sa = document.getElementById("saudio");
-      if (!L.open_audio) { if (!L.open_story) sa.innerHTML = locked("الصوت"); return; }
+      if (!L.open_audio && !IS_T) { if (!L.open_story) sa.innerHTML = locked("الصوت"); return; }
       sa.innerHTML = '<div class="tile"><p class="muted">جارٍ تحميل الصوت...</p></div>';
       var s = await sb.storage.from("lesson-audio").createSignedUrl(id + ".mp3", 3600);
       if (s.error || !s.data) { sa.innerHTML = '<div class="tile"><p class="muted">لم يرفع المعلم ملف الصوت لهذا الدرس بعد.</p></div>'; return; }
@@ -143,7 +160,8 @@
       return;
     }
     if (t === "exercises") {
-      pane.innerHTML = '<div class="infobox">تمارين الحصة التفاعلية لهذا الدرس.</div><iframe class="frame" id="ex" sandbox="allow-scripts allow-same-origin allow-forms" title="Exercises"></iframe>';
+      pane.innerHTML = '<div class="infobox">تمارين الحصة التفاعلية لهذا الدرس.</div><div class="fswrap" id="exw"><div class="fsbar"><button class="btn btn-ghost sm" type="button" data-fs="exw">⛶ ملء الشاشة</button></div><iframe class="frame" id="ex" sandbox="allow-scripts allow-same-origin allow-forms" title="Exercises"></iframe></div>';
+      wireFs();
       var exf = document.getElementById("ex");
       exf.addEventListener("load", function () { try { KZ.blockCopyIn(exf.contentDocument); } catch (e) {} });
       exf.srcdoc = content["class"] || "";
@@ -151,7 +169,7 @@
     }
     // homework: ask for confirmation before the timer starts
     var dm = /DURATION\s*=\s*(\d+)\s*\*\s*60/.exec(content.homework || ""), dmin = dm ? Number(dm[1]) : 15;
-    if (!(done && done.data)) {
+    if (!IS_T && !(done && done.data)) {
       var started = await sb.from("homework_starts").select("lesson_id").eq("lesson_id", id).maybeSingle();
       if (!(started.data)) {
         var ok = await KZ.confirmBox("هل أنت جاهز للواجب؟", "<p>سيبدأ الواجب الآن، ومدته <strong>" + dmin + " دقيقة</strong>.</p><p>يبدأ العدّاد فور الضغط على «نعم، ابدأ» <strong>ولا يتوقف</strong> حتى لو خرجت من الصفحة. درجتك الأولى هي التي تُحتسب.</p>", "نعم، ابدأ الواجب", "ليس بعد");
@@ -161,10 +179,11 @@
     var note = done && done.data
       ? '<div class="infobox">سلّمت هذا الواجب. درجتك الأولى المحتسبة: <strong>' + done.data.first_score + " / " + done.data.total + "</strong>. المحاولات التالية للتدريب فقط ولا تُحتسب.</div>"
       : '<div class="infobox">ادخل اسمك ثم أجب. <strong>درجتك الأولى هي التي تُحتسب</strong> وتُحفظ تلقائياً. <strong>المؤقت يبدأ من أول فتح للواجب ولا يتوقف</strong> حتى لو خرجت من الصفحة.</div>';
-    pane.innerHTML = note + '<iframe class="frame" id="hw" sandbox="allow-scripts allow-same-origin allow-forms" title="Homework"></iframe>';
+    pane.innerHTML = note + '<div class="fswrap" id="hww"><div class="fsbar"><button class="btn btn-ghost sm" type="button" data-fs="hww">⛶ ملء الشاشة</button></div><iframe class="frame" id="hw" sandbox="allow-scripts allow-same-origin allow-forms" title="Homework"></iframe></div>';
+    wireFs();
     var fr = document.getElementById("hw");
     var elapsed = 0, hwHtml = content.homework || "";
-    if (!(done && done.data)) {
+    if (!IS_T && !(done && done.data)) {
       var st = await sb.rpc("start_homework", { p_lesson: id });
       if (!st.error && typeof st.data === "number") elapsed = st.data;
     }
@@ -183,7 +202,7 @@
         // ask before the first submission: no better grade afterwards
         var origSubmit = w.submitHw, asked = !!(done && done.data);
         w.submitHw = async function (auto) {
-          if (auto === true || asked) return origSubmit(auto);
+          if (auto === true || asked || IS_T) return origSubmit(auto);
           var go = await KZ.confirmBox("تسليم الواجب", "<p>بعد التسليم <strong>لا يمكنك الحصول على درجة أفضل</strong>، فدرجتك الأولى هي التي تُحتسب.</p><p>راجع إجاباتك جيداً، فلا يزال لديك وقت.</p>", "سلّم الآن", "أراجع إجاباتي");
           if (!go) return;
           asked = true; return origSubmit(auto);
@@ -205,6 +224,7 @@
       } catch (e) {}
       // The homework page "sends" its result with fetch. Here we save it to the student's own record instead.
       w.fetch = async function (url, opts) {
+        if (IS_T) return { ok: true };
         try {
           var p = JSON.parse(opts.body);
           var r = await sb.from("homework_submissions").insert({

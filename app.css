@@ -117,3 +117,9 @@ table.t th{color:var(--muted);font-size:14px}
 .simgs{display:grid;gap:14px;margin-bottom:14px}
 .simgs img{width:100%;max-height:520px;object-fit:contain;border-radius:18px;border:1px solid var(--line);background:var(--surface)}
 .story{font-size:1.15rem}
+
+/* full screen for exercises and homework */
+.fsbar{display:flex;justify-content:flex-end;margin:0 0 6px}
+.fswrap.fs{position:fixed;inset:0;z-index:900;background:var(--bg,#F8F4E9);padding:8px;display:flex;flex-direction:column}
+.fswrap.fs .frame{flex:1;height:auto;min-height:0}
+body.fs-open{overflow:hidden}
