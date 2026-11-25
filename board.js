@@ -13,7 +13,7 @@ var KZBoard = (function () {
     ".kzb .sep{width:1px;height:26px;background:#ccc;margin:0 3px}.kzb .zl{min-width:48px;text-align:center;font-size:13px;color:#444}" +
     ".kzb-ctx{position:absolute;top:8px;inset-inline-start:8px;display:none;gap:4px;background:rgba(255,255,255,.96);border:1px solid #ccc;border-radius:12px;padding:5px 8px;z-index:5}" +
     ".kzb-ed{position:absolute;z-index:8;border:2px solid #0B1F44;background:#fff;color:#111;padding:2px 4px;font-family:Tajawal,sans-serif;resize:none;outline:none;overflow:hidden;line-height:1.35}" +
-    ".kzb-sm .kzb-bar{bottom:4px;padding:3px 4px;gap:2px}.kzb-sm .kzb button,.kzb-sm .kzb select{min-width:28px;height:28px;font-size:12px;padding:0 4px}.kzb-sm .sw{width:20px;min-width:20px;height:20px}.kzb-sm .kzb-top{top:4px;padding:3px 4px;gap:2px}.kzb-hidebar .kzb-bar{display:none}" +
+    ".kzb-sm .kzb-bar{bottom:4px;padding:3px 4px;gap:2px}.kzb-sm .kzb button,.kzb-sm .kzb select{min-width:28px;height:28px;font-size:12px;padding:0 4px}.kzb-sm .sw{width:20px;min-width:20px;height:20px}.kzb-sm .kzb-top{top:4px;padding:3px 4px;gap:2px}.kzb-hidebar .kzb-bar{display:none}.kzb-hidetop .kzb-top,.kzb-hidetop .kzb-ctx{display:none!important}.kzb .kzb-tg{position:absolute;bottom:8px;inset-inline-start:8px;z-index:7;opacity:.75;min-width:40px;height:40px;border-radius:50%;box-shadow:0 3px 12px rgba(0,0,0,.3)}.kzb .kzb-tg:hover{opacity:1}" +
     ".kzb-msg{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#0B1F44;color:#fff;padding:5px 12px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9}";
 
   var BGS = [["أبيض","#fbfbf8"],["كريمي","#f6efdc"],["أسود","#111111"],["سبورة خضراء","#1f4d3a"],["كحلي","#0b1f44"],["رمادي","#3a3f47"]];
@@ -65,7 +65,9 @@ var KZBoard = (function () {
     btn("✕", "حذف هذه السبورة نهائياً", function () { if (!boardId || !confirm("حذف هذه السبورة نهائياً مع كل محتواها؟")) return; sb.from(TABLE).delete().eq("id", boardId).then(function () { boardId = null; init(); }); }, top);
     var bgSel = el("select"); bgSel.title = "لون السبورة"; BGS.forEach(function (b) { var o = el("option"); o.value = b[1]; o.textContent = "🎨 " + b[0]; bgSel.appendChild(o); }); bgSel.addEventListener("change", function () { setBg(bgSel.value); changed(); }); top.appendChild(bgSel);
     btn("🖼", "إدراج صورة (أو الصق صورة بـ Ctrl+V)", function () { var f = document.createElement("input"); f.type = "file"; f.accept = "image/*"; f.multiple = true; f.onchange = function () { Array.prototype.forEach.call(f.files, function (x) { addImageFile(x); }); }; f.click(); }, top);
-    btn("🛠", "إظهار / إخفاء شريط الأدوات", function () { root.classList.toggle("kzb-hidebar"); }, top);
+    btn("🛠", "إخفاء شريط الأدوات السفلي", function () { root.classList.add("kzb-hidebar"); }, top);
+    btn("▲", "إخفاء هذا الشريط العلوي", function () { root.classList.add("kzb-hidetop"); }, top);
+    var tg = btn("👁", "إظهار / إخفاء كل الأدوات (تبقى السبورة فقط)", function () { var hid = root.classList.contains("kzb-hidebar") || root.classList.contains("kzb-hidetop"); root.classList.toggle("kzb-hidebar", !hid); root.classList.toggle("kzb-hidetop", !hid); }, root); tg.className = "kzb-tg";
     var saveS = el("span", "zl"); saveS.textContent = ""; top.appendChild(saveS);
 
     // context bar (table)

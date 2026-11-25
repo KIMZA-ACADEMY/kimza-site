@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mww8y2cw">
-<link rel="stylesheet" href="app.css?v=mww8y2cw">
+<link rel="stylesheet" href="site.css?v=mww9zhvr">
+<link rel="stylesheet" href="app.css?v=mww9zhvr">
 
 </head>
 <body class="app">
@@ -17,8 +17,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mww8y2cw"></script>
-<script src="portal-i18n.js?v=mww8y2cw"></script>
+<script src="app.js?v=mww9zhvr"></script>
+<script src="portal-i18n.js?v=mww9zhvr"></script>
 
 <script>
 (async function () {
@@ -50,6 +50,14 @@
   if (!IS_T) TABS = TABS.filter(function (t) { return HID.indexOf(t[0]) < 0; });
   if (!TABS.length) TABS = [["words", "الكلمات", false]];
   var first = (TABS.filter(function (t) { return t[2]; })[0] || TABS[0])[0];
+  var ME = null;
+  try { if (!IS_T) { var mp = await sb.from("student_prefs").select("nickname,emoji,color").maybeSingle(); if (mp.data && mp.data.nickname) ME = mp.data; } } catch (e) {}
+  function withMe(html) {
+    if (!ME || !html) return html;
+    var cfg = JSON.stringify({ name: ME.nickname, emoji: ME.emoji, color: ME.color }).replace(/</g, "\\u003c");
+    var js = "<script>window.KZ_ME=" + cfg + ";document.addEventListener('DOMContentLoaded',function(){try{var m=window.KZ_ME;var b=document.createElement('div');b.id='kzMe';b.style.cssText='position:fixed;top:8px;left:8px;z-index:99999;display:flex;align-items:center;gap:8px;background:#fff;color:#0B1F44;border:3px solid '+m.color+';border-radius:30px;padding:3px 14px 3px 4px;font:700 15px Tajawal,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)';var e=document.createElement('span');e.style.cssText='font-size:26px;line-height:1';e.textContent=m.emoji;var n=document.createElement('span');n.textContent=m.name;b.appendChild(e);b.appendChild(n);document.body.appendChild(b);document.querySelectorAll('.kz-me-emoji').forEach(function(x){x.textContent=m.emoji});document.querySelectorAll('.kz-me-name').forEach(function(x){x.textContent=m.name})}catch(err){}});<" + "/script>";
+    return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, function () { return js + "</body>"; }) : html + js;
+  }
   var content = {};
   var c = await sb.from("lesson_content").select("kind,body").eq("lesson_id", id);
   (c.data || []).forEach(function (x) { content[x.kind] = x.body; });
@@ -284,13 +292,13 @@
       wireFs();
       var exf = document.getElementById("ex");
       exf.addEventListener("load", function () { try { KZ.blockCopyIn(exf.contentDocument); } catch (e) {} });
-      exf.srcdoc = content["class"] || "";
+      exf.srcdoc = withMe(content["class"] || "");
       return;
     }
     // homework: ask for confirmation before the timer starts
     var dm = /DURATION\s*=\s*(\d+)\s*\*\s*60/.exec(content.homework || ""), dmin = dm ? Number(dm[1]) : 15;
-    if (!IS_T && !(done && done.data)) {
-      var started = await sb.from("homework_starts").select("lesson_id").eq("lesson_id", id).maybeSingle();
+    if (IS_T || !(done && done.data)) {
+      var started = IS_T ? { data: null } : await sb.from("homework_starts").select("lesson_id").eq("lesson_id", id).maybeSingle();
       if (!(started.data)) {
         var ok = await KZ.confirmBox("هل أنت جاهز للواجب؟", "<p>سيبدأ الواجب الآن، ومدته <strong>" + dmin + " دقيقة</strong>.</p><p>يبدأ العدّاد فور الضغط على «نعم، ابدأ» <strong>ولا يتوقف</strong> حتى لو خرجت من الصفحة. درجتك الأولى هي التي تُحتسب.</p>", "نعم، ابدأ الواجب", "ليس بعد");
         if (!ok) { pane.innerHTML = '<div class="tile"><h3>الواجب جاهز</h3><p class="muted">اضغط عندما تكون مستعداً. لن يبدأ العدّاد قبل ذلك.</p><p><button class="btn btn-primary" id="hwGo" type="button">ابدأ الواجب</button></p></div>'; document.getElementById("hwGo").addEventListener("click", function () { show("homework"); }); return; }
@@ -356,7 +364,7 @@
         return { ok: true };
       };
     });
-    fr.srcdoc = hwHtml;
+    fr.srcdoc = withMe(hwHtml);
   }
   document.querySelectorAll(".tabs button").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-t")); }); });
   show(first);

@@ -78,14 +78,14 @@
     var isT = prof && prof.role === "teacher";
     var FOFF = { "review.html": "review", "flashcards.html": "flashcards", "attendance.html": "attendance", "speaking.html": "speaking", "certificates.html": "certificates" };
     var links = isT
-      ? [["admin.html", "لوحة المعلم", "admin"]]
-      : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"]].filter(function (l) { return !FOFF[l[0]] || KZ.on(FOFF[l[0]]); });
+      ? [["admin.html", "لوحة المعلم", "admin"], ["community.html", "المجتمع", "community"]]
+      : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"], ["community.html", "المجتمع", "community"]].filter(function (l) { return !FOFF[l[0]] || KZ.on(FOFF[l[0]]); });
     var h = '<div class="wrap"><a href="' + (isT ? "admin.html" : "dashboard.html") + '"><img src="kimza-logo-gold.png" alt="KIMZA Academy"></a>' +
       '<nav class="links" aria-label="Main">' + links.map(function (l) { return '<a href="' + l[0] + '"' + (l[2] === active ? ' aria-current="page"' : "") + ">" + l[1] + "</a>"; }).join("") +
       '<span class="who">' + esc(prof ? prof.full_name : "") + '</span><button class="btn btn-ghost sm" id="logoutBtn" type="button" style="color:var(--cream)">خروج</button></nav></div>';
     var el = document.getElementById("appHeader");
     if (el) el.innerHTML = h;
-    try { KZ.mountBoardButton(); } catch (e) {}
+    try { KZ.mountBoardButton(); KZ.mountRecorderButton(); } catch (e) {}
     var lb = document.getElementById("logoutBtn");
     if (lb) lb.addEventListener("click", async function () { await sb.auth.signOut(); location.href = "login.html"; });
     if (window.KZ_PORTAL) window.KZ_PORTAL.mount();
@@ -169,6 +169,48 @@
     try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
     if (KZ._boardInst) KZ._boardInst.flush(); ov.style.display = "none";
     var fab = document.getElementById("kzbFab"); if (fab) fab.style.display = "";
+  };
+  // ---- temporary voice recorder (stays on the student's device; nothing is uploaded) ----
+  KZ.mountRecorderButton = function () {
+    if (document.getElementById("kzrFab")) return;
+    var b = document.createElement("button"); b.id = "kzrFab"; b.type = "button"; b.title = "سجّل صوتك واسمعه";
+    b.style.cssText = "position:fixed;bottom:16px;inset-inline-start:148px;z-index:900;font:inherit;font-weight:700;border:2px solid #D4AF37;background:#0B1F44;color:#F8F4E9;border-radius:30px;padding:10px 16px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4);display:flex;gap:6px;align-items:center";
+    b.innerHTML = "🎙 <span>سجّل صوتك</span>";
+    var panel = null, mr = null, chunks = [], stream = null, url = null, t0 = 0, tm = null, mime = "";
+    function cleanup() { if (url) { URL.revokeObjectURL(url); url = null; } chunks = []; }
+    function stopStream() { if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; } if (tm) { clearInterval(tm); tm = null; } }
+    function draw(state) {
+      if (!panel) return;
+      var h = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><strong style="flex:1">🎙 سجّل صوتك</strong><button type="button" id="kzrX" style="border:0;background:transparent;color:inherit;font-size:18px;cursor:pointer">✕</button></div>';
+      if (state === "idle") h += '<p style="margin:0 0 8px;font-size:13px;opacity:.85">اقرأ الكلمات أو القصة بصوت عالٍ ثم اسمع نفسك. التسجيل <b>مؤقت على جهازك فقط</b> ولا يسمعه أحد، ولا المعلم.</p><button type="button" class="btn btn-primary" id="kzrGo">⏺ ابدأ التسجيل</button>';
+      else if (state === "rec") h += '<p style="margin:0 0 8px">⏺ جارٍ التسجيل... <b id="kzrT">0:00</b></p><button type="button" class="btn btn-primary" id="kzrStop">⏹ إيقاف</button>';
+      else if (state === "done") h += '<audio controls src="' + url + '" style="width:100%"></audio><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button type="button" class="btn btn-primary sm" id="kzrSave">💾 حفظ على جهازي</button><button type="button" class="btn danger sm" id="kzrDel">🗑 حذف</button><button type="button" class="btn btn-ghost sm" id="kzrAgain">⏺ تسجيل جديد</button></div><p style="margin:8px 0 0;font-size:12px;opacity:.8">إن لم تحفظه سيُحذف عند إغلاق الصفحة.</p>';
+      else h += '<p style="margin:0;color:#ffb4b4">' + state + "</p>";
+      panel.innerHTML = h;
+      var q = function (id) { return panel.querySelector(id); };
+      if (q("#kzrX")) q("#kzrX").onclick = function () { if (mr && mr.state === "recording") { try { mr.stop(); } catch (e) {} } stopStream(); panel.style.display = "none"; };
+      if (q("#kzrGo")) q("#kzrGo").onclick = start;
+      if (q("#kzrStop")) q("#kzrStop").onclick = function () { try { mr.stop(); } catch (e) {} };
+      if (q("#kzrSave")) q("#kzrSave").onclick = function () { var ext = /mp4/.test(mime) ? "m4a" : /ogg/.test(mime) ? "ogg" : "webm", a2 = document.createElement("a"); a2.href = url; a2.download = "kimza-recording-" + new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-") + "." + ext; document.body.appendChild(a2); a2.click(); a2.remove(); };
+      if (q("#kzrDel")) q("#kzrDel").onclick = function () { cleanup(); draw("idle"); };
+      if (q("#kzrAgain")) q("#kzrAgain").onclick = function () { cleanup(); start(); };
+    }
+    async function start() {
+      try {
+        cleanup(); stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        var opts = {}; ["audio/webm;codecs=opus", "audio/mp4", "audio/ogg"].some(function (m) { if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) { opts.mimeType = m; return true; } return false; });
+        mr = new MediaRecorder(stream, opts); mime = mr.mimeType || opts.mimeType || "audio/webm";
+        mr.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+        mr.onstop = function () { stopStream(); if (chunks.length) { url = URL.createObjectURL(new Blob(chunks, { type: mime })); draw("done"); } else draw("idle"); };
+        mr.start(); t0 = Date.now(); draw("rec");
+        tm = setInterval(function () { var s = Math.floor((Date.now() - t0) / 1000), el = document.getElementById("kzrT"); if (el) el.textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }, 500);
+      } catch (e) { stopStream(); draw("تعذر الوصول إلى الميكروفون. اسمح للمتصفح باستخدامه ثم أعد المحاولة."); }
+    }
+    b.addEventListener("click", function () {
+      if (!panel) { panel = document.createElement("div"); panel.style.cssText = "position:fixed;bottom:70px;inset-inline-start:16px;z-index:901;width:min(320px,calc(100vw - 32px));background:#0B1F44;color:#F8F4E9;border:2px solid #D4AF37;border-radius:14px;padding:12px;box-shadow:0 10px 36px rgba(0,0,0,.5);display:none"; document.body.appendChild(panel); draw("idle"); }
+      panel.style.display = panel.style.display === "none" ? "block" : "none";
+    });
+    document.body.appendChild(b);
   };
   KZ.mountBoardButton = function () {
     if (document.getElementById("kzbFab")) return;
