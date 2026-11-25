@@ -210,3 +210,20 @@
   });
   setTimeout(function () { document.querySelectorAll(".rv:not(.in)").forEach(function (t) { var r = t.getBoundingClientRect(); if (r.top < window.innerHeight) t.classList.add("in"); }); }, 1800);
 })();
+
+/* big shortcut to the placement test on every public page */
+(function () {
+  var p = location.pathname.split("/").pop() || "index.html";
+  if (/^(placement|register|login|reset|verify|page)/.test(p) || document.body.classList.contains("app")) return;
+  function mk() {
+    if (document.getElementById("ptShortcut")) return;
+    var ar = (window.KIMZA_LANG ? window.KIMZA_LANG() : "ar") !== "en";
+    var a = document.createElement("a"); a.id = "ptShortcut"; a.href = "placement.html";
+    a.innerHTML = (ar ? "ابدأ اختبار المستوى المجاني" : "Take the free placement test") + "<small>" + (ar ? "5 دقائق فقط" : "only 5 minutes") + "</small>";
+    a.style.cssText = "position:fixed;z-index:800;bottom:18px;inset-inline-start:50%;transform:translateX(50%);display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 26px;border-radius:40px;background:#7a1530;color:#fff;border:2px solid #D4AF37;font:700 17px Tajawal,sans-serif;text-decoration:none;box-shadow:0 10px 30px rgba(0,0,0,.45);white-space:nowrap";
+    if (document.documentElement.dir === "ltr") a.style.transform = "translateX(-50%)";
+    a.querySelector("small").style.cssText = "font-size:12px;font-weight:500;color:#F8F4E9";
+    document.body.appendChild(a);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mk); else mk();
+})();

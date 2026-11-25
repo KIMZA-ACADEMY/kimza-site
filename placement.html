@@ -7,7 +7,13 @@
 <meta name="description" content="KIMZA Academy: Your English. Your Future. Learn. Practise. Progress.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mww9zi1r">
+<link rel="stylesheet" href="site.css?v=mwwetkmz">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B1F44">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<script>if("serviceWorker"in navigator&&location.protocol!=="file:")addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})</script>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")||"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="ar"?"rtl":"ltr")}catch(e){}</script>
 </head>
 <body data-title="title.placement">
@@ -61,8 +67,8 @@
     <div id="st3" hidden>
       <h3><span data-i18n="pt.s3.h">الخطوة 3: عن الاختبار</span></h3>
       <ul class="plist">
-        <li><span data-i18n="pt.s3.a">الاختبار مجاني ويستغرق نحو 25 دقيقة.</span></li>
-        <li><span data-i18n="pt.s3.b">يتضمن: أسئلة اختيار من متعدد، وإكمال فراغات، وترجمة، واختيار الزمن الصحيح، وكتابة قصيرة، واستماعاً، وتسجيلاً صوتياً اختيارياً.</span></li>
+        <li><span data-i18n="pt.s3.a">الاختبار مجاني ويستغرق نحو 5 دقائق فقط (15 سؤالاً).</span></li>
+        <li><span data-i18n="pt.s3.b">أسئلة اختيار من متعدد فقط، في المفردات والقواعد.</span></li>
         <li><span data-i18n="pt.s3.c">إذا لم تعرف الإجابة اضغط «لا أعرف». لا بأس بذلك، فنحن نريد مستواك الحقيقي.</span></li>
         <li><strong><span data-i18n="pt.s3.d">لا تستخدم أي مصدر خارجي (ترجمة آلية، ذكاء اصطناعي، قاموس أو مساعدة أحد).</span></strong> <span data-i18n="pt.s3.e">الهدف أن نعرف مستواك الحقيقي لنضعك في المكان الأنسب.</span></li>
         <li><span data-i18n="pt.s3.f">بعد الانتهاء يصلنا طلبك، وسنتواصل معك عند بدء دفعة جديدة.</span></li>
@@ -74,24 +80,6 @@
 <div id="ptTest" hidden>
     <div class="pt-top"><div class="muted" id="ptCount"></div><div class="bar"><i id="ptBar"></i></div></div>
     <div id="ptQs"></div>
-    <h2 class="sec-title"><span data-i18n="pt.ty.h">أكمل وترجم</span></h2>
-    <div class="card typed">
-      <div class="tq" data-ty="f1" data-kind="fill"><div class="qt" dir="ltr">1. She ______ (go) to school every day.</div><input class="ty" dir="ltr" autocomplete="off"><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
-      <div class="tq" data-ty="f2" data-kind="fill"><div class="qt" dir="ltr">2. I have lived here ______ 2015. (for / since)</div><input class="ty" dir="ltr" autocomplete="off"><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
-      <div class="tq" data-ty="f3" data-kind="fill"><div class="qt" dir="ltr">3. If I ______ (have) more money, I would travel the world.</div><input class="ty" dir="ltr" autocomplete="off"><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
-      <div class="tq" data-ty="t1" data-kind="tense"><div class="qt" dir="ltr">4. Choose the correct tense: “Yesterday I ______ to the park.”</div><select class="ty" dir="ltr"><option value="">—</option><option>go</option><option>went</option><option>have gone</option><option>will go</option></select><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
-      <div class="tq" data-ty="t2" data-kind="tense"><div class="qt" dir="ltr">5. Choose the correct tense: “She ______ for two hours when I arrived.”</div><select class="ty" dir="ltr"><option value="">—</option><option>waits</option><option>was waiting</option><option>had been waiting</option><option>has waited</option></select><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
-      <div class="tq" data-ty="r1" data-kind="translate"><div class="qt">6. <span data-i18n="pt.ty.tr">ترجم إلى الإنجليزية:</span> أحب أن أقرأ كل يوم.</div><textarea class="ty" dir="ltr" maxlength="300"></textarea><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
-      <div class="tq" data-ty="r2" data-kind="translate"><div class="qt">7. <span data-i18n="pt.ty.tr">ترجم إلى الإنجليزية:</span> ذهبت إلى السوق أمس واشتريت خبزاً.</div><textarea class="ty" dir="ltr" maxlength="300"></textarea><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
-      <div class="tq" data-ty="r3" data-kind="translate"><div class="qt">8. <span data-i18n="pt.ty.tr">ترجم إلى الإنجليزية:</span> لو كنت أعرف الجواب لأخبرتك.</div><textarea class="ty" dir="ltr" maxlength="300"></textarea><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
-    </div>
-<h2 class="sec-title"><span data-i18n="pt.w.h">الكتابة</span></h2>
-    <div class="card"><label for="ptWriting"><span data-i18n="pt.w.q">اكتب من 3 إلى 5 جمل بالإنجليزية عن نفسك ولماذا تريد تعلّم الإنجليزية. يراجعها المعلم.</span></label>
-      <textarea id="ptWriting" dir="ltr" maxlength="2000" placeholder="My name is..."></textarea></div>
-    <h2 class="sec-title"><span data-i18n="pt.s.h">المحادثة</span></h2>
-    <div class="card"><p style="margin-top:0"><span data-i18n="pt.s.q">سجّل صوتك لمدة 30 إلى 60 ثانية: عرّف بنفسك وتحدث عن يومك. لا بأس بالأخطاء. يستمع إليها المعلم وحده. هذا القسم اختياري.</span></p>
-      <div class="btns"><button class="btn btn-ghost" id="recBtn" type="button"><span data-i18n="pt.rec.start">ابدأ التسجيل</span></button><span id="recState" class="muted"></span></div>
-      <audio id="recPlay" controls hidden style="width:100%;margin-top:12px"></audio></div>
     <p><button class="btn btn-primary" id="ptSubmit" type="button"><span data-i18n="pt.submit">أنهِ الاختبار</span></button></p>
   </div>
   <div class="card result" id="ptResult" hidden style="text-align:center">
@@ -126,13 +114,13 @@
     <p class="copy">&copy; KIMZA Academy</p>
   </div>
 </footer>
-<script src="i18n.js?v=mww9zi1r"></script>
+<script src="i18n.js?v=mwwetkmz"></script>
 <script src="config.js"></script>
-<script src="site-config.js?v=mww9zi1r"></script>
-<script src="site.js?v=mww9zi1r"></script>
+<script src="site-config.js?v=mwwetkmz"></script>
+<script src="site.js?v=mwwetkmz"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="placement-data.js?v=mww9zi1r"></script>
+<script src="placement-data.js?v=mwwetkmz"></script>
 <script>
 (function () {
   var Q = window.PLACEMENT || [], REF = window.PLACEMENT_REF || { reading: {}, listening: {} };
@@ -155,6 +143,7 @@
     var h = "";
     SKILLS.forEach(function (s) {
       var idx = []; Q.forEach(function (q, i) { if (q.skill === s[0]) idx.push(i); });
+      if (!idx.length) return;
       var title = window.KIMZA_LANG() === "en" ? s[2] : s[1];
       h += '<h2 class="sec-title">' + esc(title) + "</h2>";
       if (s[0] === "vocab" || s[0] === "grammar") {
@@ -247,15 +236,20 @@
     return { by: by, skill: skill, correct: correct, skipped: skipped, level: rec, strongest: strongest };
   }
 
+  function notifyTeacher(p, r) {
+    var u = window.KIMZA_SITE && window.KIMZA_SITE.notifyUrl;
+    if (!u) return;
+    try {
+      var body = JSON.stringify({ token: window.KIMZA_SITE.notifyToken || "", name: p.full_name, whatsapp: p.contact, level: p.recommended_level, strongest: r.strongest, correct: p.correct, total: p.total, skipped: p.skipped, by_level: p.by_level, skills: p.skill_scores });
+      fetch(u, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" }, body: body, keepalive: true }).catch(function () {});
+    } catch (e) {}
+  }
+
   async function finish() {
     var r = analyse();
     $("ptTest").hidden = true; $("ptResult").hidden = false;
     $("ptThanksName").textContent = ($("ptName").value || "").trim().split(/\s+/)[0] || "";
     var typed = [];
-    document.querySelectorAll(".tq").forEach(function (tq) {
-      var inp = tq.querySelector(".ty"), dk = tq.querySelector(".dkc input").checked;
-      typed.push({ id: tq.getAttribute("data-ty"), kind: tq.getAttribute("data-kind"), q: tq.querySelector(".qt").textContent, given: dk ? null : ((inp.value || "").trim() || null), dont_know: dk });
-    });
     window.scrollTo({ top: 0, behavior: "smooth" });
     var audioPath = null;
     if (sb && recBlob) {
@@ -267,9 +261,10 @@
     var payload = {
       full_name: $("ptName").value.trim() || null, contact: $("ptContact").value.trim() || null,
       recommended_level: r.level, correct: r.correct, skipped: r.skipped, total: Q.length, by_level: r.by, skill_scores: r.skill,
-      writing: $("ptWriting").value.trim().slice(0, 2000) || null, audio_path: audioPath, typed: typed,
+      writing: null, audio_path: audioPath, typed: typed,
       answers: Q.map(function (q, i) { return { skill: q.skill, level: q.level, given: answers[i] === undefined ? null : answers[i], correct: q.a }; })
     };
+    notifyTeacher(payload, r);
     if (!sb) { $("ptSave").textContent = T("js.notsaved"); return; }
     var res = await sb.from("placement_attempts").insert(payload);
     // the new student also appears in the teacher's applications list
@@ -298,7 +293,7 @@
   });
 
   $("ptStart").addEventListener("click", function () {
-    $("ptIntro").hidden = true; $("ptTest").hidden = false; render(); setupRecorder();
+    $("ptIntro").hidden = true; $("ptTest").hidden = false; render();
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
   $("ptSubmit").addEventListener("click", finish);
