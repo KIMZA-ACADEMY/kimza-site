@@ -177,7 +177,7 @@
     function place(x, y) {
       var w = b.offsetWidth || 44, h = b.offsetHeight || 44;
       x = Math.max(4, Math.min(innerWidth - w - 4, x)); y = Math.max(4, Math.min(innerHeight - h - 4, y));
-      b.style.left = x + "px"; b.style.top = y + "px"; b.style.right = "auto"; b.style.bottom = "auto"; b.style.insetInlineStart = "auto"; b.style.insetInlineEnd = "auto";
+      b.style.left = x + "px"; b.style.top = y + "px"; b.style.right = "auto"; b.style.bottom = "auto"; 
     }
     place(pos && isFinite(pos.x) ? pos.x : defX, pos && isFinite(pos.y) ? pos.y : defY());
     var sx = 0, sy = 0, ox = 0, oy = 0, moved = false, down = false;
@@ -230,7 +230,7 @@
       if (panel.style.display === "block") {
         var r = b.getBoundingClientRect(), pw = panel.offsetWidth || 300, ph = panel.offsetHeight || 160;
         var px = Math.max(8, Math.min(innerWidth - pw - 8, r.left)), py = r.top > innerHeight / 2 ? r.top - ph - 8 : r.bottom + 8;
-        panel.style.left = px + "px"; panel.style.top = Math.max(8, Math.min(innerHeight - ph - 8, py)) + "px"; panel.style.bottom = "auto"; panel.style.right = "auto"; panel.style.insetInlineStart = "auto";
+        panel.style.left = px + "px"; panel.style.top = Math.max(8, Math.min(innerHeight - ph - 8, py)) + "px"; panel.style.bottom = "auto"; panel.style.right = "auto";
       }
     });
     document.body.appendChild(b);
