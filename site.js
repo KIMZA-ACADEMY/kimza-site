@@ -57,12 +57,13 @@
   window.KIMZA_FEATURES = {};
   (function () {
     var cfg = window.KIMZA_SUPABASE; if (!cfg || !window.fetch) return;
-    var pages = { placement: "placement.html", register: "register.html" };
+    var pages = { placement: "placement.html", register: "register.html", about: "about.html", courses: "courses.html" };
     window.KIMZA_FEATURES_READY = fetch(cfg.url + "/rest/v1/site_features?select=key,enabled", { headers: { apikey: cfg.publishableKey } })
       .then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }).then(function (rows) {
         rows.forEach(function (f) { window.KIMZA_FEATURES[f.key] = f.enabled; });
         var here = location.pathname.split("/").pop() || "index.html";
         function apply() {
+          document.querySelectorAll("[data-show]").forEach(function (el) { if (window.KIMZA_FEATURES[el.getAttribute("data-show")] === true) el.style.display = "block"; });
           Object.keys(pages).forEach(function (k) {
             if (window.KIMZA_FEATURES[k] !== false) return;
             document.querySelectorAll('a[href="' + pages[k] + '"]').forEach(function (a) { a.style.display = "none"; });
@@ -74,6 +75,43 @@
         }
         if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", apply); else apply();
       });
+  })();
+  // Courses and advertisements typed by the teacher (stored in the database)
+  (function () {
+    var cfg = window.KIMZA_SUPABASE; if (!cfg || !window.fetch) return;
+    function get(path) { return fetch(cfg.url + "/rest/v1/" + path, { headers: { apikey: cfg.publishableKey } }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }); }
+    function esc(x) { return String(x == null ? "" : x).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+    function cta(o) {
+      var t = o.cta_type, u = o.cta_url || "", href = "placement.html", lab = o.cta_label;
+      if (t === "contact") { href = "contact.html"; }
+      else if (t === "instagram") { href = (window.KIMZA_SITE && window.KIMZA_SITE.instagramUrl) || "https://www.instagram.com/kimza_academy/"; }
+      else if (t === "whatsapp") { href = "https://wa.me/" + u.replace(/\D/g, ""); }
+      else if (t === "link") { href = u || "#"; }
+      if (!lab) lab = t === "placement" ? "ابدأ باختبار تحديد المستوى" : t === "whatsapp" ? "تواصل عبر واتساب" : t === "instagram" ? "تواصل عبر إنستغرام" : t === "contact" ? "تواصل معنا" : "المزيد";
+      var ext = /^https?:/.test(href) ? ' target="_blank" rel="noopener"' : "";
+      return '<a class="btn btn-primary" href="' + esc(href) + '"' + ext + ">" + esc(lab) + "</a>";
+    }
+    function line(k, v) { return v ? '<div class="crow"><span>' + k + "</span><strong>" + esc(v) + "</strong></div>" : ""; }
+    document.addEventListener("DOMContentLoaded", function () {
+      var bar = document.getElementById("adsBar");
+      if (bar) get("ads?select=*&is_active=eq.true&order=sort.asc,id.desc").then(function (ads) {
+        bar.innerHTML = ads.map(function (a) { return '<div class="adcard">' + (a.badge ? '<span class="adbadge">' + esc(a.badge) + "</span>" : "") + "<div><h3>" + esc(a.title) + "</h3>" + (a.body ? "<p>" + esc(a.body) + "</p>" : "") + "</div>" + cta(a) + "</div>"; }).join("");
+      });
+      var list = document.getElementById("coursesList");
+      if (list) get("courses?select=*&is_published=eq.true&order=sort.asc,id.asc").then(function (cs) {
+        var en = window.KIMZA_LANG() === "en";
+        if (!cs.length) { list.innerHTML = '<p class="muted">' + (en ? "New courses will be announced soon." : "سنعلن عن الدورات الجديدة قريباً.") + "</p>"; return; }
+        list.innerHTML = cs.map(function (c) {
+          return '<article class="ccard"><div class="chead"><h2>' + esc(c.title) + "</h2>" + (c.level ? '<span class="adbadge en">' + esc(c.level) + "</span>" : "") + "</div>" +
+            (c.summary ? '<p class="clead">' + esc(c.summary) + "</p>" : "") +
+            (c.price ? '<div class="cprice"><strong>' + esc(c.price) + "</strong>" + (c.price_note ? "<span>" + esc(c.price_note) + "</span>" : "") + "</div>" : "") +
+            (c.description ? '<p class="cdesc">' + esc(c.description).replace(/\n/g, "<br>") + "</p>" : "") +
+            (c.goals ? '<div class="cgoals"><h4>' + (en ? "Goals" : "أهداف الدورة") + "</h4><p>" + esc(c.goals).replace(/\n/g, "<br>") + "</p></div>" : "") +
+            '<div class="cmeta">' + line(en ? "Who it is for" : "لمن؟", c.audience) + line(en ? "Duration" : "المدة", c.duration) + line(en ? "Schedule" : "المواعيد", c.schedule) + "</div>" +
+            '<div class="btns">' + cta(c) + "</div></article>";
+        }).join("");
+      });
+    });
   })();
   window.KIMZA_LANG = function () { return root.getAttribute("lang") || "ar"; };
   window.KIMZA_T = function (k) { var d = (window.I18N || {})[window.KIMZA_LANG()] || {}; return d[k] !== undefined ? d[k] : k; };

@@ -7,7 +7,7 @@
 <meta name="description" content="KIMZA Academy: Your English. Your Future. Learn. Practise. Progress.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvum94t">
+<link rel="stylesheet" href="site.css?v=mwvxuzc5">
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")||"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="ar"?"rtl":"ltr")}catch(e){}</script>
 </head>
 <body data-title="title.placement">
@@ -15,7 +15,7 @@
 <header class="nav">
   <div class="wrap">
     <a href="index.html" aria-label="KIMZA Academy"><img class="logo" src="kimza-logo-gold.png" alt="KIMZA Academy"></a>
-    <nav class="nav-links" id="navLinks" aria-label="Main"><a href="index.html"><span data-i18n="nav.home">الرئيسية</span></a><a href="about.html"><span data-i18n="nav.about">عن الأكاديمية</span></a><a href="levels.html"><span data-i18n="nav.levels">المستويات</span></a><a href="how-it-works.html"><span data-i18n="nav.how">كيف نتعلم</span></a><a href="placement.html" aria-current="page"><span data-i18n="nav.placement">اختبار المستوى</span></a><a href="faq.html"><span data-i18n="nav.faq">الأسئلة الشائعة</span></a><a href="contact.html"><span data-i18n="nav.contact">تواصل معنا</span></a><a href="login.html"><span data-i18n="nav.login">دخول الطلاب</span></a></nav>
+    <nav class="nav-links" id="navLinks" aria-label="Main"><a href="index.html"><span data-i18n="nav.home">الرئيسية</span></a><a href="about.html"><span data-i18n="nav.about">عن الأكاديمية</span></a><a href="levels.html"><span data-i18n="nav.levels">المستويات</span></a><a href="courses.html"><span data-i18n="nav.courses">الدورات</span></a><a href="how-it-works.html"><span data-i18n="nav.how">كيف نتعلم</span></a><a href="placement.html" aria-current="page"><span data-i18n="nav.placement">اختبار المستوى</span></a><a href="faq.html"><span data-i18n="nav.faq">الأسئلة الشائعة</span></a><a href="contact.html"><span data-i18n="nav.contact">تواصل معنا</span></a><a href="login.html"><span data-i18n="nav.login">دخول الطلاب</span></a></nav>
     <div class="nav-tools">
       <button class="icon-btn" id="langBtn" type="button" aria-label="Language">English</button>
       <button class="icon-btn" id="themeBtn" type="button" aria-label="Theme">&#9790;</button>
@@ -29,20 +29,59 @@
   <p class="lead"><span data-i18n="pt.lead">اختبار قصير في القراءة والمفردات والقواعد يساعدنا على اقتراح مستوى البداية المناسب لك.</span></p></div></section>
 <section class="sec sec-cream"><div class="wrap" style="max-width:780px">
   <div class="card" id="ptIntro">
-    <h3><span data-i18n="pt.i.h">قبل أن تبدأ</span></h3>
-    <ul class="muted">
-      <li><span data-i18n="pt.i.1">الأسئلة بالإنجليزية، والتعليمات بالعربية.</span></li>
-      <li><span data-i18n="pt.i.2">إذا لم تعرف الإجابة اختر «لا أعرف» أو اترك السؤال. لا بأس بذلك، فنحن نريد معرفة مستواك الحقيقي.</span></li>
-      <li><span data-i18n="pt.i.3">نتيجتك توصية فقط، ويراجعها المعلم. وهي لا تعني قبولاً تلقائياً.</span></li>
-    </ul>
-    <div class="form"><div><label for="ptName"><span data-i18n="pt.name">اسمك (اختياري)</span></label><input id="ptName" autocomplete="name" maxlength="120"></div>
-    <div><label for="ptContact"><span data-i18n="pt.contact">حسابك على إنستغرام أو رقم هاتفك (اختياري)</span></label><input id="ptContact" maxlength="120"></div>
-    <button class="btn btn-primary" id="ptStart" type="button"><span data-i18n="pt.start">ابدأ الاختبار</span></button></div>
+    <div class="steps" id="ptSteps"><span class="on">1</span><span>2</span><span>3</span></div>
+    <div id="st1">
+      <h3><span data-i18n="pt.s1.h">الخطوة 1: الالتزام والسياسات</span></h3>
+      <p class="muted"><span data-i18n="pt.s1.p">الانضمام إلى الأكاديمية التزام متبادل. اقرأ ما يلي قبل أن تتابع:</span></p>
+      <ul class="plist">
+        <li><span data-i18n="pt.s1.a">الالتزام بحضور الحصص في مواعيدها وأداء الواجبات.</span></li>
+        <li><span data-i18n="pt.s1.b">المشاركة الفعّالة في الحصة: المحاولة والكلام أهم من الإجابة الصحيحة.</span></li>
+        <li><span data-i18n="pt.s1.c">الاحترام التام لزملائك ولمعلمك، وعدم استخدام ألفاظ مسيئة أو التحدث بما يسيء إلى أحد.</span></li>
+        <li><span data-i18n="pt.s1.d">حسن السلوك داخل الحصص وفي المجتمع، والحديث فيما يخدم التعلّم فقط.</span></li>
+        <li><span data-i18n="pt.s1.e">الخصوصية: لا تسجّل الحصص ولا تنشرها، ولا تشارك روابطها أو بيانات زملائك.</span></li>
+        <li><span data-i18n="pt.s1.f">تُستخدم بياناتك للتسجيل والتواصل والشهادة فقط، ولا نشاركها مع أحد.</span></li>
+      </ul>
+      <label class="chk"><input type="checkbox" id="ptAgree"> <span data-i18n="pt.s1.ok">قرأتُ ما سبق وأوافق عليه</span></label>
+      <div class="btns"><button class="btn btn-primary" id="ptNext1" type="button" disabled><span data-i18n="pt.next">التالي</span></button></div>
+    </div>
+    <div id="st2" hidden>
+      <h3><span data-i18n="pt.s2.h">الخطوة 2: بياناتك</span></h3>
+      <p class="muted"><span data-i18n="pt.s2.p">اكتب اسمك الحقيقي كما تريده أن يظهر في نظامنا وعلى شهادتك لاحقاً. ورقم واتساب صحيح نتواصل معك عليه.</span></p>
+      <div class="form">
+        <div><label for="ptName"><span data-i18n="pt.name2">الاسم الكامل (إجباري)</span></label><input id="ptName" autocomplete="name" maxlength="120"></div>
+        <div><label for="ptContact"><span data-i18n="pt.wa">رقم واتساب مع رمز الدولة (إجباري)</span></label><input id="ptContact" inputmode="tel" dir="ltr" maxlength="25" placeholder="+967 7XX XXX XXX"></div>
+        <div id="ptErr" class="msg bad" role="alert" hidden></div>
+        <div class="btns"><button class="btn btn-ghost" id="ptBack2" type="button"><span data-i18n="pt.back">رجوع</span></button><button class="btn btn-primary" id="ptNext2" type="button"><span data-i18n="pt.next">التالي</span></button></div>
+      </div>
+    </div>
+    <div id="st3" hidden>
+      <h3><span data-i18n="pt.s3.h">الخطوة 3: عن الاختبار</span></h3>
+      <ul class="plist">
+        <li><span data-i18n="pt.s3.a">الاختبار مجاني ويستغرق نحو 25 دقيقة.</span></li>
+        <li><span data-i18n="pt.s3.b">يتضمن: أسئلة اختيار من متعدد، وإكمال فراغات، وترجمة، واختيار الزمن الصحيح، وكتابة قصيرة، واستماعاً، وتسجيلاً صوتياً اختيارياً.</span></li>
+        <li><span data-i18n="pt.s3.c">إذا لم تعرف الإجابة اضغط «لا أعرف». لا بأس بذلك، فنحن نريد مستواك الحقيقي.</span></li>
+        <li><strong><span data-i18n="pt.s3.d">لا تستخدم أي مصدر خارجي (ترجمة آلية، ذكاء اصطناعي، قاموس أو مساعدة أحد).</span></strong> <span data-i18n="pt.s3.e">الهدف أن نعرف مستواك الحقيقي لنضعك في المكان الأنسب.</span></li>
+        <li><span data-i18n="pt.s3.f">بعد الانتهاء يصلنا طلبك، وسنتواصل معك عند بدء دفعة جديدة.</span></li>
+      </ul>
+      <label class="chk"><input type="checkbox" id="ptNoHelp"> <span data-i18n="pt.s3.ok">أتعهد بعدم استخدام أي مصدر خارجي</span></label>
+      <div class="btns"><button class="btn btn-ghost" id="ptBack3" type="button"><span data-i18n="pt.back">رجوع</span></button><button class="btn btn-primary" id="ptStart" type="button" disabled><span data-i18n="pt.start">ابدأ الاختبار</span></button></div>
+    </div>
   </div>
-  <div id="ptTest" hidden>
+<div id="ptTest" hidden>
     <div class="pt-top"><div class="muted" id="ptCount"></div><div class="bar"><i id="ptBar"></i></div></div>
     <div id="ptQs"></div>
-    <h2 class="sec-title"><span data-i18n="pt.w.h">الكتابة</span></h2>
+    <h2 class="sec-title"><span data-i18n="pt.ty.h">أكمل وترجم</span></h2>
+    <div class="card typed">
+      <div class="tq" data-ty="f1" data-kind="fill"><div class="qt" dir="ltr">1. She ______ (go) to school every day.</div><input class="ty" dir="ltr" autocomplete="off"><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
+      <div class="tq" data-ty="f2" data-kind="fill"><div class="qt" dir="ltr">2. I have lived here ______ 2015. (for / since)</div><input class="ty" dir="ltr" autocomplete="off"><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
+      <div class="tq" data-ty="f3" data-kind="fill"><div class="qt" dir="ltr">3. If I ______ (have) more money, I would travel the world.</div><input class="ty" dir="ltr" autocomplete="off"><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
+      <div class="tq" data-ty="t1" data-kind="tense"><div class="qt" dir="ltr">4. Choose the correct tense: “Yesterday I ______ to the park.”</div><select class="ty" dir="ltr"><option value="">—</option><option>go</option><option>went</option><option>have gone</option><option>will go</option></select><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
+      <div class="tq" data-ty="t2" data-kind="tense"><div class="qt" dir="ltr">5. Choose the correct tense: “She ______ for two hours when I arrived.”</div><select class="ty" dir="ltr"><option value="">—</option><option>waits</option><option>was waiting</option><option>had been waiting</option><option>has waited</option></select><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
+      <div class="tq" data-ty="r1" data-kind="translate"><div class="qt">6. <span data-i18n="pt.ty.tr">ترجم إلى الإنجليزية:</span> أحب أن أقرأ كل يوم.</div><textarea class="ty" dir="ltr" maxlength="300"></textarea><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
+      <div class="tq" data-ty="r2" data-kind="translate"><div class="qt">7. <span data-i18n="pt.ty.tr">ترجم إلى الإنجليزية:</span> ذهبت إلى السوق أمس واشتريت خبزاً.</div><textarea class="ty" dir="ltr" maxlength="300"></textarea><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
+      <div class="tq" data-ty="r3" data-kind="translate"><div class="qt">8. <span data-i18n="pt.ty.tr">ترجم إلى الإنجليزية:</span> لو كنت أعرف الجواب لأخبرتك.</div><textarea class="ty" dir="ltr" maxlength="300"></textarea><label class="dkc"><input type="checkbox"> <span data-i18n="js.dk">لا أعرف</span></label></div>
+    </div>
+<h2 class="sec-title"><span data-i18n="pt.w.h">الكتابة</span></h2>
     <div class="card"><label for="ptWriting"><span data-i18n="pt.w.q">اكتب من 3 إلى 5 جمل بالإنجليزية عن نفسك ولماذا تريد تعلّم الإنجليزية. يراجعها المعلم.</span></label>
       <textarea id="ptWriting" dir="ltr" maxlength="2000" placeholder="My name is..."></textarea></div>
     <h2 class="sec-title"><span data-i18n="pt.s.h">المحادثة</span></h2>
@@ -51,17 +90,13 @@
       <audio id="recPlay" controls hidden style="width:100%;margin-top:12px"></audio></div>
     <p><button class="btn btn-primary" id="ptSubmit" type="button"><span data-i18n="pt.submit">أنهِ الاختبار</span></button></p>
   </div>
-  <div class="card result" id="ptResult" hidden>
-    <p class="muted"><span data-i18n="pt.r.rec">المستوى الموصى به</span></p>
-    <div class="big" id="ptLevel">A1</div>
-    <p id="ptWhy" class="muted"></p>
-    <div id="ptSkills" style="max-width:360px;margin:0 auto 12px;text-align:start"></div>
-    <p class="muted"><span data-i18n="pt.r.note">هذه توصية أولية، وسيراجعها المعلم. تواصل معنا لتأكيد مستواك.</span></p>
-    <div class="btns" style="justify-content:center">
-      <a class="btn btn-primary" id="ptReg" href="register.html"><span data-i18n="pt.r.reg">سجّل بهذا المستوى</span></a>
-      <a class="btn btn-ghost" href="https://www.instagram.com/kimza_academy/" target="_blank" rel="noopener"><span data-i18n="pt.r.ig">تواصل عبر إنستغرام</span></a>
-    </div>
+  <div class="card result" id="ptResult" hidden style="text-align:center">
+    <div class="big" aria-hidden="true">✓</div>
+    <h2><span data-i18n="pt.done.h">تم إرسال طلبك</span></h2>
+    <p><span data-i18n="pt.done.p1">شكراً لك</span> <strong id="ptThanksName"></strong>. <span data-i18n="pt.done.p2">تم تسجيلك في نظامنا، وسنتواصل معك على واتساب في أقرب وقت عند بدء دفعة جديدة.</span></p>
+    <p class="muted"><span data-i18n="pt.done.p3">لا حاجة لأي خطوة أخرى الآن.</span></p>
     <p id="ptSave" class="hint"></p>
+    <div class="btns" style="justify-content:center"><a class="btn btn-ghost" href="index.html"><span data-i18n="pt.done.home">العودة للرئيسية</span></a></div>
   </div>
 </div></section>
 </main>
@@ -87,13 +122,13 @@
     <p class="copy">&copy; KIMZA Academy</p>
   </div>
 </footer>
-<script src="i18n.js?v=mwvum94t"></script>
+<script src="i18n.js?v=mwvxuzc5"></script>
 <script src="config.js"></script>
-<script src="site-config.js?v=mwvum94t"></script>
-<script src="site.js?v=mwvum94t"></script>
+<script src="site-config.js?v=mwvxuzc5"></script>
+<script src="site.js?v=mwvxuzc5"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="placement-data.js?v=mwvum94t"></script>
+<script src="placement-data.js?v=mwvxuzc5"></script>
 <script>
 (function () {
   var Q = window.PLACEMENT || [], REF = window.PLACEMENT_REF || { reading: {}, listening: {} };
@@ -211,13 +246,12 @@
   async function finish() {
     var r = analyse();
     $("ptTest").hidden = true; $("ptResult").hidden = false;
-    $("ptLevel").textContent = r.level;
-    $("ptWhy").textContent = T("js.why").replace("{c}", r.correct).replace("{t}", Q.length).replace("{s}", r.strongest);
-    $("ptSkills").innerHTML = SKILLS.map(function (s) {
-      var x = r.skill[s[0]], p = x.total ? Math.round(x.correct / x.total * 100) : 0;
-      return '<div class="row"><span>' + esc(window.KIMZA_LANG() === "en" ? s[2] : s[1]) + '</span><strong>' + p + "%</strong></div>";
-    }).join("");
-    $("ptReg").setAttribute("href", "register.html?level=" + encodeURIComponent(r.level));
+    $("ptThanksName").textContent = ($("ptName").value || "").trim().split(/\s+/)[0] || "";
+    var typed = [];
+    document.querySelectorAll(".tq").forEach(function (tq) {
+      var inp = tq.querySelector(".ty"), dk = tq.querySelector(".dkc input").checked;
+      typed.push({ id: tq.getAttribute("data-ty"), kind: tq.getAttribute("data-kind"), q: tq.querySelector(".qt").textContent, given: dk ? null : ((inp.value || "").trim() || null), dont_know: dk });
+    });
     window.scrollTo({ top: 0, behavior: "smooth" });
     var audioPath = null;
     if (sb && recBlob) {
@@ -229,13 +263,35 @@
     var payload = {
       full_name: $("ptName").value.trim() || null, contact: $("ptContact").value.trim() || null,
       recommended_level: r.level, correct: r.correct, skipped: r.skipped, total: Q.length, by_level: r.by, skill_scores: r.skill,
-      writing: $("ptWriting").value.trim().slice(0, 2000) || null, audio_path: audioPath,
+      writing: $("ptWriting").value.trim().slice(0, 2000) || null, audio_path: audioPath, typed: typed,
       answers: Q.map(function (q, i) { return { skill: q.skill, level: q.level, given: answers[i] === undefined ? null : answers[i], correct: q.a }; })
     };
     if (!sb) { $("ptSave").textContent = T("js.notsaved"); return; }
     var res = await sb.from("placement_attempts").insert(payload);
-    $("ptSave").textContent = res.error ? T("js.notsaved") : T("js.saved");
+    // the new student also appears in the teacher's applications list
+    if (!res.error) await sb.from("applications").insert({ full_name: payload.full_name, phone: payload.contact, placement_level: r.level, current_level: r.level, status: "new" });
+    $("ptSave").textContent = res.error ? T("js.notsaved") : "";
   }
+
+  // ----- joining steps: 1 policies, 2 name and WhatsApp, 3 about the test
+  function step(n) {
+    ["st1", "st2", "st3"].forEach(function (id, i) { $(id).hidden = (i + 1) !== n; });
+    document.querySelectorAll("#ptSteps span").forEach(function (s, i) { s.className = (i + 1) <= n ? "on" : ""; });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  $("ptAgree").addEventListener("change", function () { $("ptNext1").disabled = !$("ptAgree").checked; });
+  $("ptNext1").addEventListener("click", function () { step(2); });
+  $("ptBack2").addEventListener("click", function () { step(1); });
+  $("ptBack3").addEventListener("click", function () { step(2); });
+  $("ptNoHelp").addEventListener("change", function () { $("ptStart").disabled = !$("ptNoHelp").checked; });
+  $("ptNext2").addEventListener("click", function () {
+    var name = $("ptName").value.trim().replace(/\s+/g, " "), wa = $("ptContact").value.replace(/[\s\-().]/g, ""), er = $("ptErr");
+    var ar = window.KIMZA_LANG() === "ar", msg = "";
+    if (name.split(" ").length < 2 || name.length < 5) msg = ar ? "اكتب اسمك الكامل الحقيقي (اسمان على الأقل)." : "Write your real full name (at least two names).";
+    else if (!/^\+?\d{8,15}$/.test(wa)) msg = ar ? "اكتب رقم واتساب صحيحاً مع رمز الدولة، مثل 967770000000+." : "Enter a valid WhatsApp number with the country code, for example +967770000000.";
+    if (msg) { er.textContent = msg; er.hidden = false; return; }
+    er.hidden = true; $("ptName").value = name; $("ptContact").value = wa; step(3);
+  });
 
   $("ptStart").addEventListener("click", function () {
     $("ptIntro").hidden = true; $("ptTest").hidden = false; render(); setupRecorder();

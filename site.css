@@ -274,3 +274,29 @@ html[lang="ar"] .kicker{letter-spacing:0}
 .hero2 .btn-ghost:hover,.phero .btn-ghost:hover,.band .btn-ghost:hover,.sec-navy .btn-ghost:hover,.sec-burgundy .btn-ghost:hover{color:var(--gold-soft);border-color:var(--gold)}
 .hero2 a:not(.btn),.phero a:not(.btn),.sec-navy a:not(.btn),.sec-burgundy a:not(.btn),footer a{color:var(--gold-soft)}
 .sec-navy .shot h3,.sec-navy .shot p{color:var(--cream)}
+
+/* join steps, courses and advertisements */
+[data-show]{display:none}
+.steps{display:flex;gap:10px;margin-bottom:14px}
+.steps span{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:800;border:2px solid var(--line);color:var(--muted)}
+.steps span.on{background:var(--navy);border-color:var(--gold);color:var(--gold)}
+.plist{padding-inline-start:20px;line-height:1.9}
+.plist li{margin:6px 0}
+.chk{display:flex;align-items:flex-start;gap:10px;margin:16px 0;font-weight:700}
+.chk input{width:auto;min-height:0;margin-top:5px}
+.typed .tq{padding:12px 0;border-bottom:1px solid var(--line)}
+.typed .tq:last-child{border-bottom:0}
+.typed .ty{width:100%;margin-top:6px}
+.dkc{display:inline-flex;align-items:center;gap:8px;margin-top:8px;font-weight:600;color:var(--muted)}
+.dkc input{width:auto;min-height:0}
+.adsbar{display:grid;gap:14px;margin:18px 0}
+.adcard{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:space-between;background:linear-gradient(135deg,var(--navy),#102A58);color:#F8F4E9;border:1px solid rgba(212,175,55,.5);border-radius:20px;padding:18px 22px}
+.adcard h3{margin:0 0 4px;color:#F8F4E9}.adcard p{margin:0;color:#D8DCE6}
+.adbadge{display:inline-block;background:var(--gold);color:#07162F;font-weight:800;border-radius:999px;padding:2px 12px;font-size:.85rem}
+.cgrid{display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.ccard{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:24px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
+.chead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.chead h2{margin:0}
+.clead{font-size:1.1rem;margin:0;color:var(--ink)}
+.cprice{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.cprice strong{font-size:1.9rem;color:var(--link)}.cprice span{color:var(--muted)}
+.cdesc,.cgoals p{margin:0;line-height:1.9}.cgoals h4{margin:6px 0 4px}
+.cmeta .crow{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line)}
