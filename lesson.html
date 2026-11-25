@@ -7,8 +7,8 @@
 <title>الدرس · KIMZA Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvw98eq">
-<link rel="stylesheet" href="app.css?v=mwvw98eq">
+<link rel="stylesheet" href="site.css?v=mwvwlcfv">
+<link rel="stylesheet" href="app.css?v=mwvwlcfv">
 
 </head>
 <body class="app">
@@ -16,7 +16,7 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvw98eq"></script>
+<script src="app.js?v=mwvwlcfv"></script>
 
 <script>
 (async function () {
@@ -70,7 +70,16 @@
       pane.innerHTML = '<div class="tile"><p class="muted">جارٍ تحميل الصوت...</p></div>';
       var s = await sb.storage.from("lesson-audio").createSignedUrl(id + ".mp3", 3600);
       if (s.error || !s.data) { pane.innerHTML = '<div class="tile"><p class="muted">لم يرفع المعلم ملف الصوت لهذا الدرس بعد.</p></div>'; return; }
-      pane.innerHTML = '<div class="tile"><h3>استمع وكرّر</h3><audio controls controlsList="nodownload" preload="none" style="width:100%" src="' + esc(s.data.signedUrl) + '"></audio><p class="muted">استمع إلى القصة ثم أعدها جملة جملة.</p></div>';
+      var dl = await sb.storage.from("lesson-audio").createSignedUrl(id + ".mp3", 3600, { download: id + ".mp3" });
+      pane.innerHTML = '<div class="tile"><h3>استمع وكرّر</h3><audio id="au" controls controlsList="nodownload" preload="none" style="width:100%" src="' + esc(s.data.signedUrl) + '"></audio>' +
+        '<div class="audiobar"><label for="auSpd">السرعة</label><select id="auSpd">' + [0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4].map(function (v) { return '<option value="' + v + '"' + (v === 1 ? " selected" : "") + ">" + v + "x</option>"; }).join("") + '</select>' +
+        '<button class="btn btn-ghost sm" id="auLoop" type="button" aria-pressed="false">🔁 تكرار تلقائي</button>' +
+        (dl.data ? '<a class="btn btn-primary sm" href="' + esc(dl.data.signedUrl) + '" download>⬇ تحميل الصوت</a>' : "") + '</div>' +
+        '<p class="muted">استمع إلى القصة ثم أعدها جملة جملة. غيّر السرعة وفعّل التكرار ليعيد الصوت نفسه دون أن تضغط كل مرة.</p></div>';
+      var au = document.getElementById("au");
+      document.getElementById("auSpd").addEventListener("change", function (ev) { au.playbackRate = Number(ev.target.value); });
+      au.addEventListener("play", function () { au.playbackRate = Number(document.getElementById("auSpd").value); });
+      document.getElementById("auLoop").addEventListener("click", function (ev) { au.loop = !au.loop; ev.target.setAttribute("aria-pressed", String(au.loop)); ev.target.className = "btn " + (au.loop ? "btn-primary" : "btn-ghost") + " sm"; ev.target.textContent = au.loop ? "⏹ إيقاف التكرار" : "🔁 تكرار تلقائي"; });
       return;
     }
     if (t === "exercises") {
@@ -106,6 +115,20 @@
     fr.addEventListener("load", function () {
       var w = fr.contentWindow;
       try { KZ.blockCopyIn(w.document); } catch (e) {}
+      // the account name is used automatically: hide the name field
+      try {
+        var nm = w.document.getElementById("sname");
+        if (nm) { nm.value = prof.full_name || ""; var wrap = nm.closest(".name-row") || nm.parentNode; wrap.style.display = "none"; }
+        var ne = w.document.getElementById("nameErr"); if (ne) ne.style.display = "none";
+        // ask before the first submission: no better grade afterwards
+        var origSubmit = w.submitHw, asked = !!(done && done.data);
+        w.submitHw = async function (auto) {
+          if (auto === true || asked) return origSubmit(auto);
+          var go = await KZ.confirmBox("تسليم الواجب", "<p>بعد التسليم <strong>لا يمكنك الحصول على درجة أفضل</strong>، فدرجتك الأولى هي التي تُحتسب.</p><p>راجع إجاباتك جيداً، فلا يزال لديك وقت.</p>", "سلّم الآن", "أراجع إجاباتي");
+          if (!go) return;
+          asked = true; return origSubmit(auto);
+        };
+      } catch (e) {}
       // keep the typed answers if the student leaves and comes back
       try {
         var d = w.document, saved = JSON.parse(localStorage.getItem(SKEY) || "{}");

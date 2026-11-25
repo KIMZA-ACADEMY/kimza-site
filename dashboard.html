@@ -7,8 +7,8 @@
 <title>لوحة الطالب · KIMZA Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvw98eq">
-<link rel="stylesheet" href="app.css?v=mwvw98eq">
+<link rel="stylesheet" href="site.css?v=mwvwlcfv">
+<link rel="stylesheet" href="app.css?v=mwvwlcfv">
 
 </head>
 <body class="app">
@@ -16,7 +16,7 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvw98eq"></script>
+<script src="app.js?v=mwvwlcfv"></script>
 
 <script>
 (async function () {
@@ -104,14 +104,15 @@
   // lessons (big tappable cards, only opened ones)
   if (KZ.on("lessons")) {
     html += '<h2 id="lessons" style="margin-top:26px">دروسك</h2>';
-    if (!lessons.length) html += '<div class="tile"><p class="muted">لم يفتح المعلم دروساً بعد. ستظهر هنا فور فتحها.</p></div>';
+    if (!lessons.length) html += '<div class="tile"><p class="muted">لم يفتح المعلم دروساً بعد. دروس مستواك ظاهرة أدناه وستُفتح تباعاً.</p></div>';
     var weeks = {};
-    lessons.forEach(function (l) { var w = Math.ceil(l.num / 4); (weeks[w] = weeks[w] || []).push(l); });
+    allLessons.forEach(function (l) { var w = Math.ceil(l.num / 4); (weeks[w] = weeks[w] || []).push(l); });
     Object.keys(weeks).forEach(function (w) {
       html += '<h3 class="wk">الأسبوع ' + w + '</h3><div class="lgrid">';
       weeks[w].forEach(function (l) {
         var h = hwMap[l.id];
         var chips = [["words", "الكلمات"], ["story", "القصة"], ["audio", "الصوت"], ["exercises", "التمارين"], ["homework", "الواجب"]].filter(function (c) { return l["open_" + c[0]]; }).map(function (c) { return '<span class="badge">' + c[1] + "</span>"; }).join(" ");
+        if (!l.is_open) { html += '<div class="lcard locked" aria-disabled="true"><span class="lnum">' + l.num + '</span><span class="lbody"><strong>الدرس ' + l.num + '</strong><span class="muted en">' + esc(l.title || "") + '</span><span class="lchips"><span class="badge">🔒 سيُفتح قريباً</span></span></span></div>'; return; }
         html += '<a class="lcard" href="lesson.html?id=' + esc(l.id) + '"><span class="lnum">' + l.num + '</span><span class="lbody"><strong>الدرس ' + l.num + '</strong><span class="muted en">' + esc(l.title || "") + '</span><span class="lchips">' + chips + (h ? ' <span class="badge ok">الواجب ' + h.first_score + "/" + h.total + "</span>" : "") + '</span></span><span class="go" aria-hidden="true">‹</span></a>';
       });
       html += "</div>";

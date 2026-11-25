@@ -7,8 +7,8 @@
 <title>الاختبار · KIMZA Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvw98eq">
-<link rel="stylesheet" href="app.css?v=mwvw98eq">
+<link rel="stylesheet" href="site.css?v=mwvwlcfv">
+<link rel="stylesheet" href="app.css?v=mwvwlcfv">
 
 </head>
 <body class="app">
@@ -16,7 +16,7 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvw98eq"></script>
+<script src="app.js?v=mwvwlcfv"></script>
 
 <script>
 (async function () {
@@ -91,7 +91,10 @@
         counter();
       });
     });
-    document.getElementById("submit").addEventListener("click", function () { submit(false); });
+    document.getElementById("submit").addEventListener("click", async function () {
+      var go = await KZ.confirmBox("تسليم الاختبار", "<p>بعد التسليم <strong>لا يمكنك الحصول على درجة أفضل</strong> ولا يمكن إعادة الاختبار.</p><p>راجع إجاباتك جيداً، فلا يزال لديك وقت.</p>", "سلّم الآن", "أراجع إجاباتي");
+      if (go) submit(false);
+    });
   }
 
   async function submit(auto) {

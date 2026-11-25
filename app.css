@@ -86,3 +86,9 @@ table.t th{color:var(--muted);font-size:14px}
 .kz-modal .btns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
 .nocopy,.nocopy *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .nocopy input,.nocopy textarea{-webkit-user-select:text;user-select:text}
+.speedbar{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0}
+.speedbar select{width:auto;min-height:0;padding:4px 10px}
+.audiobar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}
+.audiobar select{width:auto;min-height:0;padding:4px 10px}
+.lcard.locked{opacity:.55;filter:grayscale(.3);cursor:default;box-shadow:none}
+.lcard.locked:hover{transform:none;border-color:var(--line)}
