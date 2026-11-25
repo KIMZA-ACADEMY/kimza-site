@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mww5n2sd">
-<link rel="stylesheet" href="app.css?v=mww5n2sd">
+<link rel="stylesheet" href="site.css?v=mww6ywvp">
+<link rel="stylesheet" href="app.css?v=mww6ywvp">
 
 </head>
 <body class="app">
@@ -17,8 +17,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mww5n2sd"></script>
-<script src="portal-i18n.js?v=mww5n2sd"></script>
+<script src="app.js?v=mww6ywvp"></script>
+<script src="portal-i18n.js?v=mww6ywvp"></script>
 
 <script>
 (async function () {
@@ -37,12 +37,14 @@
     return;
   }
   var L = l.data;
+  var LAB = {};
+  try { var lt = await sb.from("site_texts").select("key,ar").like("key", "tab.%"); (lt.data || []).forEach(function (x) { if (x.ar) LAB[x.key] = x.ar; }); } catch (e) {}
   var TABS = [
-    ["words", "الكلمات", L.open_words || IS_T],
-    ["story", "القصة والصوت", L.open_story || L.open_audio || IS_T],
-    ["exercises", "التمارين", L.open_exercises || IS_T],
-    ["homework", "الواجب", (L.open_homework && KZ.on("homework")) || IS_T],
-    ["files", "المجلد", true]
+    ["words", LAB["tab.words"] || "الكلمات", L.open_words || IS_T],
+    ["story", LAB["tab.story"] || "القصة والصوت", L.open_story || L.open_audio || IS_T],
+    ["exercises", LAB["tab.exercises"] || "التمارين", L.open_exercises || IS_T],
+    ["homework", LAB["tab.homework"] || "الواجب", (L.open_homework && KZ.on("homework")) || IS_T],
+    ["files", LAB["tab.files"] || "المجلد", true]
   ];
   var HID = L.hidden_tabs || [];
   if (!IS_T) TABS = TABS.filter(function (t) { return HID.indexOf(t[0]) < 0; });
@@ -56,8 +58,22 @@
   var html = '<p><a href="' + BACK + '">&larr; العودة</a></p><h1>الدرس ' + L.num + ' <span class="en muted" style="font-size:.6em">' + esc(L.title || "") + "</span></h1>";
   html += '<div class="tabs" role="tablist">' + TABS.map(function (t) {
     return '<button data-t="' + t[0] + '" aria-selected="' + (t[0] === first ? "true" : "false") + '">' + (t[2] ? "" : "🔒 ") + t[1] + "</button>";
-  }).join("") + '</div><div id="pane"></div>';
+  }).join("") + '</div>' + (IS_T ? '<p style="margin:8px 0"><button class="btn btn-ghost sm" id="labEdit" type="button">✎ تعديل أسماء الأزرار</button></p><div id="labBox"></div>' : "") + '<div id="pane"></div>';
   app.innerHTML = html;
+  if (IS_T) document.getElementById("labEdit").addEventListener("click", function () {
+    var names = [["words", "الكلمات"], ["story", "القصة والصوت"], ["exercises", "التمارين"], ["homework", "الواجب"], ["files", "المجلد"]];
+    var bx = document.getElementById("labBox");
+    bx.innerHTML = '<div class="tile" style="margin:8px 0"><p class="muted">غيّر اسم كل زر، وسيظهر الاسم الجديد لكل الطلاب في كل الدروس.</p><div class="form" style="display:grid;gap:8px;max-width:420px">' +
+      names.map(function (n) { return '<label>' + n[1] + '</label><input data-lab="tab.' + n[0] + '" value="' + esc(LAB["tab." + n[0]] || n[1]) + '">'; }).join("") +
+      '</div><p style="margin:10px 0 0"><button class="btn btn-primary sm" id="labSave" type="button">حفظ</button> <button class="btn btn-ghost sm" id="labCancel" type="button">إلغاء</button></p></div>';
+    document.getElementById("labCancel").addEventListener("click", function () { bx.innerHTML = ""; });
+    document.getElementById("labSave").addEventListener("click", async function () {
+      var rows = Array.prototype.map.call(bx.querySelectorAll("[data-lab]"), function (i) { return { key: i.getAttribute("data-lab"), ar: i.value.trim() }; });
+      var r2 = await sb.from("site_texts").upsert(rows);
+      if (r2.error) { KZ.toast("تعذر الحفظ: " + r2.error.message, true); return; }
+      KZ.toast("تم الحفظ."); location.reload();
+    });
+  });
 
   function locked(name) {
     return '<div class="tile"><h3>🔒 ' + name + ' مغلق</h3><p class="muted">سيفتحه المعلم في الوقت المناسب.</p></div>';
@@ -129,26 +145,46 @@
           if (/[؀-ۿ]/.test(ln)) sh += '<div dir="rtl" style="color:#8a6d00;font-family:Tajawal,sans-serif;line-height:1.9;font-size:1.05rem;margin:0 0 4px">' + esc(ln) + "</div>";
           else sh += '<div dir="ltr" style="line-height:1.9;font-size:1.1rem;font-weight:600">' + esc(ln) + "</div>";
         });
-        h += '<div class="tile story">' + sh + "</div>";
+        if (IS_T) h += '<p style="margin:8px 0"><button class="btn btn-ghost sm" id="stEdit" type="button">✎ تعديل نص القصة</button></p>';
+        h += '<div class="tile story" id="stText">' + sh + "</div>";
       }
       h += '<div id="saudio"></div>';
       pane.innerHTML = h;
+      if (IS_T && document.getElementById("stEdit")) document.getElementById("stEdit").addEventListener("click", function () {
+        var tx = document.getElementById("stText");
+        tx.innerHTML = '<p class="muted">اكتب القصة هنا: كل سطر إنجليزي يليه سطر عربي، والأسطر الفارغة تفصل بين الأجزاء.</p><textarea id="stArea" rows="16" style="width:100%;font:inherit;line-height:1.7"></textarea><p style="margin:8px 0 0"><button class="btn btn-primary sm" id="stSave" type="button">حفظ</button> <button class="btn btn-ghost sm" id="stCancel" type="button">إلغاء</button></p>';
+        document.getElementById("stArea").value = content.story || "";
+        document.getElementById("stCancel").addEventListener("click", function () { show("story"); });
+        document.getElementById("stSave").addEventListener("click", async function () {
+          var body = document.getElementById("stArea").value;
+          var r2 = await sb.from("lesson_content").upsert({ lesson_id: id, kind: "story", body: body });
+          if (r2.error) { KZ.toast("تعذر الحفظ: " + r2.error.message, true); return; }
+          content.story = body; KZ.toast("تم حفظ القصة."); show("story"); });
+      });
       if (L.open_story || IS_T) {
         // story pictures: A1-L01-story-1.jpg, -2 ... in the public lesson-images bucket (shown in order)
         var IB = window.KIMZA_SUPABASE.url + "/storage/v1/object/public/lesson-images/" + id + "-story-";
         (async function () {
           var box = document.getElementById("simgs");
-          for (var n = 1; n <= 20 && box; n++) {
-            var okUrl = null;
+          var misses = 0;
+          for (var n = 1; n <= 20 && box && misses < 2; n++) {
+            var okUrl = null, okName = "";
             var exts = ["jpg", "jpeg", "png", "webp"];
             for (var q = 0; q < exts.length; q++) {
-              var u = IB + n + "." + exts[q];
+              var u = IB + n + "." + exts[q] + "?t=" + Date.now();
               var ok = await new Promise(function (res) { var im = new Image(); im.onload = function () { res(true); }; im.onerror = function () { res(false); }; im.src = u; });
-              if (ok) { okUrl = u; break; }
+              if (ok) { okUrl = u; okName = id + "-story-" + n + "." + exts[q]; break; }
             }
-            if (!okUrl) break;
-            box.insertAdjacentHTML("beforeend", '<img src="' + esc(okUrl) + '" alt="" loading="lazy">');
+            if (!okUrl) { misses++; continue; }
+            misses = 0;
+            box.insertAdjacentHTML("beforeend", '<div class="simg" style="position:relative;display:inline-block"><img src="' + esc(okUrl) + '" alt="" loading="lazy">' +
+              (IS_T ? '<button class="btn danger sm" type="button" data-delimg="' + esc(okName) + '" style="position:absolute;top:8px;inset-inline-start:8px">🗑 حذف الصورة</button>' : "") + "</div>");
           }
+          box.querySelectorAll("[data-delimg]").forEach(function (b) { b.addEventListener("click", async function () {
+            if (!confirm("حذف هذه الصورة نهائياً؟")) return;
+            var d = await sb.storage.from("lesson-images").remove([b.getAttribute("data-delimg")]);
+            if (d.error) { KZ.toast("تعذر الحذف: " + d.error.message, true); return; }
+            KZ.toast("تم حذف الصورة."); show("story"); }); });
         })();
       }
       var sa = document.getElementById("saudio");
@@ -169,6 +205,17 @@
       document.getElementById("auLoop").addEventListener("click", function (ev) { au.loop = !au.loop; ev.target.setAttribute("aria-pressed", String(au.loop)); ev.target.className = "btn " + (au.loop ? "btn-primary" : "btn-ghost") + " sm"; ev.target.textContent = au.loop ? "⏹ إيقاف التكرار" : "🔁 تكرار تلقائي"; });
       return;
     }
+    async function fileBlobUrl(f, onp) {
+      var su = await sb.storage.from("lesson-files").createSignedUrl(f.path, 600);
+      if (su.error || !su.data) throw new Error(su.error ? su.error.message : "no url");
+      var res = await fetch(su.data.signedUrl);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      var total = Number(res.headers.get("content-length")) || f.size || 0, got = 0, chunks = [];
+      var rd = res.body && res.body.getReader ? res.body.getReader() : null;
+      if (rd) { for (;;) { var r = await rd.read(); if (r.done) break; chunks.push(r.value); got += r.value.length; if (total) onp(Math.min(99, Math.round(got * 100 / total))); } }
+      else chunks.push(new Uint8Array(await res.arrayBuffer()));
+      return URL.createObjectURL(new Blob(chunks, { type: f.mime || "application/octet-stream" }));
+    }
     if (t === "files") {
       pane.innerHTML = '<div class="tile"><p class="muted">جارٍ تحميل الملفات...</p></div>';
       var fr0 = await sb.from("lesson_files").select("*").eq("lesson_id", id).order("sort").order("id");
@@ -185,9 +232,9 @@
       pane.querySelectorAll("[data-fv]").forEach(function (b) { b.addEventListener("click", async function () {
         var f = byId[b.getAttribute("data-fv")], box = document.getElementById("fview");
         box.innerHTML = '<div class="tile"><p class="muted">جارٍ فتح الملف...</p></div>';
-        var su = await sb.storage.from("lesson-files").createSignedUrl(f.path, 3600);
-        if (su.error || !su.data) { box.innerHTML = '<div class="tile"><p class="muted">تعذر فتح الملف.</p></div>'; return; }
-        var u = su.data.signedUrl, m = f.mime || "", inner;
+        var m = f.mime || "", inner, u;
+        try { u = await fileBlobUrl(f, function (p) { box.innerHTML = '<div class="tile"><p class="muted">جارٍ فتح الملف... ' + p + "%</p></div>"; }); }
+        catch (er) { box.innerHTML = '<div class="tile"><p class="muted">تعذر فتح الملف: ' + esc(er.message || "") + "</p></div>"; return; }
         if (/^image\//.test(m)) inner = '<img src="' + esc(u) + '" alt="" style="max-width:100%;border-radius:14px">';
         else if (/pdf/.test(m)) inner = '<iframe class="frame" src="' + esc(u) + '#toolbar=' + (f.downloadable ? "1" : "0") + '&navpanes=0" title="' + esc(f.title) + '"></iframe>';
         else if (/^audio\//.test(m)) inner = '<audio controls ' + (f.downloadable ? "" : 'controlsList="nodownload"') + ' style="width:100%" src="' + esc(u) + '"></audio>';
@@ -198,9 +245,12 @@
       }); });
       pane.querySelectorAll("[data-fd]").forEach(function (b) { b.addEventListener("click", async function () {
         var f = byId[b.getAttribute("data-fd")];
-        var su = await sb.storage.from("lesson-files").createSignedUrl(f.path, 600, { download: f.title.replace(/[\\/:*?"<>|]/g, "_") + "." + (f.path.split(".").pop() || "") });
-        if (su.error || !su.data) { KZ.toast("تعذر التحميل.", true); return; }
-        location.href = su.data.signedUrl; }); });
+        KZ.toast("جارٍ التحميل...");
+        try {
+          var bu = await fileBlobUrl(f, function () {});
+          var a = document.createElement("a"); a.href = bu; a.download = f.title.replace(/[\\/:*?"<>|]/g, "_") + "." + (f.path.split(".").pop() || "");
+          document.body.appendChild(a); a.click(); a.remove(); KZ.toast("تم التحميل.");
+        } catch (er) { KZ.toast("تعذر التحميل: " + (er.message || ""), true); } }); });
       return;
     }
     if (t === "exercises") {
