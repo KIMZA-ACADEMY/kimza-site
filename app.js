@@ -108,6 +108,17 @@
     }, 30000);
   };
   // Any picture (jpg, png, webp, gif, heic on Safari) is resized and saved as a light JPEG, so uploads do not fail on size or type
+  // delete storage objects one by one with a plain DELETE (the bulk call with a body fails in some browsers)
+  KZ.removeObjects = async function (bucket, names) {
+    var s = (await sb.auth.getSession()).data.session, err = null, n = 0;
+    for (var i = 0; i < names.length; i++) {
+      try {
+        var res = await fetch(window.KIMZA_SUPABASE.url + "/storage/v1/object/" + bucket + "/" + names[i].split("/").map(encodeURIComponent).join("/"), { method: "DELETE", headers: { apikey: window.KIMZA_SUPABASE.publishableKey, Authorization: "Bearer " + s.access_token } });
+        if (res.ok) n++; else err = "HTTP " + res.status;
+      } catch (e) { err = e.message; }
+    }
+    return { count: n, error: n < names.length ? { message: err || "failed" } : null };
+  };
   KZ.prepImage = function (file, maxSide) {
     maxSide = maxSide || 1800;
     return new Promise(function (resolve, reject) {

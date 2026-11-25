@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mww6ywvp">
-<link rel="stylesheet" href="app.css?v=mww6ywvp">
+<link rel="stylesheet" href="site.css?v=mww73rxm">
+<link rel="stylesheet" href="app.css?v=mww73rxm">
 
 </head>
 <body class="app">
@@ -17,8 +17,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mww6ywvp"></script>
-<script src="portal-i18n.js?v=mww6ywvp"></script>
+<script src="app.js?v=mww73rxm"></script>
+<script src="portal-i18n.js?v=mww73rxm"></script>
 
 <script>
 (async function () {
@@ -182,7 +182,7 @@
           }
           box.querySelectorAll("[data-delimg]").forEach(function (b) { b.addEventListener("click", async function () {
             if (!confirm("حذف هذه الصورة نهائياً؟")) return;
-            var d = await sb.storage.from("lesson-images").remove([b.getAttribute("data-delimg")]);
+            var d = await KZ.removeObjects("lesson-images", [b.getAttribute("data-delimg")]);
             if (d.error) { KZ.toast("تعذر الحذف: " + d.error.message, true); return; }
             KZ.toast("تم حذف الصورة."); show("story"); }); });
         })();

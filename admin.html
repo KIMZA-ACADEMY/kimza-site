@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mww5n2sd">
-<link rel="stylesheet" href="app.css?v=mww5n2sd">
+<link rel="stylesheet" href="site.css?v=mww73rxm">
+<link rel="stylesheet" href="app.css?v=mww73rxm">
 
 </head>
 <body class="app">
@@ -17,9 +17,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mww5n2sd"></script>
-<script src="portal-i18n.js?v=mww5n2sd"></script>
-<script src="i18n.js?v=mww5n2sd"></script>
+<script src="app.js?v=mww73rxm"></script>
+<script src="portal-i18n.js?v=mww73rxm"></script>
+<script src="i18n.js?v=mww73rxm"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -211,11 +211,11 @@
       KZ.toast(bad ? "تعذر رفع " + bad + " صورة: " + lastErr : "تم رفع " + fs_.length + " صورة.", !!bad); }); });
     view.querySelectorAll("[data-dau]").forEach(function (b) { b.addEventListener("click", async function () {
       if (!confirm("حذف صوت هذا الدرس نهائياً؟")) return;
-      var d = await sb.storage.from("lesson-audio").remove([b.getAttribute("data-dau") + ".mp3"]);
+      var d = await KZ.removeObjects("lesson-audio", [b.getAttribute("data-dau") + ".mp3"]);
       KZ.toast(d.error ? "تعذر الحذف: " + d.error.message : "تم حذف الصوت.", !!d.error); VIEWS.lessons(); }); });
     view.querySelectorAll("[data-dim]").forEach(function (b) { b.addEventListener("click", async function () {
       var lid = b.getAttribute("data-dim"); if (!confirm("حذف كل صور هذا الدرس نهائياً؟")) return;
-      var d = await sb.storage.from("lesson-images").remove(imgSet[lid] || []);
+      var d = await KZ.removeObjects("lesson-images", imgSet[lid] || []);
       KZ.toast(d.error ? "تعذر الحذف: " + d.error.message : "تم حذف الصور.", !!d.error); VIEWS.lessons(); }); });
     view.querySelectorAll("[data-au]").forEach(function (inp) { inp.addEventListener("change", async function () {
       var f = inp.files[0]; if (!f) return;
@@ -589,7 +589,7 @@
     view.querySelectorAll("[data-fx]").forEach(function (b) { b.addEventListener("click", async function () {
       if (!confirm("حذف هذا الملف نهائياً؟")) return;
       var f = r.filter(function (x) { return String(x.id) === b.getAttribute("data-fx"); })[0];
-      await sb.storage.from("lesson-files").remove([f.path]); await sb.from("lesson_files").delete().eq("id", f.id); VIEWS.files(lid); }); });
+      await KZ.removeObjects("lesson-files", [f.path]); await sb.from("lesson_files").delete().eq("id", f.id); VIEWS.files(lid); }); });
   };
 
   // ================= Site designer: panels, ads, images, order, custom pages =================
