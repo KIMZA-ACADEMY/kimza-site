@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwo8npo">
-<link rel="stylesheet" href="app.css?v=mwwo8npo">
+<link rel="stylesheet" href="site.css?v=mwwok0pn">
+<link rel="stylesheet" href="app.css?v=mwwok0pn">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwo8npo"></script>
-<script src="portal-i18n.js?v=mwwo8npo"></script>
-<script src="i18n.js?v=mwwo8npo"></script>
+<script src="app.js?v=mwwok0pn"></script>
+<script src="portal-i18n.js?v=mwwok0pn"></script>
+<script src="i18n.js?v=mwwok0pn"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -33,7 +33,7 @@
   KZ.shell("admin");
   var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
   var LEVELS = ["A1", "A2", "B1", "B2", "C1"];
-  var TABS = [["students", "الطلاب"], ["lessons", "الدروس"], ["tests", "الاختبارات"], ["results", "النتائج"], ["attendance", "الحضور"], ["payments", "المدفوعات"], ["applications", "الطلبات"], ["speaking", "المحادثة"], ["certs", "الشهادات"], ["news", "الإعلانات"], ["follow", "متابعة الطلاب"], ["fluency", "الطلاقة والجهد"], ["designer", "تصميم الموقع"], ["texts", "النصوص"], ["courses", "الدورات والإعلانات"], ["features", "الميزات"], ["settings", "المستويات"]];
+  var TABS = [["students", "الطلاب"], ["lessons", "الدروس"], ["tests", "الاختبارات"], ["results", "النتائج"], ["attendance", "الحضور"], ["payments", "المدفوعات"], ["applications", "الطلبات"], ["speaking", "المحادثة"], ["certs", "الشهادات"], ["news", "الإعلانات"], ["follow", "متابعة الطلاب"], ["fluency", "الطلاقة والجهد"], ["groups", "مجموعات الطلاب"], ["themes", "الألوان والثيمات"], ["lsearch", "بحث الدروس"], ["designer", "تصميم الموقع"], ["texts", "النصوص"], ["courses", "الدورات والإعلانات"], ["features", "الميزات"], ["settings", "المستويات"]];
   var KIND = { weekly: "أسبوعي", monthly: "شهري", final: "نهاية المستوى" };
   var ST = { active: "نشط", paused: "متوقف مؤقتاً", graduated: "خريج", stopped: "موقوف" };
   var AT = { present: "حاضر", absent: "غائب", late: "متأخر", excused: "بعذر" };
@@ -162,9 +162,10 @@
       '<div><label for="bPw">كلمة المرور المؤقتة لكل هؤلاء</label><input id="bPw" dir="ltr" value="' + DEFAULT_PW + '"></div>' +
       '<textarea id="bulk" rows="6" placeholder="776258366/A1, 784979244/A2&#10;774172469/A1/A2"></textarea><div><button class="btn btn-primary" type="submit">إنشاء الحسابات</button></div></form></div>' +
       '<div id="creds"></div>';
+    h += '<div class="tile form" style="margin-top:24px"><div><label for="stQ">🔎 بحث عن طالب (الاسم أو اسم المستخدم أو الرقم أو المستوى)</label><input id="stQ" dir="auto" autocomplete="off" placeholder="اكتب جزءاً من الاسم أو الرقم..."></div></div>';
     h += '<h2 style="margin-top:24px">الطلاب (' + nm.list.length + ')</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>المستخدم</th><th>المستوى</th><th>الحالة</th><th>مستويات إضافية</th><th>غياب</th><th></th></tr></thead><tbody>';
     nm.list.forEach(function (p) {
-      h += '<tr><td>' + esc(p.full_name) + '</td><td class="en">' + esc(p.username || "") + '</td>' +
+      h += '<tr data-q="' + esc(((p.full_name || "") + " " + (p.username || "") + " " + (p.level || "")).toLowerCase()) + '"><td>' + esc(p.full_name) + '</td><td class="en">' + esc(p.username || "") + '</td>' +
         '<td><select data-lv="' + p.id + '">' + opts(LEVELS, p.level) + '</select></td>' +
         '<td><select data-st="' + p.id + '">' + opts(Object.keys(ST).map(function (k) { return [k, ST[k]]; }), p.status) + '</select></td>' +
         '<td class="en">' + ((p.completed_levels || []).join(" ") || "—") + '</td><td>' + (abs[p.id] || 0) + (abs[p.id] > 3 ? ' <span class="badge bad">!</span>' : "") + '</td>' +
@@ -172,6 +173,7 @@
     });
     h += "</tbody></table></div>";
     view.innerHTML = h;
+    $("stQ").addEventListener("input", function () { var q = $("stQ").value.trim().toLowerCase().replace(/^\+?967/, ""); view.querySelectorAll("tr[data-q]").forEach(function (tr) { tr.style.display = !q || tr.getAttribute("data-q").indexOf(q) >= 0 ? "" : "none"; }); });
 
     function showCreds(rows) {
       var txt = rows.map(function (r) { return r.name + " | " + r.user + " | " + r.pw; }).join("\n");
@@ -960,6 +962,139 @@
       if (!confirm("إصدار «شهادة تفوّق» للطالب " + p.full_name + " تقديراً لجهده في الطلاقة؟")) return;
       var r = await sb.rpc("issue_custom_certificate", { p_user: p.id, p_kind: "excellence", p_title: "CERTIFICATE OF EXCELLENCE", p_body: "has shown outstanding effort and dedication to improving English fluency", p_level: null, p_hours: null, p_date: null });
       KZ.toast(r.error ? "تعذر الإصدار." : "تم الإصدار: " + r.data.number, !!r.error); }); });
+  };
+
+  // ================= Lesson search: which lesson has this topic / word? =================
+  VIEWS.lsearch = async function () {
+    view.innerHTML = '<h2>بحث الدروس</h2><p class="muted">اكتب موضوعاً أو كلمة (إنجليزي أو عربي) لتعرف أي درس يحتويها: في العنوان أو الكلمات أو القصة.</p><div class="tile form"><div><label for="lsq">🔎 ابحث</label><input id="lsq" dir="auto" autocomplete="off" placeholder="مثلاً: family أو travel أو الماضي"></div></div><div id="lsr" style="margin-top:14px"></div>';
+    var tm = null;
+    $("lsq").addEventListener("input", function () { clearTimeout(tm); tm = setTimeout(run, 350); });
+    function snip(body, q) { var i = body.toLowerCase().indexOf(q.toLowerCase()); if (i < 0) return ""; return (i > 40 ? "…" : "") + body.slice(Math.max(0, i - 40), i + q.length + 60).replace(/\s+/g, " ") + "…"; }
+    async function run() {
+      var q = $("lsq").value.trim(), out = $("lsr");
+      if (q.length < 2) { out.innerHTML = '<p class="muted">اكتب حرفين على الأقل.</p>'; return; }
+      out.innerHTML = '<p class="muted">جارٍ البحث...</p>';
+      var like = '"%' + q.replace(/["%_,()\\]/g, " ") + '%"';
+      var res = await Promise.all([
+        sb.from("lessons").select("id,level,num,title").ilike("title", like.replace(/"/g, "")).limit(60),
+        sb.from("flashcards").select("level,lesson_num,english,arabic").or("english.ilike." + like + ",arabic.ilike." + like).limit(120),
+        sb.from("lesson_content").select("lesson_id,kind,body").in("kind", ["words", "story"]).ilike("body", like.replace(/"/g, "")).limit(80)
+      ]);
+      var hits = {};
+      function H(id) { return hits[id] = hits[id] || { id: id, chips: [] }; }
+      (res[0].data || []).forEach(function (l) { var h = H(l.id); h.level = l.level; h.num = l.num; h.title = l.title; h.chips.push("عنوان الدرس"); });
+      (res[1].data || []).forEach(function (c) { var id = c.level + "-L" + String(c.lesson_num).padStart(2, "0"); H(id).chips.push("كلمة: " + c.english + (c.arabic ? " = " + c.arabic : "")); });
+      (res[2].data || []).forEach(function (c) { H(c.lesson_id).chips.push((c.kind === "story" ? "القصة: " : "الكلمات: ") + snip(c.body, q)); });
+      var ids = Object.keys(hits);
+      if (!ids.length) { out.innerHTML = '<p class="muted">لا يوجد درس يحتوي هذه الكلمة.</p>'; return; }
+      var need = ids.filter(function (i) { return !hits[i].title; });
+      if (need.length) ((await sb.from("lessons").select("id,level,num,title").in("id", need)).data || []).forEach(function (l) { var h = hits[l.id]; h.level = l.level; h.num = l.num; h.title = l.title; });
+      ids.sort(function (a, b) { var x = hits[a], y = hits[b]; return String(x.level).localeCompare(String(y.level)) || (x.num - y.num); });
+      out.innerHTML = '<p class="muted">' + ids.length + ' درساً</p>' + ids.map(function (id) {
+        var h = hits[id], seen = {}, chips = h.chips.filter(function (c) { if (seen[c]) return false; seen[c] = 1; return true; }).slice(0, 6);
+        return '<div class="tile" style="margin-bottom:10px"><div class="row" style="border:0;padding:0"><div><strong class="en">' + esc(h.level || "") + ' · الدرس ' + esc(String(h.num || "")) + '</strong> <span class="muted en">' + esc(h.title || "") + '</span></div><a class="btn btn-ghost sm" target="_blank" rel="noopener" href="lesson.html?id=' + encodeURIComponent(id) + '">معاينة الدرس</a></div><div class="muted" style="margin-top:6px" dir="auto">' + chips.map(function (c) { return esc(c); }).join(" &nbsp;•&nbsp; ") + "</div></div>";
+      }).join("");
+    }
+    $("lsq").focus();
+  };
+
+  // ================= Student groups =================
+  var grpOpen = null;
+  VIEWS.groups = async function () {
+    var nm = await nameMap();
+    var groups = (await sb.from("student_groups").select("*").order("created_at")).data || [];
+    var mem = (await sb.from("group_members").select("group_id,user_id")).data || [];
+    var by = {}; mem.forEach(function (m) { (by[m.group_id] = by[m.group_id] || []).push(m.user_id); });
+    var h = '<h2>مجموعات الطلاب</h2><p class="muted">أنشئ مجموعة بأي اسم (مثل «حصة السبت» أو «المتفوقون»)، ثم أضف إليها طلاباً. بعدها تفتح لهم درساً دفعة واحدة، أو ترسل لهم إعلاناً، أو تعطيهم لوناً خاصاً من «الألوان والثيمات».</p>' +
+      '<form class="tile form" id="gNew" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end"><div style="flex:1;min-width:200px"><label for="gName">اسم المجموعة</label><input id="gName" maxlength="60" required></div><div><button class="btn btn-primary" type="submit">إنشاء المجموعة</button></div></form>';
+    if (!groups.length) h += '<p class="muted" style="margin-top:14px">لا توجد مجموعات بعد.</p>';
+    groups.forEach(function (g) {
+      var ids = by[g.id] || [], open = grpOpen === g.id;
+      h += '<div class="tile" style="margin-top:12px"><div class="row" style="border:0;padding:0"><div><strong style="font-size:1.1rem">' + esc(g.name) + '</strong> <span class="badge">' + ids.length + ' طالب</span></div><div class="btns"><button class="btn btn-ghost sm" data-gopen="' + g.id + '" type="button">' + (open ? "طيّ" : "إدارة") + '</button> <button class="btn danger sm" data-gdel="' + g.id + '" type="button">حذف المجموعة</button></div></div>';
+      if (open) {
+        h += '<h4 style="margin:14px 0 6px">الأعضاء</h4><div>' + (ids.length ? ids.map(function (u) { var p = nm.map[u]; return '<span class="badge" style="margin:2px">' + esc(p ? p.full_name : "؟") + ' <button type="button" data-grm="' + g.id + ":" + u + '" aria-label="إزالة" style="border:0;background:transparent;cursor:pointer;color:inherit">✕</button></span>'; }).join("") : '<span class="muted">لا أعضاء بعد.</span>') + '</div>' +
+          '<div class="form" style="margin-top:10px"><div><label for="gAdd">إضافة طلاب (أسماء المستخدمين أو الأرقام، افصل بفاصلة أو سطر)</label><textarea id="gAdd" rows="2" dir="ltr"></textarea></div><div class="btns"><button class="btn btn-primary sm" data-gadd="' + g.id + '" type="button">إضافة</button> <select id="gLv" style="width:auto">' + opts(LEVELS) + '</select> <button class="btn btn-ghost sm" data-gaddlv="' + g.id + '" type="button">إضافة كل طلاب هذا المستوى</button></div></div>' +
+          '<h4 style="margin:16px 0 6px">فتح درس لكل المجموعة</h4><div class="form" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end"><div><label for="gl1">المستوى</label><select id="gl1">' + opts(LEVELS) + '</select></div><div style="min-width:220px"><label for="gl2">الدرس</label><select id="gl2"></select></div><div class="btns"><button class="btn btn-primary sm" data-gles="' + g.id + ':1" type="button">فتح الدرس لهم</button> <button class="btn btn-ghost sm" data-gles="' + g.id + ':0" type="button">إغلاقه عنهم</button></div></div>' +
+          '<h4 style="margin:16px 0 6px">إعلان للمجموعة</h4><div class="form"><div><label for="gaT">العنوان</label><input id="gaT" maxlength="150"></div><div><label for="gaB">الرسالة</label><textarea id="gaB" rows="3"></textarea></div><div><button class="btn btn-primary sm" data-gann="' + g.id + '" type="button">إرسال الإعلان للمجموعة</button></div></div>';
+      }
+      h += "</div>";
+    });
+    view.innerHTML = h;
+    $("gNew").addEventListener("submit", async function (e) { e.preventDefault(); var r = await sb.from("student_groups").insert({ name: $("gName").value.trim() }); KZ.toast(r.error ? "تعذر الإنشاء." : "تم إنشاء المجموعة.", !!r.error); VIEWS.groups(); });
+    view.querySelectorAll("[data-gopen]").forEach(function (b) { b.addEventListener("click", function () { var id = Number(b.getAttribute("data-gopen")); grpOpen = grpOpen === id ? null : id; VIEWS.groups(); }); });
+    view.querySelectorAll("[data-gdel]").forEach(function (b) { b.addEventListener("click", async function () { if (!confirm("حذف هذه المجموعة؟ (لا يُحذف الطلاب)")) return; await sb.from("student_groups").delete().eq("id", Number(b.getAttribute("data-gdel"))); grpOpen = null; VIEWS.groups(); }); });
+    view.querySelectorAll("[data-grm]").forEach(function (b) { b.addEventListener("click", async function () { var p = b.getAttribute("data-grm").split(":"); await sb.from("group_members").delete().eq("group_id", Number(p[0])).eq("user_id", p[1]); VIEWS.groups(); }); });
+    view.querySelectorAll("[data-gadd]").forEach(function (b) { b.addEventListener("click", async function () {
+      var gid = Number(b.getAttribute("data-gadd")), toks = $("gAdd").value.split(/[\s,،;\n]+/).map(function (x) { return x.trim().toLowerCase(); }).filter(Boolean), rows = [], miss = [];
+      toks.forEach(function (t) { var d = t.replace(/[^0-9]/g, ""); var p = nm.list.find(function (x) { var u = String(x.username || "").toLowerCase(); return u === t || (d && u === d) || (d.length >= 12 && u === d.slice(3)); }); if (p) rows.push({ group_id: gid, user_id: p.id }); else miss.push(t); });
+      if (rows.length) { var r = await sb.from("group_members").upsert(rows, { onConflict: "group_id,user_id" }); if (r.error) { KZ.toast("تعذرت الإضافة.", true); return; } }
+      KZ.toast("أضفتُ " + rows.length + " طالباً" + (miss.length ? " · غير موجود: " + miss.join("، ") : ""), !!miss.length); VIEWS.groups(); }); });
+    view.querySelectorAll("[data-gaddlv]").forEach(function (b) { b.addEventListener("click", async function () {
+      var gid = Number(b.getAttribute("data-gaddlv")), rows = nm.list.filter(function (x) { return x.level === $("gLv").value; }).map(function (x) { return { group_id: gid, user_id: x.id }; });
+      if (!rows.length) { KZ.toast("لا طلاب في هذا المستوى.", true); return; }
+      var r = await sb.from("group_members").upsert(rows, { onConflict: "group_id,user_id" }); KZ.toast(r.error ? "تعذرت الإضافة." : "أضفتُ " + rows.length + " طالباً.", !!r.error); VIEWS.groups(); }); });
+    if ($("gl1")) {
+      var fill = async function () { var ls = (await sb.from("lessons").select("id,num,title").eq("level", $("gl1").value).order("num")).data || []; $("gl2").innerHTML = ls.map(function (l) { return '<option value="' + esc(l.id) + '">الدرس ' + l.num + (l.title ? " — " + esc(l.title) : "") + "</option>"; }).join(""); };
+      $("gl1").addEventListener("change", fill); fill();
+    }
+    view.querySelectorAll("[data-gles]").forEach(function (b) { b.addEventListener("click", async function () {
+      var p = b.getAttribute("data-gles").split(":"), gid = Number(p[0]), on = p[1] === "1", lid = $("gl2").value, ids = by[gid] || [];
+      if (!lid || !ids.length) { KZ.toast("اختر درساً وتأكد أن للمجموعة أعضاء.", true); return; }
+      var r = on ? await sb.from("lesson_grants").upsert(ids.map(function (u) { return { user_id: u, lesson_id: lid }; }), { onConflict: "user_id,lesson_id" }) : await sb.from("lesson_grants").delete().in("user_id", ids).eq("lesson_id", lid);
+      KZ.toast(r.error ? "تعذر التنفيذ." : (on ? "فُتح الدرس لـ" + ids.length + " طالباً." : "أُغلق الدرس عنهم."), !!r.error); }); });
+    view.querySelectorAll("[data-gann]").forEach(function (b) { b.addEventListener("click", async function () {
+      var t = $("gaT").value.trim(); if (!t) { KZ.toast("اكتب عنواناً.", true); return; }
+      var r = await sb.from("announcements").insert({ title: t, body: $("gaB").value.trim(), level: null, group_id: Number(b.getAttribute("data-gann")), created_by: KZ.user.id });
+      KZ.toast(r.error ? "تعذر الإرسال." : "وصل الإعلان لطلاب المجموعة عند دخولهم.", !!r.error); if (!r.error) { $("gaT").value = ""; $("gaB").value = ""; } }); });
+  };
+
+  // ================= Colour themes =================
+  var THEME_KEYS = [["primary", "اللون الأساسي (الشريط والعناوين)"], ["accent", "لون التمييز (الذهبي)"], ["bg", "خلفية الصفحة"], ["surface", "خلفية البطاقات"], ["text", "لون النص"], ["link", "لون الروابط"]];
+  var PRESETS = [
+    ["ملكي (الافتراضي)", { primary: "#0B1F44", deep: "#07162F", accent: "#D4AF37", accent2: "#E6C77A", bg: "#F8F4E9", surface: "#FFFDF7", text: "#0B1F44", link: "#7A0F2D", muted: "#475569", line: "#E7E7EA" }],
+    ["زمردي", { primary: "#0F3D3A", deep: "#082A28", accent: "#E0B84C", accent2: "#EBD08A", bg: "#F1F6F2", surface: "#FBFEFB", text: "#0F2B29", link: "#0F6B5E", muted: "#4A6360", line: "#DCE6E2" }],
+    ["محيطي", { primary: "#0B3C5D", deep: "#072A42", accent: "#F2A541", accent2: "#F6C27A", bg: "#EEF5FA", surface: "#FBFDFF", text: "#0B2A3F", link: "#1766A6", muted: "#4B6478", line: "#D9E5EE" }],
+    ["بنفسجي هادئ", { primary: "#3B1F5C", deep: "#27123F", accent: "#E3B45C", accent2: "#EDCB8A", bg: "#F6F1FA", surface: "#FFFCFF", text: "#2A1646", link: "#7A2E8E", muted: "#5E5470", line: "#E5DCEE" }],
+    ["غروب دافئ", { primary: "#7A2E12", deep: "#521C09", accent: "#F2B544", accent2: "#F6CC7E", bg: "#FBF3EA", surface: "#FFFCF8", text: "#3B1A0B", link: "#B4461E", muted: "#6B5446", line: "#EDDFD2" }],
+    ["وردي ناعم", { primary: "#5C1F3B", deep: "#41132A", accent: "#E8A5B8", accent2: "#F0C2CF", bg: "#FCF1F4", surface: "#FFFBFC", text: "#3B1426", link: "#B02E5E", muted: "#6B5560", line: "#F0DDE3" }],
+    ["رمادي وتركوازي", { primary: "#1F2937", deep: "#111827", accent: "#14B8A6", accent2: "#5EEAD4", bg: "#F3F4F6", surface: "#FFFFFF", text: "#111827", link: "#0F766E", muted: "#4B5563", line: "#E5E7EB" }]
+  ];
+  function strip(v) { return '<span style="display:inline-flex;border-radius:8px;overflow:hidden;border:1px solid #0003;vertical-align:middle">' + ["primary", "accent", "bg", "surface", "link"].map(function (k) { return '<i style="display:block;width:22px;height:22px;background:' + esc(v[k] || "#ccc") + '"></i>'; }).join("") + "</span>"; }
+  VIEWS.themes = async function () {
+    var themes = (await sb.from("themes").select("*").order("created_at")).data || [];
+    var rules = (await sb.from("theme_rules").select("*")).data || [];
+    var groups = (await sb.from("student_groups").select("id,name").order("created_at")).data || [];
+    var tn = {}; themes.forEach(function (t) { tn[t.id] = t; });
+    var gn = {}; groups.forEach(function (g) { gn[g.id] = g.name; });
+    var h = '<h2>الألوان والثيمات</h2><p class="muted">اختر ألواناً متناسقة لكل الموقع، أو لمستوى معيّن، أو لمجموعة معيّنة. تظهر الألوان للطلاب بعد دخولهم، والأولوية: المجموعة ثم المستوى ثم «الكل». الوضع الليلي لا يتأثر.</p>' +
+      '<div class="tile form"><h3 style="margin-top:0">1) أنشئ ثيماً</h3><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end"><div><label for="thP">ابدأ من قالب جاهز</label><select id="thP">' + PRESETS.map(function (p, i) { return '<option value="' + i + '">' + esc(p[0]) + "</option>"; }).join("") + '</select></div><div style="flex:1;min-width:200px"><label for="thN">اسم الثيم</label><input id="thN" maxlength="60" value="' + esc(PRESETS[0][0]) + '"></div></div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:10px">' + THEME_KEYS.map(function (k) { return '<div><label for="thc-' + k[0] + '">' + k[1] + '</label><input id="thc-' + k[0] + '" type="color" style="width:100%;height:42px;padding:2px"></div>'; }).join("") + '</div>' +
+      '<div class="btns" style="margin-top:10px"><button class="btn btn-ghost sm" id="thPrev" type="button">👁 معاينة على هذه الصفحة</button> <button class="btn btn-ghost sm" id="thUnprev" type="button">إلغاء المعاينة</button> <button class="btn btn-primary sm" id="thSave" type="button">حفظ الثيم</button></div></div>' +
+      '<div class="tile" style="margin-top:14px"><h3 style="margin-top:0">2) ثيماتي</h3>' + (themes.length ? themes.map(function (t) { return '<div class="row"><div>' + strip(t.vars || {}) + ' <strong>' + esc(t.name) + '</strong></div><div class="btns"><button class="btn btn-ghost sm" data-thview="' + t.id + '" type="button">معاينة</button> <button class="btn danger sm" data-thdel="' + t.id + '" type="button">حذف</button></div></div>'; }).join("") : '<p class="muted">لم تحفظ ثيماً بعد.</p>') + '</div>' +
+      '<form class="tile form" id="thRule" style="margin-top:14px"><h3 style="margin-top:0">3) طبّق ثيماً</h3><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end"><div><label for="trT">الثيم</label><select id="trT">' + themes.map(function (t) { return '<option value="' + t.id + '">' + esc(t.name) + "</option>"; }).join("") + '</select></div><div><label for="trS">على من؟</label><select id="trS"><option value="all">كل الموقع</option><option value="level">مستوى</option><option value="group">مجموعة</option></select></div><div><label for="trV">&nbsp;</label><select id="trV" disabled></select></div><div><button class="btn btn-primary" type="submit"' + (themes.length ? "" : " disabled") + '>تطبيق</button></div></div></form>' +
+      '<div class="tile" style="margin-top:14px"><h3 style="margin-top:0">القواعد المطبّقة الآن</h3>' + (rules.length ? rules.map(function (r) { var t = tn[r.theme_id]; return '<div class="row"><div>' + (r.scope === "all" ? "كل الموقع" : r.scope === "level" ? "مستوى " + esc(r.scope_value) : "مجموعة «" + esc(gn[r.scope_value] || "؟") + "»") + ' ← <strong>' + esc(t ? t.name : "؟") + '</strong></div><button class="btn danger sm" data-rdel="' + r.id + '" type="button">إزالة (يعود للافتراضي)</button></div>'; }).join("") : '<p class="muted">كل شيء بالألوان الافتراضية.</p>') + "</div>";
+    view.innerHTML = h;
+    function fillPreset(i) { var v = PRESETS[i][1]; THEME_KEYS.forEach(function (k) { $("thc-" + k[0]).value = v[k[0]]; }); $("thN").value = PRESETS[i][0]; }
+    function cur() { var v = Object.assign({}, PRESETS[Number($("thP").value)][1]); THEME_KEYS.forEach(function (k) { v[k[0]] = $("thc-" + k[0]).value; }); v.deep = v.primary; v.accent2 = v.accent; return v; }
+    fillPreset(0);
+    $("thP").addEventListener("change", function () { fillPreset(Number($("thP").value)); });
+    $("thPrev").addEventListener("click", function () { KZ.applyThemeVars(cur()); });
+    $("thUnprev").addEventListener("click", function () { KZ.loadTheme(); });
+    $("thSave").addEventListener("click", async function () { var n = $("thN").value.trim(); if (!n) { KZ.toast("اكتب اسماً للثيم.", true); return; } var r = await sb.from("themes").insert({ name: n, vars: cur() }); KZ.toast(r.error ? "تعذر الحفظ." : "تم حفظ الثيم.", !!r.error); if (!r.error) VIEWS.themes(); });
+    view.querySelectorAll("[data-thview]").forEach(function (b) { b.addEventListener("click", function () { var t = tn[b.getAttribute("data-thview")]; if (t) KZ.applyThemeVars(t.vars); }); });
+    view.querySelectorAll("[data-thdel]").forEach(function (b) { b.addEventListener("click", async function () { if (!confirm("حذف هذا الثيم وكل قواعده؟")) return; await sb.from("themes").delete().eq("id", Number(b.getAttribute("data-thdel"))); KZ.loadTheme(); VIEWS.themes(); }); });
+    view.querySelectorAll("[data-rdel]").forEach(function (b) { b.addEventListener("click", async function () { await sb.from("theme_rules").delete().eq("id", Number(b.getAttribute("data-rdel"))); KZ.loadTheme(); VIEWS.themes(); }); });
+    function scopeVals() {
+      var s = $("trS").value, sel = $("trV");
+      if (s === "all") { sel.innerHTML = ""; sel.disabled = true; }
+      else { sel.disabled = false; sel.innerHTML = s === "level" ? opts(LEVELS) : groups.map(function (g) { return '<option value="' + g.id + '">' + esc(g.name) + "</option>"; }).join(""); }
+    }
+    $("trS").addEventListener("change", scopeVals); scopeVals();
+    $("thRule").addEventListener("submit", async function (e) {
+      e.preventDefault(); var s = $("trS").value, v = s === "all" ? "" : $("trV").value;
+      if (s !== "all" && !v) { KZ.toast("لا توجد مجموعات بعد.", true); return; }
+      var r = await sb.from("theme_rules").upsert({ scope: s, scope_value: v, theme_id: Number($("trT").value) }, { onConflict: "scope,scope_value" });
+      KZ.toast(r.error ? "تعذر التطبيق." : "تم التطبيق. سيراه الطلاب عند دخولهم.", !!r.error); if (!r.error) { KZ.loadTheme(); VIEWS.themes(); } });
   };
 
   go((location.hash || "#students").slice(1));

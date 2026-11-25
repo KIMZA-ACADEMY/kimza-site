@@ -243,3 +243,21 @@
   function all(root) { fix(root); if (root.querySelectorAll) { var l = root.querySelectorAll("[style*='inset-inline']"); for (var i = 0; i < l.length; i++) fix(l[i]); } }
   new MutationObserver(function (ms) { ms.forEach(function (m) { m.addedNodes && Array.prototype.forEach.call(m.addedNodes, function (n) { if (n.nodeType === 1) all(n); }); }); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
+
+// Colour theme chosen by the teacher for the whole website (public pages): only the "all" rule applies here.
+(function () {
+  var cfg = window.KIMZA_SUPABASE; if (!cfg || !window.fetch) return;
+  var map = { primary: "--navy", deep: "--deep", accent: "--gold", accent2: "--gold-soft", bg: "--bg", surface: "--surface", text: "--text", link: "--link", muted: "--muted", line: "--line" };
+  function apply(v) {
+    var s = ""; v = v || {};
+    Object.keys(map).forEach(function (k) { if (v[k] && /^#[0-9a-fA-F]{3,8}$/.test(v[k])) s += map[k] + ":" + v[k] + ";"; });
+    var st = document.getElementById("kzTheme"); if (!st) { st = document.createElement("style"); st.id = "kzTheme"; document.head.appendChild(st); }
+    st.textContent = s ? ':root:not([data-theme="dark"]){' + s + "}" : "";
+  }
+  try { var c = localStorage.getItem("kz-theme-pub"); if (c) apply(JSON.parse(c)); } catch (e) {}
+  fetch(cfg.url + "/rest/v1/theme_rules?scope=eq.all&select=themes(vars)", { headers: { apikey: cfg.publishableKey } })
+    .then(function (r) { return r.ok ? r.json() : []; }).then(function (rows) {
+      var v = rows[0] && rows[0].themes ? rows[0].themes.vars : null; apply(v);
+      try { if (v) localStorage.setItem("kz-theme-pub", JSON.stringify(v)); else localStorage.removeItem("kz-theme-pub"); } catch (e) {}
+    }).catch(function () {});
+})();

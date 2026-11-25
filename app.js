@@ -53,6 +53,7 @@
     if (role === "teacher" && prof.role !== "teacher") { location.replace("dashboard.html"); return null; }
     if (role === "student" && prof.role === "teacher") { location.replace("admin.html"); return null; }
     KZ.profile = prof; KZ.user = session.user;
+    try { KZ.loadTheme(); } catch (e) {}
     KZ.features = {};
     try {
       var fr = await sb.from("site_features").select("key,enabled");
@@ -243,6 +244,32 @@
     b.setAttribute("aria-label", "السبورة (اسحب الزر لتحريكه)"); b.title = "السبورة (اسحب الزر لتحريكه)";
     b.textContent = "🧑‍🏫"; b.addEventListener("click", KZ.openBoard); document.body.appendChild(b);
     KZ.dragFab(b, "kz-fab-board", 8, function () { return Math.round(innerHeight * 0.42); });
+  };
+  // ----- colour themes chosen by the teacher: all / per level / per group -----
+  KZ.themeMap = { primary: "--navy", deep: "--deep", accent: "--gold", accent2: "--gold-soft", bg: "--bg", surface: "--surface", text: "--text", link: "--link", muted: "--muted", line: "--line" };
+  KZ.themeCss = function (v) {
+    var s = ""; v = v || {};
+    Object.keys(KZ.themeMap).forEach(function (k) { if (v[k] && /^#[0-9a-fA-F]{3,8}$/.test(v[k])) s += KZ.themeMap[k] + ":" + v[k] + ";"; });
+    return s ? ':root:not([data-theme="dark"]){' + s + "}" : "";
+  };
+  KZ.applyThemeVars = function (v) {
+    var st = document.getElementById("kzTheme");
+    if (!st) { st = document.createElement("style"); st.id = "kzTheme"; document.head.appendChild(st); }
+    st.textContent = v ? KZ.themeCss(v) : "";
+  };
+  KZ.loadTheme = async function () {
+    var key = "kz-theme-" + (KZ.user ? KZ.user.id : "");
+    try { var c = localStorage.getItem(key); if (c) KZ.applyThemeVars(JSON.parse(c)); } catch (e) {}
+    try {
+      var rr = await KZ.sb.from("theme_rules").select("scope,scope_value,themes(vars)");
+      var gids = [];
+      if (KZ.profile && KZ.profile.role !== "teacher") gids = ((await KZ.sb.from("group_members").select("group_id")).data || []).map(function (x) { return String(x.group_id); });
+      var rules = rr.data || [], lv = KZ.profile ? String(KZ.profile.level || "") : "";
+      var pick = rules.find(function (r) { return r.scope === "group" && gids.indexOf(r.scope_value) >= 0; }) || rules.find(function (r) { return r.scope === "level" && r.scope_value === lv; }) || rules.find(function (r) { return r.scope === "all"; });
+      var v = pick && pick.themes ? pick.themes.vars : null;
+      KZ.applyThemeVars(v);
+      try { if (v) localStorage.setItem(key, JSON.stringify(v)); else localStorage.removeItem(key); } catch (e) {}
+    } catch (e) {}
   };
   KZ.features = {};
   // A feature is on unless the teacher switched it off.
