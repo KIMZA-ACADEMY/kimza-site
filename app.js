@@ -61,7 +61,7 @@
     var isT = prof && prof.role === "teacher";
     var links = isT
       ? [["admin.html", "لوحة المعلم", "admin"]]
-      : [["dashboard.html", "الرئيسية", "home"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"]];
+      : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"]];
     var h = '<div class="wrap"><a href="' + (isT ? "admin.html" : "dashboard.html") + '"><img src="kimza-logo-gold.png" alt="KIMZA Academy"></a>' +
       '<nav class="links" aria-label="Main">' + links.map(function (l) { return '<a href="' + l[0] + '"' + (l[2] === active ? ' aria-current="page"' : "") + ">" + l[1] + "</a>"; }).join("") +
       '<span class="who">' + esc(prof ? prof.full_name : "") + '</span><button class="btn btn-ghost sm" id="logoutBtn" type="button" style="color:var(--cream)">خروج</button></nav></div>';

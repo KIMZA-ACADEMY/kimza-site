@@ -7,8 +7,8 @@
 <title>لوحة الطالب · KIMZA Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvf7qrm">
-<link rel="stylesheet" href="app.css?v=mwvf7qrm">
+<link rel="stylesheet" href="site.css?v=mwvttfqu">
+<link rel="stylesheet" href="app.css?v=mwvttfqu">
 
 </head>
 <body class="app">
@@ -16,7 +16,7 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvf7qrm"></script>
+<script src="app.js?v=mwvttfqu"></script>
 
 <script>
 (async function () {
@@ -35,7 +35,18 @@
     sb.from("announcements").select("title,body,created_at,level").order("created_at", { ascending: false }).limit(5),
     sb.from("level_info").select("*").eq("level", prof.level).maybeSingle(),
     sb.from("attendance").select("status"),
+    sb.from("flashcards").select("id").eq("level", prof.level),
+    sb.from("card_progress").select("card_id,state,due,first_seen"),
   ]);
+  var allCards = res[7].data || [], prog = res[8].data || [];
+  var endToday = new Date(); endToday.setHours(23, 59, 59, 999);
+  var startToday = new Date(); startToday.setHours(0, 0, 0, 0);
+  var cardIds = {}; allCards.forEach(function (c) { cardIds[c.id] = 1; });
+  var dueCards = prog.filter(function (p) { return cardIds[p.card_id] && new Date(p.due) <= (p.state === "learning" ? new Date(Date.now() + 20 * 60000) : endToday); }).length;
+  var seenIds = {}; prog.forEach(function (p) { seenIds[p.card_id] = 1; });
+  var unseen = allCards.filter(function (c) { return !seenIds[c.id]; }).length;
+  var newToday = prog.filter(function (p) { return cardIds[p.card_id] && new Date(p.first_seen) >= startToday; }).length;
+  var newAvail = Math.min(unseen, Math.max(0, 10 - newToday));
   var lessons = res[0].data || [], tests = res[1].data || [], attempts = res[2].data || [], hw = res[3].data || [];
   var news = res[4].data || [], info = res[5].data, att = res[6].data || [];
   var hwMap = {}; hw.forEach(function (h) { hwMap[h.lesson_id] = h; });
@@ -55,6 +66,16 @@
   }
   if (prof.status !== "active") html += '<div class="warnbox">حسابك ليس نشطاً حالياً، لذلك قد لا تظهر بعض المواد. تواصل مع المعلم.</div>';
   if (absences > 3) html += '<div class="warnbox">لديك ' + absences + ' غيابات. أكثر من 3 غيابات قد تعرّضك لعدم اجتياز الاختبار النهائي. تواصل مع المعلم، ويمكنك متابعة مواد الدروس وحل الواجبات لتعويض ما فاتك.</div>';
+
+  var todo = [];
+  if (dueCards + newAvail > 0) todo.push('<div class="row"><div><strong>مراجعة البطاقات</strong><div class="muted">' + dueCards + ' للمراجعة · ' + newAvail + ' جديدة اليوم</div></div><a class="btn btn-primary sm" href="review.html">ابدأ</a></div>');
+  lessons.filter(function (l) { return l.open_homework && !hwMap[l.id]; }).forEach(function (l) {
+    todo.push('<div class="row"><div><strong>واجب الدرس ' + l.num + '</strong><div class="muted">لم يُسلَّم بعد</div></div><a class="btn btn-primary sm" href="lesson.html?id=' + esc(l.id) + '">افتح</a></div>');
+  });
+  tests.filter(function (t) { return t.is_open && !atMap[t.id]; }).forEach(function (t) {
+    todo.push('<div class="row"><div><strong>' + esc(KINDS[t.kind]) + '</strong><div class="muted">مفتوح الآن · ' + t.minutes + ' دقيقة</div></div><a class="btn btn-primary sm" href="test.html?id=' + esc(t.id) + '">ابدأ</a></div>');
+  });
+  html += '<h2 style="margin-top:18px">مهامك اليوم</h2><div class="tile">' + (todo.length ? todo.join("") : '<p class="muted">🎉 لا مهام متبقية اليوم. أحسنت!</p>') + '</div>';
 
   html += '<div class="cards" style="margin:18px 0">';
   html += '<div class="tile"><h3>تقدمك</h3><div class="bar"><i style="width:' + pct + '%"></i></div><p class="muted" style="margin-top:8px">' + doneHw + ' من ' + openLessons.length + ' واجباً مفتوحاً تم تسليمه</p>';
