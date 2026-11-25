@@ -28,7 +28,7 @@
   var learned = {};
   try { learned = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
 
-  var ls = await sb.from("lessons").select("num,level,title,is_open").eq("level", prof.level).eq("is_open", true).order("num");
+  var ls = await sb.from("lessons").select("num,level,title,is_open").eq("level", prof.level).eq("open_words", true).order("num");
   var open = ls.data || [];
   if (!open.length) { app.innerHTML = '<h1>البطاقات</h1><p class="muted">لا توجد دروس مفتوحة بعد. ستظهر بطاقات كل درس عندما يفتحه المعلم.</p>'; return; }
 

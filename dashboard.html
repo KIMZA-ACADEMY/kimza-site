@@ -28,7 +28,7 @@
   var KINDS = { weekly: "اختبار أسبوعي", monthly: "امتحان شهري", final: "امتحان نهاية المستوى" };
 
   var res = await Promise.all([
-    sb.from("lessons").select("id,level,num,title,is_open").eq("level", prof.level).order("num"),
+    sb.from("lessons").select("id,level,num,title,is_open,open_words,open_story,open_audio,open_exercises,open_homework").eq("level", prof.level).order("num"),
     sb.from("tests").select("id,level,kind,minutes,is_open").eq("level", prof.level),
     sb.from("test_attempts").select("test_id,score,total,submitted_at"),
     sb.from("homework_submissions").select("lesson_id,first_score,total"),
@@ -42,13 +42,13 @@
   var atMap = {}; attempts.forEach(function (a) { atMap[a.test_id] = a; });
 
   var absences = att.filter(function (a) { return a.status === "absent"; }).length;
-  var openLessons = lessons.filter(function (l) { return l.is_open; });
+  var openLessons = lessons.filter(function (l) { return l.open_homework; });
   var doneHw = openLessons.filter(function (l) { return hwMap[l.id]; }).length;
   var pct = openLessons.length ? Math.round(doneHw / openLessons.length * 100) : 0;
 
   var html = "";
-  html += '<h1>مرحباً ' + esc(prof.full_name) + '</h1>';
-  html += '<p><span class="badge gold">المستوى ' + esc(prof.level) + '</span> <span class="badge ' + (prof.status === "active" ? "ok" : "bad") + '">' + esc(STATUS[prof.status] || prof.status) + '</span></p>';
+  html += '<div class="welcome"><div><h1>مرحباً ' + esc(prof.full_name) + '</h1>';
+  html += '<p style="margin:0"><span class="badge gold">المستوى ' + esc(prof.level) + '</span> <span class="badge ' + (prof.status === "active" ? "ok" : "bad") + '">' + esc(STATUS[prof.status] || prof.status) + '</span></p></div><div class="wnum" aria-hidden="true">' + esc(prof.level) + '</div></div>';
 
   if (prof.must_change_password) {
     html += '<div class="infobox"><strong>غيّر كلمة المرور المؤقتة الآن</strong><div class="form" style="margin-top:10px"><div><label for="np">كلمة مرور جديدة (8 أحرف على الأقل)</label><input id="np" type="password" dir="ltr" autocomplete="new-password"></div><div><button class="btn btn-primary sm" id="npBtn" type="button">حفظ كلمة المرور</button></div></div></div>';
@@ -66,6 +66,9 @@
     if (info.community_url) html += '<p><a class="btn btn-ghost sm" href="' + esc(info.community_url) + '" target="_blank" rel="noopener">مجتمع المستوى</a></p>';
     html += '</div>';
   }
+  html += '<div class="tile"><h3>بطاقات AnkiDroid</h3>' + (info && info.deck_open
+    ? '<p class="muted">حمّل حزمة بطاقات مستواك وافتحها في تطبيق AnkiDroid.</p><p><button class="btn btn-primary sm" id="deckBtn" type="button">تحميل الحزمة (' + esc(prof.level) + ')</button></p>'
+    : '<p class="muted">🔒 ستُفتح الحزمة عندما يقرر المعلم ذلك.</p>') + '</div>';
   html += '<a class="tile link" href="flashcards.html"><h3>بطاقات المفردات</h3><p class="muted">راجع كلمات دروسك المفتوحة.</p></a>';
   html += '<a class="tile link" href="speaking.html"><h3>المحادثة</h3><p class="muted">احجز جلسة محادثة مع زميل أو مع المعلم.</p></a>';
   html += '</div>';
@@ -98,14 +101,25 @@
     html += '<div class="tile" style="margin-bottom:12px"><h3>الأسبوع ' + w + '</h3>';
     weeks[w].forEach(function (l) {
       var h = hwMap[l.id];
-      var state = l.is_open ? (h ? '<span class="badge ok">الواجب ' + h.first_score + "/" + h.total + "</span>" : '<span class="badge gold">مفتوح</span>') : '<span class="badge">🔒 مغلق</span>';
+      var chips = [["words", "الكلمات"], ["story", "القصة"], ["audio", "الصوت"], ["exercises", "التمارين"], ["homework", "الواجب"]].map(function (c) {
+        var on = l["open_" + c[0]];
+        return '<span class="badge ' + (on ? "ok" : "") + '">' + (on ? "" : "🔒 ") + c[1] + "</span>";
+      }).join(" ");
+      var state = h ? '<span class="badge ok">الواجب ' + h.first_score + "/" + h.total + "</span>" : "";
       var act = l.is_open ? '<a class="btn btn-primary sm" href="lesson.html?id=' + esc(l.id) + '">افتح</a>' : "";
+      state = chips + " " + state;
       html += '<div class="row"><div><strong>الدرس ' + l.num + '</strong> <span class="muted en">' + esc(l.title || "") + "</span></div><div>" + state + " " + act + "</div></div>";
     });
     html += "</div>";
   });
   app.innerHTML = html;
 
+  var deck = document.getElementById("deckBtn");
+  if (deck) deck.addEventListener("click", async function () {
+    var s = await sb.storage.from("anki-decks").createSignedUrl("KIMZA-" + prof.level + ".apkg", 600, { download: "KIMZA-" + prof.level + ".apkg" });
+    if (s.error || !s.data) { KZ.toast("لم يرفع المعلم الحزمة بعد.", true); return; }
+    location.href = s.data.signedUrl;
+  });
   var btn = document.getElementById("npBtn");
   if (btn) btn.addEventListener("click", async function () {
     var pw = document.getElementById("np").value;

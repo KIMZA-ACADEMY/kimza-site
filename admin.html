@@ -134,33 +134,51 @@
       try { await fn({ action: "delete", user_id: id }); KZ.toast("تم الحذف."); VIEWS.students(); } catch (er) { KZ.toast("تعذر الحذف.", true); } }); });
   };
 
-  // ================= Lessons =================
+  // ================= Lessons: open or lock every part of every lesson =================
   var lessonLevel = "A1";
+  var PARTS = [["words", "الكلمات"], ["story", "القصة"], ["audio", "الصوت"], ["exercises", "التمارين"], ["homework", "الواجب"]];
   VIEWS.lessons = async function () {
-    var r = await sb.from("lessons").select("id,num,title,is_open").eq("level", lessonLevel).order("num");
+    var r = await sb.from("lessons").select("id,num,title,open_words,open_story,open_audio,open_exercises,open_homework").eq("level", lessonLevel).order("num");
     var ls = r.data || [];
+    var audioSet = {};
+    try { ((await sb.storage.from("lesson-audio").list("", { limit: 1000 })).data || []).forEach(function (o) { audioSet[o.name] = true; }); } catch (e) {}
     var h = '<div class="form" style="max-width:240px"><label for="lv">المستوى</label><select id="lv">' + opts(LEVELS, lessonLevel) + "</select></div>";
-    h += '<p class="muted">افتح الدرس ليظهر للطلاب (الكلمات والقصة والواجب والبطاقات). صفحة الحصة للمعلم فقط.</p>';
+    h += '<p class="muted">تحكّم في كل جزء من كل درس على حدة: الكلمات، القصة، الصوت، التمارين (صفحة الحصة التفاعلية)، والواجب. الأجزاء المقفلة تظهر للطالب بقفل.</p>';
     var weeks = {}; ls.forEach(function (l) { var w = Math.ceil(l.num / 4); (weeks[w] = weeks[w] || []).push(l); });
     Object.keys(weeks).forEach(function (w) {
-      var all = weeks[w].every(function (l) { return l.is_open; });
-      h += '<div class="tile" style="margin:12px 0"><div class="row" style="padding-top:0"><h3 style="margin:0">الأسبوع ' + w + '</h3><button class="btn btn-ghost sm" data-wk="' + w + '" data-to="' + (all ? "0" : "1") + '" type="button">' + (all ? "إغلاق الأسبوع" : "فتح الأسبوع") + "</button></div>";
+      h += '<div class="tile" style="margin:12px 0"><div class="row" style="padding-top:0"><h3 style="margin:0">الأسبوع ' + w + '</h3><div class="btns">';
+      PARTS.forEach(function (p) {
+        var all = weeks[w].every(function (l) { return l["open_" + p[0]]; });
+        h += '<button class="btn btn-ghost sm" data-wk="' + w + '|' + p[0] + '|' + (all ? "0" : "1") + '" type="button">' + (all ? "إغلاق " : "فتح ") + p[1] + "</button>";
+      });
+      h += "</div></div>";
       weeks[w].forEach(function (l) {
-        h += '<div class="row"><div><strong>الدرس ' + l.num + '</strong> <span class="muted en">' + esc(l.title || "") + '</span></div><div>' +
-          '<a class="btn btn-ghost sm" href="class.html?id=' + esc(l.id) + '">صفحة الحصة</a> ' +
-          '<button class="btn ' + (l.is_open ? "btn-primary" : "btn-ghost") + ' sm" data-tg="' + esc(l.id) + '" data-to="' + (l.is_open ? "0" : "1") + '" type="button">' + (l.is_open ? "مفتوح ✓" : "🔒 مغلق") + "</button></div></div>";
+        h += '<div class="row" style="align-items:flex-start"><div><strong>الدرس ' + l.num + '</strong> <span class="muted en">' + esc(l.title || "") + '</span><div class="btns" style="margin-top:8px">';
+        PARTS.forEach(function (p) {
+          var on = l["open_" + p[0]];
+          h += '<button class="btn ' + (on ? "btn-primary" : "btn-ghost") + ' sm" data-tg="' + esc(l.id) + "|" + p[0] + "|" + (on ? "0" : "1") + '" type="button">' + (on ? "✓ " : "🔒 ") + p[1] + "</button>";
+        });
+        h += '</div></div><div style="text-align:end"><a class="btn btn-ghost sm" href="class.html?id=' + esc(l.id) + '">صفحة الحصة</a>' +
+          '<div style="margin-top:8px"><label class="btn btn-ghost sm" style="display:inline-flex;margin:0;cursor:pointer">' + (audioSet[l.id + ".mp3"] ? "استبدال الصوت" : "رفع الصوت") +
+          '<input type="file" accept="audio/*" data-au="' + esc(l.id) + '" style="display:none"></label> ' + (audioSet[l.id + ".mp3"] ? '<span class="badge ok">الصوت مرفوع</span>' : '<span class="badge">لا صوت</span>') + "</div></div></div>";
       });
       h += "</div>";
     });
     view.innerHTML = h;
     $("lv").addEventListener("change", function () { lessonLevel = $("lv").value; VIEWS.lessons(); });
     view.querySelectorAll("[data-tg]").forEach(function (b) { b.addEventListener("click", async function () {
-      var r2 = await sb.from("lessons").update({ is_open: b.getAttribute("data-to") === "1" }).eq("id", b.getAttribute("data-tg"));
+      var p = b.getAttribute("data-tg").split("|"), patch = {}; patch["open_" + p[1]] = p[2] === "1";
+      var r2 = await sb.from("lessons").update(patch).eq("id", p[0]);
       if (r2.error) KZ.toast("تعذر الحفظ.", true); VIEWS.lessons(); }); });
     view.querySelectorAll("[data-wk]").forEach(function (b) { b.addEventListener("click", async function () {
-      var w = Number(b.getAttribute("data-wk")), ids = (weeks[w] || []).map(function (l) { return l.id; });
-      var r2 = await sb.from("lessons").update({ is_open: b.getAttribute("data-to") === "1" }).in("id", ids);
+      var p = b.getAttribute("data-wk").split("|"), ids = (weeks[Number(p[0])] || []).map(function (l) { return l.id; }), patch = {}; patch["open_" + p[1]] = p[2] === "1";
+      var r2 = await sb.from("lessons").update(patch).in("id", ids);
       if (r2.error) KZ.toast("تعذر الحفظ.", true); VIEWS.lessons(); }); });
+    view.querySelectorAll("[data-au]").forEach(function (inp) { inp.addEventListener("change", async function () {
+      var f = inp.files[0]; if (!f) return;
+      KZ.toast("جارٍ رفع الصوت...");
+      var up = await sb.storage.from("lesson-audio").upload(inp.getAttribute("data-au") + ".mp3", f, { upsert: true, contentType: f.type || "audio/mpeg" });
+      KZ.toast(up.error ? "تعذر رفع الصوت." : "تم رفع الصوت.", !!up.error); VIEWS.lessons(); }); });
   };
 
   // ================= Tests =================
@@ -374,22 +392,37 @@
     view.querySelectorAll("[data-dn]").forEach(function (b) { b.addEventListener("click", async function () { await sb.from("announcements").delete().eq("id", Number(b.getAttribute("data-dn"))); VIEWS.news(); }); });
   };
 
-  // ================= Level settings =================
+  // ================= Level settings, AnkiDroid decks =================
   VIEWS.settings = async function () {
     var li = (await sb.from("level_info").select("*").order("level")).data || [];
-    var h = '<p class="muted">رابط الحصة المباشرة ورابط مجتمع كل مستوى وملاحظة الجدول. تظهر لطلاب المستوى فقط.</p>';
+    var deckSet = {};
+    try { ((await sb.storage.from("anki-decks").list("", { limit: 100 })).data || []).forEach(function (o) { deckSet[o.name] = true; }); } catch (e) {}
+    var h = '<p class="muted">لكل مستوى: رابط الحصة، رابط المجتمع، ملاحظة الجدول، وحزمة بطاقات AnkiDroid (ارفع الملف ثم افتحها للطلاب).</p>';
     li.forEach(function (l) {
+      var file = "KIMZA-" + l.level + ".apkg";
       h += '<form class="tile form" data-lf="' + l.level + '" style="margin-bottom:14px"><h3 class="en">' + l.level + '</h3>' +
         '<div><label>رابط الحصة</label><input name="meeting_url" dir="ltr" value="' + esc(l.meeting_url || "") + '"></div>' +
         '<div><label>رابط مجتمع المستوى</label><input name="community_url" dir="ltr" value="' + esc(l.community_url || "") + '"></div>' +
         '<div><label>ملاحظة الجدول (أيام وأوقات الحصص)</label><input name="schedule_note" value="' + esc(l.schedule_note || "") + '"></div>' +
-        '<div><button class="btn btn-primary sm" type="submit">حفظ</button></div></form>';
+        '<div><button class="btn btn-primary sm" type="submit">حفظ</button></div>' +
+        '<div class="row" style="border-top:1px solid var(--line);margin-top:8px"><div><strong>حزمة AnkiDroid</strong> ' + (deckSet[file] ? '<span class="badge ok">مرفوعة</span>' : '<span class="badge">لم تُرفع</span>') + '</div><div class="btns">' +
+        '<label class="btn btn-ghost sm" style="display:inline-flex;margin:0;cursor:pointer">' + (deckSet[file] ? "استبدال الملف" : "رفع الملف") + '<input type="file" accept=".apkg" data-dk="' + file + '" style="display:none"></label>' +
+        '<button class="btn ' + (l.deck_open ? "btn-primary" : "btn-ghost") + ' sm" data-dg="' + l.level + "|" + (l.deck_open ? "0" : "1") + '" type="button">' + (l.deck_open ? "✓ مفتوحة للطلاب" : "🔒 مقفلة") + "</button></div></div></form>";
     });
     view.innerHTML = h;
     view.querySelectorAll("[data-lf]").forEach(function (f) { f.addEventListener("submit", async function (e) {
       e.preventDefault();
       var r = await sb.from("level_info").update({ meeting_url: f.meeting_url.value || null, community_url: f.community_url.value || null, schedule_note: f.schedule_note.value || null }).eq("level", f.getAttribute("data-lf"));
       KZ.toast(r.error ? "تعذر الحفظ." : "تم الحفظ.", !!r.error); }); });
+    view.querySelectorAll("[data-dg]").forEach(function (b) { b.addEventListener("click", async function () {
+      var p = b.getAttribute("data-dg").split("|");
+      var r = await sb.from("level_info").update({ deck_open: p[1] === "1" }).eq("level", p[0]);
+      if (r.error) KZ.toast("تعذر الحفظ.", true); VIEWS.settings(); }); });
+    view.querySelectorAll("[data-dk]").forEach(function (inp) { inp.addEventListener("change", async function () {
+      var f = inp.files[0]; if (!f) return;
+      KZ.toast("جارٍ رفع الملف...");
+      var up = await sb.storage.from("anki-decks").upload(inp.getAttribute("data-dk"), f, { upsert: true, contentType: "application/octet-stream" });
+      KZ.toast(up.error ? "تعذر رفع الملف." : "تم رفع الملف.", !!up.error); VIEWS.settings(); }); });
   };
 
   go((location.hash || "#students").slice(1));

@@ -26,26 +26,58 @@
   var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
   var id = new URLSearchParams(location.search).get("id") || "";
 
-  var l = await sb.from("lessons").select("id,num,level,title,is_open").eq("id", id).maybeSingle();
-  var c = await sb.from("lesson_content").select("kind,body").eq("lesson_id", id);
-  if (!l.data || !c.data || !c.data.length) {
-    app.innerHTML = '<h1>الدرس غير متاح</h1><p class="muted">هذا الدرس مغلق الآن. سيفتحه المعلم في وقته.</p><p><a class="btn btn-primary" href="dashboard.html">العودة</a></p>';
+  var l = await sb.from("lessons").select("id,num,level,title,open_words,open_story,open_audio,open_exercises,open_homework").eq("id", id).maybeSingle();
+  if (!l.data) {
+    app.innerHTML = '<h1>الدرس غير متاح</h1><p><a class="btn btn-primary" href="dashboard.html">العودة</a></p>';
     return;
   }
-  var content = {}; c.data.forEach(function (x) { content[x.kind] = x.body; });
+  var L = l.data;
+  var TABS = [
+    ["words", "الكلمات", L.open_words],
+    ["story", "القصة", L.open_story],
+    ["audio", "الصوت", L.open_audio],
+    ["exercises", "التمارين", L.open_exercises],
+    ["homework", "الواجب", L.open_homework]
+  ];
+  var first = (TABS.filter(function (t) { return t[2]; })[0] || TABS[0])[0];
+  var content = {};
+  var c = await sb.from("lesson_content").select("kind,body").eq("lesson_id", id);
+  (c.data || []).forEach(function (x) { content[x.kind] = x.body; });
   var done = await sb.from("homework_submissions").select("first_score,total").eq("lesson_id", id).maybeSingle();
 
-  var html = '<p><a href="dashboard.html">&larr; العودة</a></p><h1>الدرس ' + l.data.num + ' <span class="en muted" style="font-size:.6em">' + esc(l.data.title || "") + "</span></h1>";
-  html += '<div class="tabs" role="tablist"><button data-t="words" aria-selected="true">الكلمات</button><button data-t="story" aria-selected="false">القصة</button><button data-t="homework" aria-selected="false">الواجب</button></div><div id="pane"></div>';
+  var html = '<p><a href="dashboard.html">&larr; العودة</a></p><h1>الدرس ' + L.num + ' <span class="en muted" style="font-size:.6em">' + esc(L.title || "") + "</span></h1>";
+  html += '<div class="tabs" role="tablist">' + TABS.map(function (t) {
+    return '<button data-t="' + t[0] + '" aria-selected="' + (t[0] === first ? "true" : "false") + '">' + (t[2] ? "" : "🔒 ") + t[1] + "</button>";
+  }).join("") + '</div><div id="pane"></div>';
   app.innerHTML = html;
 
-  function show(t) {
+  function locked(name) {
+    return '<div class="tile"><h3>🔒 ' + name + ' مغلق</h3><p class="muted">سيفتحه المعلم في الوقت المناسب.</p></div>';
+  }
+
+  async function show(t) {
     document.querySelectorAll(".tabs button").forEach(function (b) { b.setAttribute("aria-selected", b.getAttribute("data-t") === t ? "true" : "false"); });
     var pane = document.getElementById("pane");
+    var tab = TABS.filter(function (x) { return x[0] === t; })[0];
+    if (!tab[2]) { pane.innerHTML = locked(tab[1]); return; }
+
     if (t === "words" || t === "story") {
       pane.innerHTML = '<div class="tile"><pre style="white-space:pre-wrap;font-family:inherit;direction:auto;margin:0;line-height:1.9">' + esc(content[t] || "") + "</pre></div>";
       return;
     }
+    if (t === "audio") {
+      pane.innerHTML = '<div class="tile"><p class="muted">جارٍ تحميل الصوت...</p></div>';
+      var s = await sb.storage.from("lesson-audio").createSignedUrl(id + ".mp3", 3600);
+      if (s.error || !s.data) { pane.innerHTML = '<div class="tile"><p class="muted">لم يرفع المعلم ملف الصوت لهذا الدرس بعد.</p></div>'; return; }
+      pane.innerHTML = '<div class="tile"><h3>استمع وكرّر</h3><audio controls controlsList="nodownload" preload="none" style="width:100%" src="' + esc(s.data.signedUrl) + '"></audio><p class="muted">استمع إلى القصة ثم أعدها جملة جملة.</p></div>';
+      return;
+    }
+    if (t === "exercises") {
+      pane.innerHTML = '<div class="infobox">تمارين الحصة التفاعلية لهذا الدرس.</div><iframe class="frame" id="ex" sandbox="allow-scripts allow-same-origin allow-forms" title="Exercises"></iframe>';
+      document.getElementById("ex").srcdoc = content["class"] || "";
+      return;
+    }
+    // homework
     var note = done && done.data
       ? '<div class="infobox">سلّمت هذا الواجب. درجتك الأولى المحتسبة: <strong>' + done.data.first_score + " / " + done.data.total + "</strong>. المحاولات التالية للتدريب فقط ولا تُحتسب.</div>"
       : '<div class="infobox">ادخل اسمك ثم أجب. <strong>درجتك الأولى هي التي تُحتسب</strong> وتُحفظ تلقائياً.</div>';
@@ -69,7 +101,7 @@
     fr.srcdoc = content.homework || "";
   }
   document.querySelectorAll(".tabs button").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-t")); }); });
-  show("words");
+  show(first);
 })();
 
 </script>
