@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>استعادة كلمة المرور · KIMZA Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="app.css">
+
+</head>
+<body class="app">
+<main class="app-main" id="app" style="max-width:440px;margin-top:6vh"></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+
+<script>
+(function () {
+  var sb = KZ.sb, app = document.getElementById("app");
+  var hash = location.hash || "";
+  var isRecovery = /type=recovery/.test(hash) || /access_token=/.test(hash);
+
+  function requestForm(msg) {
+    app.innerHTML = '<div class="tile" style="text-align:center"><h1 style="font-size:1.5rem">استعادة كلمة المرور</h1>' +
+      '<p class="muted">للمعلم فقط. اكتب بريدك الإلكتروني وسنرسل رابط تغيير كلمة المرور. الطلاب يطلبون من المعلم كلمة مرور جديدة.</p>' +
+      '<form class="form" id="f" style="margin:auto;text-align:start"><div><label for="e">البريد الإلكتروني</label><input id="e" type="email" dir="ltr" required autocomplete="email"></div>' +
+      '<div id="m" class="msg" hidden></div><button class="btn btn-primary" type="submit">أرسل الرابط</button></form><p><a href="login.html">العودة لتسجيل الدخول</a></p></div>' + (msg || "");
+    document.getElementById("f").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var m = document.getElementById("m"); m.hidden = false; m.className = "msg"; m.textContent = "جارٍ الإرسال...";
+      var r = await sb.auth.resetPasswordForEmail(document.getElementById("e").value.trim(), { redirectTo: location.origin + location.pathname });
+      m.className = "msg " + (r.error ? "bad" : "ok");
+      m.textContent = r.error ? "تعذر الإرسال. حاول بعد قليل." : "إن كان البريد مسجلاً فقد أرسلنا إليه رابطاً. افتحه من نفس الجهاز.";
+    });
+  }
+
+  function newPasswordForm() {
+    app.innerHTML = '<div class="tile" style="text-align:center"><h1 style="font-size:1.5rem">كلمة مرور جديدة</h1>' +
+      '<form class="form" id="f" style="margin:auto;text-align:start"><div><label for="p">كلمة المرور الجديدة (8 أحرف على الأقل)</label><input id="p" type="password" dir="ltr" autocomplete="new-password" required minlength="8"></div>' +
+      '<div id="m" class="msg" hidden></div><button class="btn btn-primary" type="submit">حفظ</button></form></div>';
+    document.getElementById("f").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var pw = document.getElementById("p").value, m = document.getElementById("m");
+      m.hidden = false; m.className = "msg"; m.textContent = "جارٍ الحفظ...";
+      var r = await sb.auth.updateUser({ password: pw });
+      if (r.error) { m.className = "msg bad"; m.textContent = "تعذر الحفظ. اطلب رابطاً جديداً."; return; }
+      m.className = "msg ok"; m.textContent = "تم تغيير كلمة المرور.";
+      await sb.auth.signOut();
+      setTimeout(function () { location.href = "login.html"; }, 1500);
+    });
+  }
+
+  if (!isRecovery) { requestForm(""); return; }
+  // The recovery link signs the browser in temporarily; wait for the session, then ask for the new password.
+  var done = false;
+  sb.auth.onAuthStateChange(function (ev) { if (!done && (ev === "PASSWORD_RECOVERY" || ev === "SIGNED_IN")) { done = true; newPasswordForm(); } });
+  setTimeout(function () { if (!done) requestForm('<div class="warnbox">انتهت صلاحية الرابط أو استُخدم من قبل. اطلب رابطاً جديداً.</div>'); }, 5000);
+})();
+
+</script>
+</body>
+</html>
