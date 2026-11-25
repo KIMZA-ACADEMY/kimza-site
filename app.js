@@ -107,24 +107,67 @@
     try { await KZ.loadBoard(); } catch (e) { toast("تعذر تحميل السبورة.", true); return; }
     var ov = document.getElementById("kzbOv");
     if (!ov) {
-      ov = document.createElement("div"); ov.id = "kzbOv"; ov.style.cssText = "position:fixed;inset:0;z-index:9998;background:#0B1F44;display:none;flex-direction:column";
-      ov.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;color:#F8F4E9;font-weight:700"><span style="flex:1">🧑‍🏫 سبورتي (تُحفظ في حسابك تلقائياً)</span><button type="button" id="kzbFs" style="font:inherit;border:1px solid #D4AF37;background:transparent;color:#F8F4E9;border-radius:9px;padding:6px 12px;cursor:pointer">⛶ ملء الشاشة</button><button type="button" id="kzbClose" style="font:inherit;border:0;background:#D4AF37;color:#0B1F44;border-radius:9px;padding:6px 14px;cursor:pointer;font-weight:700">✕ رجوع إلى الدرس</button></div><div id="kzbHost" style="flex:1;min-height:0;position:relative"></div>';
+      var G = { x: 0, y: 0, w: 0, h: 0, max: false, min: false };
+      try { G = Object.assign(G, JSON.parse(localStorage.getItem("kzb-win") || "{}")); } catch (e) {}
+      var vw = window.innerWidth, vh = window.innerHeight;
+      if (!G.w || G.w < 280) { G.w = Math.min(760, vw - 24); G.h = Math.min(520, vh - 80); G.x = Math.max(8, vw - G.w - 16); G.y = Math.max(8, vh - G.h - 72); }
+      ov = document.createElement("div"); ov.id = "kzbOv";
+      ov.style.cssText = "position:fixed;z-index:9998;background:#0B1F44;display:none;flex-direction:column;border:2px solid #D4AF37;border-radius:14px;box-shadow:0 14px 50px rgba(0,0,0,.55);overflow:hidden;direction:rtl";
+      var bs = "font:inherit;border:1px solid #D4AF37;background:transparent;color:#F8F4E9;border-radius:9px;padding:4px 10px;cursor:pointer;min-height:32px";
+      ov.innerHTML = '<div id="kzbHd" style="display:flex;align-items:center;gap:6px;padding:5px 10px;color:#F8F4E9;font-weight:700;cursor:move;touch-action:none;user-select:none;-webkit-user-select:none"><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🧑‍🏫 سبورتي ⠿ اسحب من هنا</span><button type="button" id="kzbMin" title="تصغير إلى شريط" style="' + bs + '">—</button><button type="button" id="kzbMax" title="تكبير / استرجاع الحجم" style="' + bs + '">▢</button><button type="button" id="kzbFs" title="ملء الشاشة بالكامل" style="' + bs + '">⛶</button><button type="button" id="kzbClose" title="إغلاق (تبقى محفوظة)" style="font:inherit;border:0;background:#D4AF37;color:#0B1F44;border-radius:9px;padding:4px 12px;cursor:pointer;font-weight:700;min-height:32px">✕</button></div><div id="kzbHost" style="flex:1;min-height:0;position:relative"></div>';
       document.body.appendChild(ov);
+      var handles = [["n", "top:-3px;left:12px;right:12px;height:8px;cursor:ns-resize"], ["s", "bottom:-3px;left:12px;right:12px;height:8px;cursor:ns-resize"], ["w", "left:-3px;top:12px;bottom:12px;width:8px;cursor:ew-resize"], ["e", "right:-3px;top:12px;bottom:12px;width:8px;cursor:ew-resize"], ["nw", "top:-3px;left:-3px;width:16px;height:16px;cursor:nwse-resize"], ["ne", "top:-3px;right:-3px;width:16px;height:16px;cursor:nesw-resize"], ["sw", "bottom:-3px;left:-3px;width:18px;height:18px;cursor:nesw-resize"], ["se", "bottom:-3px;right:-3px;width:22px;height:22px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 50%,#D4AF37 50%)"]];
+      handles.forEach(function (h) { var d = document.createElement("div"); d.dataset.h = h[0]; d.style.cssText = "position:absolute;z-index:3;touch-action:none;" + h[1]; ov.appendChild(d); });
+      function apply() {
+        var vw2 = window.innerWidth, vh2 = window.innerHeight;
+        if (G.max) { ov.style.left = "0"; ov.style.top = "0"; ov.style.width = vw2 + "px"; ov.style.height = vh2 + "px"; ov.style.borderRadius = "0"; ov.style.borderWidth = "0"; }
+        else {
+          G.w = Math.max(280, Math.min(G.w, vw2)); G.h = Math.max(200, Math.min(G.h, vh2)); G.x = Math.max(-G.w + 80, Math.min(G.x, vw2 - 80)); G.y = Math.max(0, Math.min(G.y, vh2 - 40));
+          ov.style.left = G.x + "px"; ov.style.top = G.y + "px"; ov.style.width = G.w + "px"; ov.style.height = (G.min ? 44 : G.h) + "px"; ov.style.borderRadius = "14px"; ov.style.borderWidth = "2px";
+        }
+        document.getElementById("kzbHost").style.display = G.min && !G.max ? "none" : "block";
+        try { localStorage.setItem("kzb-win", JSON.stringify(G)); } catch (e) {}
+        if (KZ._boardInst) setTimeout(function () { KZ._boardInst.resize(); }, 30);
+      }
+      KZ._boardApply = apply;
+      var drag = null;
+      document.getElementById("kzbHd").addEventListener("pointerdown", function (e) { if (e.target.tagName === "BUTTON" || G.max) return; drag = { mode: "move", sx: e.clientX, sy: e.clientY, x: G.x, y: G.y }; e.currentTarget.setPointerCapture(e.pointerId); });
+      ov.querySelectorAll("[data-h]").forEach(function (h) { h.addEventListener("pointerdown", function (e) { if (G.max) return; drag = { mode: h.dataset.h, sx: e.clientX, sy: e.clientY, x: G.x, y: G.y, w: G.w, h: G.h }; h.setPointerCapture(e.pointerId); e.preventDefault(); }); });
+      function mv(e) {
+        if (!drag) return; var dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+        if (drag.mode === "move") { G.x = drag.x + dx; G.y = drag.y + dy; }
+        else {
+          var m = drag.mode;
+          if (m.indexOf("e") >= 0) G.w = Math.max(280, drag.w + dx);
+          if (m.indexOf("s") >= 0) G.h = Math.max(200, drag.h + dy);
+          if (m.indexOf("w") >= 0) { var nw = Math.max(280, drag.w - dx); G.x = drag.x + (drag.w - nw); G.w = nw; }
+          if (m.indexOf("n") >= 0) { var nh = Math.max(200, drag.h - dy); G.y = drag.y + (drag.h - nh); G.h = nh; }
+        }
+        G.min = false; apply();
+      }
+      document.addEventListener("pointermove", mv); document.addEventListener("pointerup", function () { drag = null; });
+      window.addEventListener("resize", function () { if (ov.style.display !== "none" && !document.fullscreenElement) apply(); });
       var sess = (await sb.auth.getSession()).data.session;
       KZ._boardInst = KZBoard.mount(document.getElementById("kzbHost"), { sb: sb, table: "user_boards", col: "user_id", val: sess.user.id });
       KZ._boardInst.setFull(true);
       document.getElementById("kzbClose").addEventListener("click", KZ.closeBoard);
+      document.getElementById("kzbMin").addEventListener("click", function () { G.min = !G.min; G.max = false; apply(); });
+      document.getElementById("kzbMax").addEventListener("click", function () { G.max = !G.max; G.min = false; apply(); });
       document.getElementById("kzbFs").addEventListener("click", function () { if (document.fullscreenElement) document.exitFullscreen(); else if (ov.requestFullscreen) ov.requestFullscreen().catch(function () {}); });
-      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ov.style.display !== "none" && !document.fullscreenElement && !document.querySelector(".kzb-ed")) KZ.closeBoard(); });
+      document.addEventListener("fullscreenchange", function () {
+        if (document.fullscreenElement === ov) { ov.style.left = "0"; ov.style.top = "0"; ov.style.width = "100vw"; ov.style.height = "100vh"; ov.style.borderRadius = "0"; ov.style.borderWidth = "0"; if (KZ._boardInst) setTimeout(function () { KZ._boardInst.resize(); }, 80); }
+        else if (ov.style.display !== "none") apply();
+      });
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ov.style.display !== "none" && !document.fullscreenElement && !document.querySelector(".kzb-ed") && G.max) { G.max = false; apply(); } });
     }
-    ov.style.display = "flex"; document.body.style.overflow = "hidden";
+    ov.style.display = "flex";
     var fab = document.getElementById("kzbFab"); if (fab) fab.style.display = "none";
-    setTimeout(function () { if (KZ._boardInst) { KZ._boardInst.resize(); KZ._boardInst.setFull(true); } }, 60);
+    KZ._boardApply(); setTimeout(function () { if (KZ._boardInst) { KZ._boardInst.resize(); KZ._boardInst.setFull(true); } }, 60);
   };
   KZ.closeBoard = function () {
     var ov = document.getElementById("kzbOv"); if (!ov) return;
     try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
-    if (KZ._boardInst) KZ._boardInst.flush(); ov.style.display = "none"; document.body.style.overflow = "";
+    if (KZ._boardInst) KZ._boardInst.flush(); ov.style.display = "none";
     var fab = document.getElementById("kzbFab"); if (fab) fab.style.display = "";
   };
   KZ.mountBoardButton = function () {
