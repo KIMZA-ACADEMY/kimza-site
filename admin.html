@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwkfq92">
-<link rel="stylesheet" href="app.css?v=mwwkfq92">
+<link rel="stylesheet" href="site.css?v=mwwkxkzg">
+<link rel="stylesheet" href="app.css?v=mwwkxkzg">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwkfq92"></script>
-<script src="portal-i18n.js?v=mwwkfq92"></script>
-<script src="i18n.js?v=mwwkfq92"></script>
+<script src="app.js?v=mwwkxkzg"></script>
+<script src="portal-i18n.js?v=mwwkxkzg"></script>
+<script src="i18n.js?v=mwwkxkzg"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -56,7 +56,7 @@
   }
   function copy(text) { try { navigator.clipboard.writeText(text); KZ.toast("تم النسخ."); } catch (e) { KZ.toast("تعذر النسخ، انسخ يدوياً.", true); } }
   async function nameMap() {
-    var r = await sb.from("profiles").select("id,full_name,username,level,status,role,completed_levels").eq("role", "student").order("full_name");
+    var r = await sb.from("profiles").select("id,full_name,username,level,status,role,completed_levels,vote_levels").eq("role", "student").order("full_name");
     var m = {}; (r.data || []).forEach(function (p) { m[p.id] = p; }); return { list: r.data || [], map: m };
   }
 
@@ -84,6 +84,7 @@
     var gl = LEVELS[0];
     ov.innerHTML = '<div class="tile" style="max-width:560px;width:100%;max-height:88vh;overflow:auto;background:var(--paper,#fff)" role="dialog" aria-label="مستويات ودروس الطالب"><h2 style="margin-top:0">' + esc(p.full_name) + '</h2>' +
       '<h3>المستويات التي يدرسها</h3><p class="muted">مستواه الأساسي ' + esc(p.level) + ' (يتغير من الجدول). اختر المستويات الإضافية:</p><div id="acLv" style="display:flex;gap:14px;flex-wrap:wrap"></div>' +
+      '<h3 style="margin-top:20px">التصويت على مواعيد الحصص</h3><p class="muted">اختر المستويات التي يمثّلها في التصويت. يصوّت لكل مستوى على حدة. إن لم تختر شيئاً يصوّت لمستواه الأساسي فقط.</p><div id="acVt" style="display:flex;gap:14px;flex-wrap:wrap"></div>' +
       '<h3 style="margin-top:20px">دروس مفتوحة له وحده</h3><p class="muted">الدرس يفتح له بكل أجزائه حتى لو كان مغلقاً على بقية الطلاب.</p>' +
       '<div class="form"><div><label for="acL">المستوى</label><select id="acL">' + opts(LEVELS, gl) + '</select></div></div><div id="acList" style="margin-top:10px"></div>' +
       '<div class="btns" style="margin-top:16px"><button class="btn btn-primary" id="acX" type="button">إغلاق</button></div></div>';
@@ -99,7 +100,23 @@
         var lv = c.getAttribute("data-lv"), i = extra.indexOf(lv);
         if (c.checked && i < 0) extra.push(lv); if (!c.checked && i >= 0) extra.splice(i, 1);
         var r = await sb.from("profiles").update({ completed_levels: extra }).eq("id", p.id);
-        if (r.error) { KZ.toast("تعذر الحفظ.", true); } else { p.completed_levels = extra.slice(); KZ.toast("تم الحفظ."); }
+        if (r.error) { KZ.toast("تعذر الحفظ.", true); } else { p.completed_levels = extra.slice(); KZ.toast("تم الحفظ."); if (typeof drawVt === "function") drawVt(); }
+      }); });
+    }
+    var vl = (p.vote_levels || []).slice();
+    function drawVt() {
+      var set = [p.level].concat(extra).filter(function (x, i, arr) { return arr.indexOf(x) === i; }).sort();
+      $("acVt").innerHTML = set.map(function (lv) {
+        var on = vl.length ? vl.indexOf(lv) >= 0 : lv === p.level;
+        return '<label style="font-weight:400"><input type="checkbox" data-vt="' + lv + '"' + (on ? " checked" : "") + ' style="width:auto;min-height:0"> ' + lv + "</label>";
+      }).join("");
+      $("acVt").querySelectorAll("input").forEach(function (c) { c.addEventListener("change", async function () {
+        var cur = vl.length ? vl.slice() : [p.level], lv = c.getAttribute("data-vt"), i = cur.indexOf(lv);
+        if (c.checked && i < 0) cur.push(lv); if (!c.checked && i >= 0) cur.splice(i, 1);
+        if (!cur.length) { c.checked = true; KZ.toast("يجب أن يمثّل مستوى واحداً على الأقل.", true); return; }
+        var save = (cur.length === 1 && cur[0] === p.level) ? [] : cur.sort();
+        var r = await sb.from("profiles").update({ vote_levels: save }).eq("id", p.id);
+        if (r.error) { KZ.toast("تعذر الحفظ.", true); c.checked = !c.checked; } else { vl = save; p.vote_levels = save; KZ.toast("تم الحفظ."); }
       }); });
     }
     async function drawLs() {
@@ -116,7 +133,7 @@
         if (r.error) c.checked = !c.checked;
       }); });
     }
-    drawLv(); $("acL").addEventListener("change", drawLs); drawLs();
+    drawLv(); drawVt(); $("acL").addEventListener("change", drawLs); drawLs();
   }
 
   // ================= Students =================

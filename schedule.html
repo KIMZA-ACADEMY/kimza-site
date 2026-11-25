@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwihl84">
-<link rel="stylesheet" href="app.css?v=mwwihl84">
+<link rel="stylesheet" href="site.css?v=mwwkxkzg">
+<link rel="stylesheet" href="app.css?v=mwwkxkzg">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwihl84"></script>
-<script src="portal-i18n.js?v=mwwihl84"></script>
+<script src="app.js?v=mwwkxkzg"></script>
+<script src="portal-i18n.js?v=mwwkxkzg"></script>
 
 <script>
 (async function () {
@@ -38,7 +38,8 @@
   var COL = { A1: "#e53935", A2: "#fb8c00", B1: "#43a047", B2: "#1e88e5", C1: "#8e24aa" };
   var TEAM = { A1: "الفريق الأحمر", A2: "الفريق البرتقالي", B1: "الفريق الأخضر", B2: "الفريق الأزرق", C1: "الفريق البنفسجي" };
   var DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
-  var MY = IS_T ? null : String(prof.level || "");
+  var MYL = IS_T ? [] : ((prof.vote_levels && prof.vote_levels.length) ? prof.vote_levels.slice() : [String(prof.level || "")]).sort();
+  var MY = IS_T ? null : MYL[0];
 
   var state = { poll: null, polls: [], slots: [], counts: {}, mine: [], progress: {}, asg: [], sel: [], names: {} };
 
@@ -82,6 +83,10 @@
     var want = Number(sessionStorage.getItem("vtPoll"));
     state.poll = state.polls.find(function (p) { return p.id === want; }) || state.polls.find(function (p) { return p.status === "open"; }) || state.polls[0] || null;
   }
+  function pickMine() {
+    state.mine = (state.myVotes || []).filter(function (v) { return v.level === MY; }).map(function (v) { return v.slot_id; });
+    state.sel = state.mine.slice();
+  }
   async function loadPoll() {
     var p = state.poll; state.slots = []; state.counts = {}; state.mine = []; state.progress = {}; state.asg = []; state.sel = []; state.names = {};
     if (!p) return;
@@ -95,17 +100,19 @@
     state.slots = res[0].data || [];
     (res[1].data || []).forEach(function (r) { (state.counts[r.slot_id] = state.counts[r.slot_id] || {})[r.level] = r.n; });
     var votes = res[2].data || [];
-    state.mine = votes.filter(function (v) { return v.user_id === uid; }).map(function (v) { return v.slot_id; });
-    state.sel = state.mine.slice();
+    state.myVotes = votes.filter(function (v) { return v.user_id === uid; });
+    pickMine();
     (res[3].data || []).forEach(function (r) { state.progress[r.level] = r; });
     state.asg = res[4].data || [];
     if (IS_T) {
       state.votes = votes;
       var ids = Array.from(new Set(votes.map(function (v) { return v.user_id; })));
       var pr = ids.length ? (await sb.from("profiles").select("id,full_name,level").in("id", ids)).data || [] : [];
+      var vkey = {}; votes.forEach(function (v) { vkey[v.user_id + "|" + v.level] = 1; });
       pr.forEach(function (x) { state.names[x.id] = x.full_name; });
-      var all = (await sb.from("profiles").select("id,full_name,level,role,status").neq("role", "teacher").eq("status", "active")).data || [];
-      state.notVoted = all.filter(function (x) { return ids.indexOf(x.id) < 0; });
+      var all = (await sb.from("profiles").select("id,full_name,level,vote_levels,role,status").neq("role", "teacher").eq("status", "active")).data || [];
+      state.notVoted = [];
+      all.forEach(function (x) { ((x.vote_levels && x.vote_levels.length) ? x.vote_levels : [String(x.level)]).forEach(function (lv) { if (!vkey[x.id + "|" + lv]) state.notVoted.push({ id: x.id, full_name: x.full_name, level: lv }); }); });
     }
   }
 
@@ -126,6 +133,7 @@
     var p = state.poll, open = isOpen(p), picks = p.picks;
     var h = '<div class="row" style="border:0;padding:0"><h1 style="margin:0">' + esc(p.title) + "</h1>" +
       '<span class="vt-badge" style="background:' + (COL[MY] || "#555") + '">' + (MY ? "أنت في " + esc(TEAM[MY] || "") + " (" + esc(MY) + ")" : "") + "</span></div>";
+    if (MYL.length > 1) h += '<div class="tile" style="margin:10px 0"><strong>أنت تمثّل أكثر من مستوى. صوّت لكل مستوى على حدة:</strong><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' + MYL.map(function (lv) { var done = (state.myVotes || []).some(function (v) { return v.level === lv; }); return '<button type="button" class="btn ' + (lv === MY ? 'btn-primary' : 'btn-ghost') + ' sm" data-lvsw="' + lv + '" style="border-color:' + COL[lv] + '">' + lv + ' ' + esc(TEAM[lv].replace('الفريق ', '')) + (done ? ' ✅' : '') + '</button>'; }).join('') + '</div></div>';
     if (p.note) h += '<p class="muted">' + esc(p.note).replace(/\n/g, "<br>") + "</p>";
     h += '<p><strong>' + (open ? "التصويت مفتوح" : p.status === "closed" || (p.closes_at && new Date(p.closes_at) <= Date.now()) ? "التصويت مغلق" : "") + "</strong> · آخر موعد: " + esc(fmtDeadline(p.closes_at)) + " " + (open ? "(" + remaining(p.closes_at) + ")" : "") + "</p>";
     // final result for my level
@@ -153,6 +161,7 @@
     var pg = state.progress[MY];
     if (pg) h += '<div class="tile" style="margin-top:18px"><strong>تصويت فريقك</strong>: ' + pg.voted + " من " + pg.students + ' طالباً صوّتوا<div class="vt-bar" style="margin-top:8px"><i style="width:' + (pg.students ? Math.round(pg.voted / pg.students * 100) : 0) + "%;background:" + COL[MY] + '"></i></div></div>';
     app.innerHTML = h;
+    app.querySelectorAll("[data-lvsw]").forEach(function (b) { b.addEventListener("click", function () { MY = b.getAttribute("data-lvsw"); pickMine(); studentView(); }); });
     app.querySelectorAll("[data-s]").forEach(function (b) {
       b.addEventListener("click", function () {
         var id = Number(b.getAttribute("data-s")), i = state.sel.indexOf(id);
@@ -165,7 +174,7 @@
       var m = document.getElementById("vtMsg");
       if (state.sel.length !== picks) { m.textContent = "يجب اختيار " + picks + " مواعيد بالضبط."; m.style.color = "#c62828"; return; }
       sv.disabled = true; m.textContent = "جارٍ الحفظ...";
-      var r = await sb.rpc("cast_votes", { p_poll: p.id, p_slots: state.sel });
+      var r = await sb.rpc("cast_votes", { p_poll: p.id, p_slots: state.sel, p_level: MY });
       if (r.error) { m.textContent = /closed/.test(r.error.message) ? "أُغلق التصويت." : "تعذر الحفظ: " + r.error.message; m.style.color = "#c62828"; sv.disabled = false; return; }
       await loadPoll(); studentView();
       var m2 = document.getElementById("vtMsg"); if (m2) { m2.textContent = "✅ تم حفظ اختيارك. يمكنك تعديله حتى إغلاق التصويت."; m2.style.color = "#2e7d32"; }
