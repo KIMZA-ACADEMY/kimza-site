@@ -318,3 +318,57 @@ html[lang="ar"] .kicker{letter-spacing:0}
 .blk-image .blk-txt{padding:8px 16px}
 .blk-cap{margin:0;color:inherit}
 @media (max-width:700px){.blk-in{flex-direction:column;align-items:stretch}.blk-img{max-width:100%}}
+
+/* ===== polish v3: smoother motion, focus, typography (design only, no content changes) ===== */
+:root{color-scheme:light;--ease-out:cubic-bezier(.22,.8,.24,1);--ease-spring:cubic-bezier(.34,1.4,.5,1)}
+:root[data-theme="dark"]{color-scheme:dark}
+@view-transition{navigation:auto}
+::view-transition-old(root){animation:kz-fade-out .18s var(--ease-out) both}
+::view-transition-new(root){animation:kz-fade-in .28s var(--ease-out) both}
+@keyframes kz-fade-out{to{opacity:0}}
+@keyframes kz-fade-in{from{opacity:0}}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:84px}
+body{text-rendering:optimizeLegibility;-webkit-tap-highlight-color:rgba(212,175,55,.22);overscroll-behavior-y:none}
+::selection{background:var(--gold);color:var(--navy)}
+h1,h2,h3{text-wrap:balance}
+p,li{text-wrap:pretty}
+a,button,summary,label,[role="button"],input,select,textarea{touch-action:manipulation}
+img,video,canvas{max-width:100%}
+img{height:auto}
+/* focus: always visible for keyboard users, never for mouse clicks */
+:where(a,button,summary,input,select,textarea,[tabindex]):focus{outline:none}
+:where(a,button,summary,input,select,textarea,[tabindex]):focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:8px;box-shadow:0 0 0 6px rgba(212,175,55,.22)}
+/* explicit transition lists (no transition:all) and tactile press states */
+.btn{transition:transform .18s var(--ease-out),background-color .18s,color .18s,border-color .18s,box-shadow .22s var(--ease-out)}
+.btn:hover{box-shadow:0 8px 22px rgba(11,31,68,.22)}
+.btn:active{transform:translateY(1px) scale(.985);box-shadow:none}
+.btn-primary{background-image:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,0))}
+.card,.tile{transition:transform .25s var(--ease-out),box-shadow .25s var(--ease-out),border-color .2s}
+.card:hover{box-shadow:0 16px 40px rgba(11,31,68,.14)}
+input,select,textarea{transition:border-color .15s,box-shadow .2s var(--ease-out),background-color .15s}
+input:focus-visible,select:focus-visible,textarea:focus-visible{border-color:var(--gold)}
+::-webkit-scrollbar{width:11px;height:11px}
+::-webkit-scrollbar-thumb{background:rgba(120,130,150,.45);border-radius:10px;border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(212,175,55,.8);background-clip:content-box}
+select{background-color:var(--surface-2);color:var(--text)}
+.nav,.app-nav{backdrop-filter:saturate(1.2) blur(10px);-webkit-backdrop-filter:saturate(1.2) blur(10px)}
+.nav,.app-nav{transition:box-shadow .25s var(--ease-out),background-color .25s}
+.nav.scrolled,.app-nav.scrolled{box-shadow:0 8px 28px rgba(0,0,0,.28)}
+table.t td,table.t th,.stat,[data-num]{font-variant-numeric:tabular-nums}
+/* scroll reveal (applied by JS only when motion is allowed) */
+html.js-rv .rv{opacity:0;transform:translateY(18px);transition:opacity .7s var(--ease-out),transform .7s var(--ease-out);transition-delay:var(--rvd,0ms)}
+html.js-rv .rv.in{opacity:1;transform:none}
+/* tab / pane content eases in */
+#pane,#cmBody,#view{animation:kz-rise .35s var(--ease-out) both}
+@keyframes kz-rise{from{opacity:0;transform:translateY(8px)}}
+/* loading placeholder shimmer for .muted loaders */
+.skel{background:linear-gradient(90deg,rgba(128,128,128,.12),rgba(128,128,128,.24),rgba(128,128,128,.12));background-size:200% 100%;animation:kz-shimmer 1.3s linear infinite;border-radius:10px}
+@keyframes kz-shimmer{to{background-position:-200% 0}}
+@supports (padding:max(0px)){.app-main,.wrap{padding-left:max(20px,env(safe-area-inset-left));padding-right:max(20px,env(safe-area-inset-right))}}
+@media (pointer:fine){html{overscroll-behavior:none}}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+  html.js-rv .rv{opacity:1;transform:none}
+  @view-transition{navigation:none}
+}
