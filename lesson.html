@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwvxuz7f">
-<link rel="stylesheet" href="app.css?v=mwvxuz7f">
+<link rel="stylesheet" href="site.css?v=mwvynmjr">
+<link rel="stylesheet" href="app.css?v=mwvynmjr">
 
 </head>
 <body class="app">
@@ -17,8 +17,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvxuz7f"></script>
-<script src="portal-i18n.js?v=mwvxuz7f"></script>
+<script src="app.js?v=mwvynmjr"></script>
+<script src="portal-i18n.js?v=mwvynmjr"></script>
 
 <script>
 (async function () {
@@ -41,7 +41,8 @@
     ["words", "الكلمات", L.open_words || IS_T],
     ["story", "القصة والصوت", L.open_story || L.open_audio || IS_T],
     ["exercises", "التمارين", L.open_exercises || IS_T],
-    ["homework", "الواجب", (L.open_homework && KZ.on("homework")) || IS_T]
+    ["homework", "الواجب", (L.open_homework && KZ.on("homework")) || IS_T],
+    ["files", "المجلد", true]
   ];
   var first = (TABS.filter(function (t) { return t[2]; })[0] || TABS[0])[0];
   var content = {};
@@ -157,6 +158,40 @@
       document.getElementById("auSpd").addEventListener("change", function (ev) { au.playbackRate = Number(ev.target.value); });
       au.addEventListener("play", function () { au.playbackRate = Number(document.getElementById("auSpd").value); });
       document.getElementById("auLoop").addEventListener("click", function (ev) { au.loop = !au.loop; ev.target.setAttribute("aria-pressed", String(au.loop)); ev.target.className = "btn " + (au.loop ? "btn-primary" : "btn-ghost") + " sm"; ev.target.textContent = au.loop ? "⏹ إيقاف التكرار" : "🔁 تكرار تلقائي"; });
+      return;
+    }
+    if (t === "files") {
+      pane.innerHTML = '<div class="tile"><p class="muted">جارٍ تحميل الملفات...</p></div>';
+      var fr0 = await sb.from("lesson_files").select("*").eq("lesson_id", id).order("sort").order("id");
+      var files = (fr0.data || []).filter(function (f) { return IS_T || f.is_open; });
+      if (!files.length) { pane.innerHTML = '<div class="tile"><p class="muted">لا توجد ملفات في مجلد هذا الدرس بعد.</p></div>'; return; }
+      var h2 = '<div class="fgrid">';
+      files.forEach(function (f) {
+        var kind = /^image\//.test(f.mime || "") ? "🖼" : /pdf/.test(f.mime || "") ? "📄" : /^audio\//.test(f.mime || "") ? "🎧" : /^video\//.test(f.mime || "") ? "🎬" : "📁";
+        h2 += '<div class="fcard"><div class="ficon">' + kind + '</div><div class="fbody"><strong>' + esc(f.title) + '</strong><span class="muted">' + (f.downloadable ? "يمكن تحميله" : "للعرض فقط") + (IS_T && !f.is_open ? " · مخفي عن الطلاب" : "") + '</span></div><div class="fbtns"><button class="btn btn-primary sm" data-fv="' + f.id + '" type="button">عرض</button>' + (f.downloadable ? '<button class="btn btn-ghost sm" data-fd="' + f.id + '" type="button">⬇ تحميل</button>' : "") + "</div></div>";
+      });
+      h2 += '</div><div id="fview"></div>';
+      pane.innerHTML = h2;
+      var byId = {}; files.forEach(function (f) { byId[f.id] = f; });
+      pane.querySelectorAll("[data-fv]").forEach(function (b) { b.addEventListener("click", async function () {
+        var f = byId[b.getAttribute("data-fv")], box = document.getElementById("fview");
+        box.innerHTML = '<div class="tile"><p class="muted">جارٍ فتح الملف...</p></div>';
+        var su = await sb.storage.from("lesson-files").createSignedUrl(f.path, 3600);
+        if (su.error || !su.data) { box.innerHTML = '<div class="tile"><p class="muted">تعذر فتح الملف.</p></div>'; return; }
+        var u = su.data.signedUrl, m = f.mime || "", inner;
+        if (/^image\//.test(m)) inner = '<img src="' + esc(u) + '" alt="" style="max-width:100%;border-radius:14px">';
+        else if (/pdf/.test(m)) inner = '<iframe class="frame" src="' + esc(u) + '#toolbar=' + (f.downloadable ? "1" : "0") + '&navpanes=0" title="' + esc(f.title) + '"></iframe>';
+        else if (/^audio\//.test(m)) inner = '<audio controls ' + (f.downloadable ? "" : 'controlsList="nodownload"') + ' style="width:100%" src="' + esc(u) + '"></audio>';
+        else if (/^video\//.test(m)) inner = '<video controls ' + (f.downloadable ? "" : 'controlsList="nodownload"') + ' style="width:100%;border-radius:14px" src="' + esc(u) + '"></video>';
+        else inner = '<p class="muted">لا يمكن عرض هذا النوع داخل الصفحة.' + (f.downloadable ? " استخدم زر التحميل." : "") + "</p>";
+        box.innerHTML = '<div class="tile" style="margin-top:14px"><h3>' + esc(f.title) + "</h3>" + inner + "</div>";
+        box.scrollIntoView({ behavior: "smooth", block: "start" });
+      }); });
+      pane.querySelectorAll("[data-fd]").forEach(function (b) { b.addEventListener("click", async function () {
+        var f = byId[b.getAttribute("data-fd")];
+        var su = await sb.storage.from("lesson-files").createSignedUrl(f.path, 600, { download: f.title.replace(/[\\/:*?"<>|]/g, "_") + "." + (f.path.split(".").pop() || "") });
+        if (su.error || !su.data) { KZ.toast("تعذر التحميل.", true); return; }
+        location.href = su.data.signedUrl; }); });
       return;
     }
     if (t === "exercises") {

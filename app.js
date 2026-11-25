@@ -69,6 +69,7 @@
         return null;
       }
     }
+    if (prof.role === "student") KZ.track();
     return prof;
   }
 
@@ -97,6 +98,32 @@
 
   // Copy protection helper for exam pages
   // Copy protection for a document (the page itself or a lesson/homework iframe)
+  // How long the student really uses the portal: a heartbeat every 30 s while the page is visible and he is active
+  KZ.track = function () {
+    if (KZ._tracking) return; KZ._tracking = true;
+    var lastAct = Date.now();
+    ["mousemove", "keydown", "touchstart", "scroll", "click"].forEach(function (ev) { window.addEventListener(ev, function () { lastAct = Date.now(); }, { passive: true }); });
+    setInterval(function () {
+      if (document.visibilityState === "visible" && Date.now() - lastAct < 120000) { try { sb.rpc("track_time", { p_seconds: 30 }); } catch (e) {} }
+    }, 30000);
+  };
+  // Any picture (jpg, png, webp, gif, heic on Safari) is resized and saved as a light JPEG, so uploads do not fail on size or type
+  KZ.prepImage = function (file, maxSide) {
+    maxSide = maxSide || 1800;
+    return new Promise(function (resolve, reject) {
+      if (!file || !/^image\//.test(file.type || "")) { reject(new Error("الملف ليس صورة.")); return; }
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        var w = im.naturalWidth, h = im.naturalHeight, k = Math.min(1, maxSide / Math.max(w, h));
+        var c = document.createElement("canvas"); c.width = Math.round(w * k); c.height = Math.round(h * k);
+        var ctx = c.getContext("2d"); ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(im, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (b) { if (b) resolve(b); else reject(new Error("تعذر تجهيز الصورة.")); }, "image/jpeg", 0.88);
+      };
+      im.onerror = function () { URL.revokeObjectURL(url); reject(new Error("هذه الصيغة غير مدعومة في متصفحك. حوّل الصورة إلى JPG أو PNG.")); };
+      im.src = url;
+    });
+  };
   KZ.blockCopyIn = function (doc) {
     if (!doc || doc.__kzNoCopy) return; doc.__kzNoCopy = true;
     ["copy", "cut", "paste", "contextmenu", "dragstart", "selectstart"].forEach(function (ev) { doc.addEventListener(ev, function (e) { var t = e.target; if (ev === "selectstart" && t && t.nodeType === 1 && /^(INPUT|TEXTAREA)$/.test(t.tagName)) return; e.preventDefault(); }); });

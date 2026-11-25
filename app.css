@@ -123,3 +123,16 @@ table.t th{color:var(--muted);font-size:14px}
 .fswrap.fs{position:fixed;inset:0;z-index:900;background:var(--bg,#F8F4E9);padding:8px;display:flex;flex-direction:column}
 .fswrap.fs .frame{flex:1;height:auto;min-height:0}
 body.fs-open{overflow:hidden}
+
+/* teacher follow-up colours, lesson folder */
+.pc{padding:6px 10px;border-radius:10px;font-weight:700;text-align:center}
+.p-ex{background:rgba(47,158,91,.18);color:#15803d}
+.p-gd{background:rgba(20,150,170,.18);color:#0e7490}
+.p-md{background:rgba(217,162,26,.22);color:#a16207}
+.p-lo{background:rgba(196,48,48,.18);color:#b91c1c}
+.p-no{background:rgba(120,120,120,.14);color:var(--muted)}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.legend .pc{display:inline-block;font-size:.85rem}
+.fgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.fcard{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+.fcard .ficon{font-size:2rem}.fcard .fbody{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}.fcard .fbtns{display:flex;gap:6px;flex-wrap:wrap}

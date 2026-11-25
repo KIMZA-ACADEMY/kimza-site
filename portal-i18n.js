@@ -45,7 +45,7 @@
     "يُسلَّم الاختبار تلقائياً عند انتهاء الوقت.": "The test is submitted automatically when time runs out.", "لا يمكن إعادة الاختبار.": "The test cannot be retaken.", "النسخ والطباعة محظوران على هذه الصفحة.": "Copying and printing are blocked on this page.",
     "هذه الميزة متوقفة مؤقتاً": "This feature is temporarily unavailable", "سيعيد المعلم تشغيلها قريباً.": "The teacher will turn it back on soon.",
     "تسجيل الدخول": "Log in", "اسم المستخدم": "Username", "كلمة المرور": "Password", "دخول": "Log in",
-    "بطاقات المفردات": "Vocabulary cards", "السابقة": "Previous", "التالية": "Next", "عرفتها ✓": "I knew it ✓"
+    "بطاقات المفردات": "Vocabulary cards", "المجلد": "Folder", "لا توجد ملفات في مجلد هذا الدرس بعد.": "There are no files in this lesson folder yet.", "عرض": "View", "للعرض فقط": "View only", "يمكن تحميله": "Downloadable", "⬇ تحميل": "⬇ Download", "جارٍ فتح الملف...": "Opening the file...", "السابقة": "Previous", "التالية": "Next", "عرفتها ✓": "I knew it ✓"
   };
   var PATTERNS = [
     [/^مرحباً (.+)$/, "Welcome, $1"], [/^المستوى ([A-C]\d)$/, "Level $1"],

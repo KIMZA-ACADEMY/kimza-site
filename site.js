@@ -113,6 +113,79 @@
       });
     });
   })();
+  // Site designer: blocks (panels, ads, pictures, texts) and edited texts, both stored in the database
+  (function () {
+    var cfg = window.KIMZA_SUPABASE; if (!cfg || !window.fetch) return;
+    function get(path) { return fetch(cfg.url + "/rest/v1/" + path, { headers: { apikey: cfg.publishableKey } }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }); }
+    function esc(x) { return String(x == null ? "" : x).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+    var PRESET = { navy: "#0B1F44", burgundy: "#7A0F2D", gold: "#D4AF37", cream: "#F8F4E9", white: "#FFFFFF" };
+    function isDark(hex) { var m = /^#?([0-9a-f]{6})$/i.exec(hex || ""); if (!m) return false; var n = parseInt(m[1], 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) < 140; }
+    function ctaHref(b) {
+      var t = b.cta_type, u = b.cta_url || "";
+      if (!t || t === "none") return null;
+      if (t === "placement") return "placement.html"; if (t === "contact") return "contact.html";
+      if (t === "instagram") return (window.KIMZA_SITE && window.KIMZA_SITE.instagramUrl) || "https://www.instagram.com/kimza_academy/";
+      if (t === "whatsapp") return "https://wa.me/" + u.replace(/\D/g, "");
+      return u || null;
+    }
+    function renderBlock(b) {
+      var st = b.style || {}, bg = st.bg === "custom" ? (st.bgc || "#0B1F44") : (PRESET[st.bg] || PRESET.navy);
+      var dark = isDark(bg), rad = st.radius == null ? "14" : st.radius, size = st.size || "m", pos = b.image_url ? (st.imgPos || "side") : "none";
+      var href = ctaHref(b), lab = b.cta_label || "المزيد";
+      var ext = href && /^https?:/.test(href) ? ' target="_blank" rel="noopener"' : "";
+      var btn = href ? '<a class="btn btn-primary" href="' + esc(href) + '"' + ext + ">" + esc(lab) + "</a>" : "";
+      var el = document.createElement("section");
+      el.className = "blk blk-" + b.kind + " blk-" + size + (st.width === "narrow" ? " blk-narrow" : "") + (dark ? " blk-dark" : " blk-light") + " blk-pos-" + pos + (st.align === "center" ? " blk-center" : "");
+      el.style.setProperty("--blk-bg", bg); el.style.setProperty("--blk-r", rad + "px");
+      if (pos === "bg") el.style.backgroundImage = "linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.45)),url('" + b.image_url.replace(/'/g, "%27") + "')";
+      var img = (b.image_url && pos !== "bg" && pos !== "none") ? '<img class="blk-img" src="' + esc(b.image_url) + '" alt="" loading="lazy">' : "";
+      var txt = "";
+      if (b.kind === "image") txt = b.title ? '<p class="blk-cap">' + esc(b.title) + "</p>" : "";
+      else txt = (st.badge ? '<span class="adbadge">' + esc(st.badge) + "</span>" : "") + (b.title ? "<h2>" + esc(b.title) + "</h2>" : "") + (b.body ? "<p>" + esc(b.body).replace(/\n/g, "<br>") + "</p>" : "") + btn;
+      el.innerHTML = '<div class="wrap blk-in">' + (pos === "top" || pos === "side" ? img : "") + (txt ? '<div class="blk-txt">' + txt + "</div>" : "") + "</div>";
+      return el;
+    }
+    function layoutBlocks() {
+      var root = document.getElementById("blocks"); if (!root) return;
+      var page = root.getAttribute("data-page") || "home", pr = Promise.resolve(page);
+      if (page === "custom") {
+        var slug = new URLSearchParams(location.search).get("p") || "";
+        pr = get("site_pages?slug=eq." + encodeURIComponent(slug) + "&select=*").then(function (ps) {
+          if (!ps.length) { root.innerHTML = '<div class="wrap" style="padding:80px 0;text-align:center"><h1>' + (window.KIMZA_LANG() === "en" ? "Page not found" : "الصفحة غير موجودة") + "</h1></div>"; return null; }
+          var t = document.getElementById("pgTitle"); if (t) t.textContent = ps[0].title; document.title = ps[0].title + " · KIMZA Academy"; return slug;
+        });
+      }
+      pr.then(function (pg) {
+        if (!pg) return;
+        get("site_blocks?page=eq." + encodeURIComponent(pg) + "&select=*&order=sort.asc,id.asc").then(function (rows) {
+          if (!rows.length) return;
+          var keep = {}; rows.forEach(function (b) { if (b.kind === "builtin") keep[b.bkey] = 1; });
+          root.querySelectorAll("[data-block]").forEach(function (el) { if (!keep[el.getAttribute("data-block")]) el.style.display = "none"; });
+          rows.forEach(function (b) {
+            var el = b.kind === "builtin" ? root.querySelector('[data-block="' + b.bkey + '"]') : renderBlock(b);
+            if (el) root.appendChild(el);
+          });
+          var foot = root.querySelector("[data-after]"); if (foot) root.appendChild(foot);
+        });
+      });
+    }
+    function applyTexts() {
+      var T = window.KIMZA_TEXTS; if (!T) return; var lang = window.KIMZA_LANG ? window.KIMZA_LANG() : "ar";
+      document.querySelectorAll("[data-i18n]").forEach(function (el) { var o = T[el.getAttribute("data-i18n")]; if (o && o[lang]) el.innerHTML = o[lang]; });
+    }
+    function navPages() {
+      get("site_pages?enabled=eq.true&in_nav=eq.true&select=slug,title&order=sort.asc,slug.asc").then(function (ps) {
+        var nav = document.getElementById("navLinks"); if (!nav || !ps.length) return;
+        var login = nav.querySelector('a[href="login.html"]');
+        ps.forEach(function (p) { var a = document.createElement("a"); a.href = "page.html?p=" + p.slug; a.textContent = p.title; nav.insertBefore(a, login); });
+      });
+    }
+    document.addEventListener("DOMContentLoaded", function () {
+      layoutBlocks(); navPages();
+      get("site_texts?select=*").then(function (rows) { var T = {}; rows.forEach(function (r) { T[r.key] = { ar: r.ar, en: r.en }; }); window.KIMZA_TEXTS = T; applyTexts(); });
+      window.addEventListener("kimza-lang", applyTexts);
+    });
+  })();
   window.KIMZA_LANG = function () { return root.getAttribute("lang") || "ar"; };
   window.KIMZA_T = function (k) { var d = (window.I18N || {})[window.KIMZA_LANG()] || {}; return d[k] !== undefined ? d[k] : k; };
 })();
