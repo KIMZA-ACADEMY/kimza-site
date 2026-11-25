@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>مواعيد الحصص · KIMZA Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
+<script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
+<link rel="stylesheet" href="site.css?v=mwwihl84">
+<link rel="stylesheet" href="app.css?v=mwwihl84">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B1F44">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<script>if("serviceWorker"in navigator&&location.protocol!=="file:")addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})</script>
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="supabase-lib.js"></script>
+<script src="config.js"></script>
+<script src="app.js?v=mwwihl84"></script>
+<script src="portal-i18n.js?v=mwwihl84"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("any");
+  if (!prof) return;
+  KZ.shell("schedule");
+  var sb = KZ.sb, esc = KZ.esc, IS_T = prof.role === "teacher";
+  var app = document.getElementById("app");
+  var uid = (await sb.auth.getSession()).data.session.user.id;
+  var LEVELS = ["A1", "A2", "B1", "B2", "C1"];
+  var COL = { A1: "#e53935", A2: "#fb8c00", B1: "#43a047", B2: "#1e88e5", C1: "#8e24aa" };
+  var TEAM = { A1: "الفريق الأحمر", A2: "الفريق البرتقالي", B1: "الفريق الأخضر", B2: "الفريق الأزرق", C1: "الفريق البنفسجي" };
+  var DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
+  var MY = IS_T ? null : String(prof.level || "");
+
+  var state = { poll: null, polls: [], slots: [], counts: {}, mine: [], progress: {}, asg: [], sel: [], names: {} };
+
+  function css() {
+    if (document.getElementById("vtCss")) return;
+    var s = document.createElement("style"); s.id = "vtCss";
+    s.textContent =
+      ".vt-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:30px;color:#fff;font-weight:700}" +
+      ".vt-days{display:grid;gap:14px}.vt-day h3{margin:0 0 8px}" +
+      ".vt-slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}" +
+      ".vt-slot{position:relative;border:2px solid var(--line);border-radius:14px;padding:12px;background:var(--surface);cursor:pointer;text-align:start;font:inherit;color:inherit;transition:border-color .15s,transform .15s,box-shadow .15s}" +
+      ".vt-slot:hover{transform:translateY(-2px)}" +
+      ".vt-slot.on{border-width:3px;box-shadow:0 0 0 4px rgba(212,175,55,.35)}" +
+      ".vt-slot .tm{font-weight:800;font-size:1.05rem;direction:ltr;display:inline-block}" +
+      ".vt-dots{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;min-height:26px}" +
+      ".vt-chip{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:2px 9px;font-size:.85rem;font-weight:800;color:#fff;opacity:.92}" +
+      ".vt-chip.me{outline:3px solid var(--text);outline-offset:1px;opacity:1}" +
+      ".vt-tick{position:absolute;top:8px;inset-inline-end:10px;font-size:1.2rem}" +
+      ".vt-legend{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 18px}" +
+      ".vt-bar{height:10px;border-radius:10px;background:var(--line);overflow:hidden}.vt-bar i{display:block;height:100%;background:var(--gold)}" +
+      "table.vt{width:100%;border-collapse:collapse}table.vt th,table.vt td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:start;vertical-align:top}" +
+      ".vt-warn{color:#c62828;font-weight:700}";
+    document.head.appendChild(s);
+  }
+  function fmtDeadline(d) {
+    if (!d) return "بلا موعد محدد";
+    var t = new Date(d); return t.toLocaleString("ar", { dateStyle: "full", timeStyle: "short" });
+  }
+  function remaining(d) {
+    if (!d) return "";
+    var ms = new Date(d) - Date.now(); if (ms <= 0) return "انتهى الوقت";
+    var h = Math.floor(ms / 3600000), dd = Math.floor(h / 24);
+    return dd >= 1 ? "باقي " + dd + " يوم" : "باقي " + h + " ساعة";
+  }
+  function isOpen(p) { return p && p.status === "open" && (!p.closes_at || new Date(p.closes_at) > Date.now()); }
+  function slotLabel(s) { return DAYS[s.dow] + " " + s.start_time + "–" + s.end_time; }
+
+  async function loadPolls() {
+    var r = await sb.from("vote_polls").select("*").order("id", { ascending: false });
+    state.polls = r.data || [];
+    var want = Number(sessionStorage.getItem("vtPoll"));
+    state.poll = state.polls.find(function (p) { return p.id === want; }) || state.polls.find(function (p) { return p.status === "open"; }) || state.polls[0] || null;
+  }
+  async function loadPoll() {
+    var p = state.poll; state.slots = []; state.counts = {}; state.mine = []; state.progress = {}; state.asg = []; state.sel = []; state.names = {};
+    if (!p) return;
+    var res = await Promise.all([
+      sb.from("vote_slots").select("*").eq("poll_id", p.id).order("dow").order("start_time"),
+      sb.rpc("vote_counts", { p_poll: p.id }),
+      sb.from("votes").select("slot_id,user_id,level").eq("poll_id", p.id),
+      sb.rpc("vote_progress", { p_poll: p.id }),
+      sb.from("vote_assignments").select("*").eq("poll_id", p.id)
+    ]);
+    state.slots = res[0].data || [];
+    (res[1].data || []).forEach(function (r) { (state.counts[r.slot_id] = state.counts[r.slot_id] || {})[r.level] = r.n; });
+    var votes = res[2].data || [];
+    state.mine = votes.filter(function (v) { return v.user_id === uid; }).map(function (v) { return v.slot_id; });
+    state.sel = state.mine.slice();
+    (res[3].data || []).forEach(function (r) { state.progress[r.level] = r; });
+    state.asg = res[4].data || [];
+    if (IS_T) {
+      state.votes = votes;
+      var ids = Array.from(new Set(votes.map(function (v) { return v.user_id; })));
+      var pr = ids.length ? (await sb.from("profiles").select("id,full_name,level").in("id", ids)).data || [] : [];
+      pr.forEach(function (x) { state.names[x.id] = x.full_name; });
+      var all = (await sb.from("profiles").select("id,full_name,level,role,status").neq("role", "teacher").eq("status", "active")).data || [];
+      state.notVoted = all.filter(function (x) { return ids.indexOf(x.id) < 0; });
+    }
+  }
+
+  function chips(slotId, mineLevel) {
+    var c = state.counts[slotId] || {}, h = "";
+    LEVELS.forEach(function (lv) {
+      if (c[lv]) h += '<span class="vt-chip' + (lv === mineLevel ? " me" : "") + '" style="background:' + COL[lv] + '" title="' + esc(TEAM[lv]) + " " + lv + '">' + lv + " · " + c[lv] + "</span>";
+    });
+    return h || '<span class="muted" style="font-size:.85rem">لا أصوات بعد</span>';
+  }
+  function slotsByDay() {
+    var by = {}; state.slots.forEach(function (s) { (by[s.dow] = by[s.dow] || []).push(s); });
+    return by;
+  }
+
+  // ---------- student board ----------
+  function studentView() {
+    var p = state.poll, open = isOpen(p), picks = p.picks;
+    var h = '<div class="row" style="border:0;padding:0"><h1 style="margin:0">' + esc(p.title) + "</h1>" +
+      '<span class="vt-badge" style="background:' + (COL[MY] || "#555") + '">' + (MY ? "أنت في " + esc(TEAM[MY] || "") + " (" + esc(MY) + ")" : "") + "</span></div>";
+    if (p.note) h += '<p class="muted">' + esc(p.note).replace(/\n/g, "<br>") + "</p>";
+    h += '<p><strong>' + (open ? "التصويت مفتوح" : p.status === "closed" || (p.closes_at && new Date(p.closes_at) <= Date.now()) ? "التصويت مغلق" : "") + "</strong> · آخر موعد: " + esc(fmtDeadline(p.closes_at)) + " " + (open ? "(" + remaining(p.closes_at) + ")" : "") + "</p>";
+    // final result for my level
+    var mineFinal = state.asg.filter(function (a) { return a.level === MY; });
+    if (p.status === "closed" && mineFinal.length) {
+      h += '<div class="tile" style="border:3px solid ' + COL[MY] + ';margin:14px 0"><h2 style="margin-top:0">🎉 مواعيد حصصكم المعتمدة</h2><ul>' +
+        mineFinal.map(function (a) { var s = state.slots.find(function (x) { return x.id === a.slot_id; }); return s ? "<li><strong>" + esc(slotLabel(s)) + "</strong></li>" : ""; }).join("") + "</ul></div>";
+    } else if (p.status === "closed") h += '<div class="tile" style="margin:14px 0">أُغلق التصويت. سيعلن المعلم مواعيد كل مستوى قريباً.</div>';
+    h += '<div class="vt-legend">' + LEVELS.map(function (lv) { return '<span class="vt-chip' + (lv === MY ? " me" : "") + '" style="background:' + COL[lv] + '">' + lv + " " + esc(TEAM[lv].replace("الفريق ", "")) + "</span>"; }).join("") + "</div>";
+    if (open) h += '<div class="tile" style="margin-bottom:14px"><strong>اختر ' + picks + " من المواعيد المناسبة لك.</strong> اخترت الآن: <span id=\"vtCnt\">" + state.sel.length + "</span> من " + picks +
+      ' <button class="btn btn-primary" id="vtSave" type="button" style="margin-inline-start:10px">' + (state.mine.length ? "حفظ تعديل اختياري" : "حفظ اختياري") + '</button> <span id="vtMsg" class="muted"></span></div>';
+    var by = slotsByDay();
+    h += '<div class="vt-days">';
+    Object.keys(by).sort(function (a, b) { return a - b; }).forEach(function (d) {
+      h += '<div class="vt-day"><h3>' + DAYS[d] + '</h3><div class="vt-slots">';
+      by[d].forEach(function (s) {
+        var on = state.sel.indexOf(s.id) >= 0;
+        h += '<button type="button" class="vt-slot' + (on ? " on" : "") + '" data-s="' + s.id + '"' + (on ? ' style="border-color:' + COL[MY] + '"' : "") + (open ? "" : " disabled") + ">" + (on ? '<span class="vt-tick">✅</span>' : "") +
+          '<span class="tm">' + esc(s.start_time) + " – " + esc(s.end_time) + '</span><div class="vt-dots">' + chips(s.id, MY) + "</div></button>";
+      });
+      h += "</div></div>";
+    });
+    h += "</div>";
+    if (!state.slots.length) h += '<p class="muted">لم يضف المعلم مواعيد بعد.</p>';
+    var pg = state.progress[MY];
+    if (pg) h += '<div class="tile" style="margin-top:18px"><strong>تصويت فريقك</strong>: ' + pg.voted + " من " + pg.students + ' طالباً صوّتوا<div class="vt-bar" style="margin-top:8px"><i style="width:' + (pg.students ? Math.round(pg.voted / pg.students * 100) : 0) + "%;background:" + COL[MY] + '"></i></div></div>';
+    app.innerHTML = h;
+    app.querySelectorAll("[data-s]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var id = Number(b.getAttribute("data-s")), i = state.sel.indexOf(id);
+        if (i >= 0) state.sel.splice(i, 1); else if (state.sel.length < picks) state.sel.push(id); else { state.sel.shift(); state.sel.push(id); }
+        studentView();
+      });
+    });
+    var sv = document.getElementById("vtSave");
+    if (sv) sv.addEventListener("click", async function () {
+      var m = document.getElementById("vtMsg");
+      if (state.sel.length !== picks) { m.textContent = "يجب اختيار " + picks + " مواعيد بالضبط."; m.style.color = "#c62828"; return; }
+      sv.disabled = true; m.textContent = "جارٍ الحفظ...";
+      var r = await sb.rpc("cast_votes", { p_poll: p.id, p_slots: state.sel });
+      if (r.error) { m.textContent = /closed/.test(r.error.message) ? "أُغلق التصويت." : "تعذر الحفظ: " + r.error.message; m.style.color = "#c62828"; sv.disabled = false; return; }
+      await loadPoll(); studentView();
+      var m2 = document.getElementById("vtMsg"); if (m2) { m2.textContent = "✅ تم حفظ اختيارك. يمكنك تعديله حتى إغلاق التصويت."; m2.style.color = "#2e7d32"; }
+    });
+  }
+
+  // ---------- teacher ----------
+  function suggest() {
+    // greedy: for each level take the best-voted free slots, never giving one slot (or an overlapping hour) to two levels
+    var res = {}, used = {};
+    function overlap(a, b) { return a.dow === b.dow && a.start_time < b.end_time && b.start_time < a.end_time; }
+    var perLevel = Number(document.getElementById("tPer") ? document.getElementById("tPer").value : 2) || 2;
+    LEVELS.slice().sort(function (a, b) { return total(b) - total(a); }).forEach(function (lv) {
+      res[lv] = [];
+      state.slots.map(function (s) { return { s: s, n: (state.counts[s.id] || {})[lv] || 0 }; }).filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; }).forEach(function (x) {
+        if (res[lv].length >= perLevel) return;
+        var clash = Object.keys(used).some(function (k) { return overlap(used[k], x.s); });
+        if (!clash) { res[lv].push(x.s.id); used[x.s.id] = x.s; }
+      });
+    });
+    return res;
+  }
+  function total(lv) { var t = 0; Object.keys(state.counts).forEach(function (k) { t += state.counts[k][lv] || 0; }); return t; }
+
+  function teacherView() {
+    var p = state.poll, h = '<h1>مواعيد الحصص (لوحة المعلم)</h1>';
+    h += '<div class="tile"><div class="row" style="border:0;padding:0"><div><label for="tSel">الاستفتاء</label><select id="tSel">' + state.polls.map(function (x) { return '<option value="' + x.id + '"' + (p && p.id === x.id ? " selected" : "") + ">" + esc(x.title) + " (" + ({ draft: "مسودة", open: "مفتوح", closed: "مغلق" }[x.status]) + ")</option>"; }).join("") + '</select></div>' +
+      '<div class="btns"><button class="btn btn-primary" id="tNew" type="button">+ استفتاء جديد</button></div></div></div>';
+    if (!p) { app.innerHTML = h + '<p class="muted">لا يوجد استفتاء. أنشئ واحداً.</p>'; bindT(); return; }
+    var dt = p.closes_at ? new Date(new Date(p.closes_at).getTime() - new Date(p.closes_at).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "";
+    h += '<div class="tile" style="margin-top:14px"><h2 style="margin-top:0">إعدادات الاستفتاء</h2><div class="form">' +
+      '<div><label for="tTitle">العنوان</label><input id="tTitle" value="' + esc(p.title) + '"></div>' +
+      '<div><label for="tNote">ملاحظة للطلاب (اختياري)</label><textarea id="tNote" rows="2">' + esc(p.note || "") + "</textarea></div>" +
+      '<div class="row" style="border:0;padding:0;justify-content:flex-start;gap:18px"><div><label for="tPicks">عدد المواعيد المطلوب من كل طالب</label><select id="tPicks">' + [1, 2, 3, 4].map(function (n) { return '<option' + (n === p.picks ? " selected" : "") + ">" + n + "</option>"; }).join("") + '</select></div>' +
+      '<div><label for="tClose">آخر موعد للتصويت</label><input id="tClose" type="datetime-local" value="' + dt + '"></div></div>' +
+      '<div class="btns"><button class="btn btn-primary" id="tSave" type="button">حفظ الإعدادات</button>' +
+      (p.status !== "open" ? '<button class="btn btn-primary" id="tOpen" type="button" style="background:#2e7d32">▶ فتح التصويت للطلاب</button>' : '<button class="btn btn-ghost" id="tClosePoll" type="button">⏹ إغلاق التصويت</button>') +
+      '<button class="btn danger sm" id="tDel" type="button">حذف الاستفتاء</button> <span id="tMsg" class="muted"></span></div></div></div>';
+    // slots
+    h += '<div class="tile" style="margin-top:14px"><h2 style="margin-top:0">المواعيد المتاحة</h2>' +
+      '<p class="muted">اختر الأيام ونطاق الساعات، وسأقسّمها لحصص بالمدة التي تحددها (توقيتك المحلي).</p>' +
+      '<div class="row" style="border:0;padding:0;justify-content:flex-start;gap:14px;align-items:flex-end;flex-wrap:wrap">' +
+      '<div><label>الأيام</label><div style="display:flex;gap:8px;flex-wrap:wrap">' + DAYS.map(function (d, i) { return '<label style="display:inline-flex;gap:4px;align-items:center"><input type="checkbox" data-gd="' + i + '"> ' + d + "</label>"; }).join("") + "</div></div>" +
+      '<div><label for="gFrom">من الساعة</label><input id="gFrom" type="time" value="16:00"></div><div><label for="gTo">إلى الساعة</label><input id="gTo" type="time" value="21:00"></div>' +
+      '<div><label for="gLen">مدة الحصة (دقيقة)</label><input id="gLen" type="number" min="30" max="240" step="15" value="90" style="width:90px"></div>' +
+      '<button class="btn btn-primary" id="gAdd" type="button">إضافة المواعيد</button></div><div id="gMsg" class="muted" style="margin-top:8px"></div>';
+    var by = slotsByDay();
+    h += '<div style="margin-top:14px">' + (state.slots.length ? Object.keys(by).sort(function (a, b) { return a - b; }).map(function (d) {
+      return "<div><strong>" + DAYS[d] + ":</strong> " + by[d].map(function (s) { return '<span class="vt-chip" style="background:#555;margin:2px">' + esc(s.start_time + "–" + s.end_time) + ' <a href="#" data-xs="' + s.id + '" style="color:#fff" title="حذف">✕</a></span>'; }).join(" ") + "</div>";
+    }).join("") : '<span class="muted">لا مواعيد بعد.</span>') + "</div></div>";
+    // results
+    h += '<div class="tile" style="margin-top:14px"><h2 style="margin-top:0">النتائج حسب المستوى</h2>';
+    h += '<table class="vt"><tr><th>المستوى</th><th>صوّتوا</th><th>أفضل المواعيد (عدد الأصوات)</th><th>المعتمد</th></tr>';
+    var sg = suggest();
+    LEVELS.forEach(function (lv) {
+      var pg = state.progress[lv] || { students: 0, voted: 0 };
+      var rank = state.slots.map(function (s) { return { s: s, n: (state.counts[s.id] || {})[lv] || 0 }; }).filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 5);
+      var chosen = state.asg.filter(function (a) { return a.level === lv; });
+      h += '<tr><td><span class="vt-chip" style="background:' + COL[lv] + '">' + lv + "</span></td><td>" + pg.voted + " / " + pg.students + "</td><td>" +
+        (rank.length ? rank.map(function (x) {
+          var ch = state.asg.some(function (a) { return a.level === lv && a.slot_id === x.s.id; });
+          var other = state.asg.find(function (a) { return a.level !== lv && a.slot_id === x.s.id; });
+          return '<div><label><input type="checkbox" data-as="' + lv + ":" + x.s.id + '"' + (ch ? " checked" : "") + "> " + esc(slotLabel(x.s)) + " <strong>(" + x.n + ")</strong></label>" + (other ? ' <span class="vt-warn">⚠ محجوز لمستوى ' + esc(other.level) + "</span>" : "") + "</div>";
+        }).join("") : '<span class="muted">لا أصوات</span>') + "</td><td>" +
+        (chosen.length ? chosen.map(function (a) { var s = state.slots.find(function (x) { return x.id === a.slot_id; }); return s ? "<div>" + esc(slotLabel(s)) + "</div>" : ""; }).join("") : '<span class="muted">—</span>') + "</td></tr>";
+    });
+    h += '</table><div class="btns" style="margin-top:12px"><label>عدد الحصص لكل مستوى في الاقتراح <input id="tPer" type="number" min="1" max="6" value="2" style="width:70px"></label>' +
+      '<button class="btn btn-ghost" id="tSuggest" type="button">✨ اقترح توزيعاً بلا تعارض</button><button class="btn btn-ghost" id="tClear" type="button">مسح الاعتماد</button><button class="btn btn-primary" id="tAnnounce" type="button">📋 نسخ إعلان للمجموعة</button></div><div id="tAM" class="muted" style="margin-top:8px"></div></div>';
+    // not voted
+    if (state.notVoted) h += '<div class="tile" style="margin-top:14px"><h2 style="margin-top:0">لم يصوّتوا بعد (' + state.notVoted.length + ')</h2>' + (state.notVoted.length ? LEVELS.map(function (lv) {
+      var l = state.notVoted.filter(function (x) { return String(x.level) === lv; }); return l.length ? "<p><span class=\"vt-chip\" style=\"background:" + COL[lv] + '">' + lv + "</span> " + l.map(function (x) { return esc(x.full_name); }).join("، ") + "</p>" : "";
+    }).join("") : '<span class="muted">الجميع صوّت 🎉</span>') + "</div>";
+    // who voted what
+    h += '<div class="tile" style="margin-top:14px"><h2 style="margin-top:0">من اختار ماذا (أسماء)</h2>' + (state.slots.length ? state.slots.map(function (s) {
+      var vs = (state.votes || []).filter(function (v) { return v.slot_id === s.id; }); if (!vs.length) return "";
+      return "<p><strong>" + esc(slotLabel(s)) + " (" + vs.length + "):</strong> " + vs.map(function (v) { return '<span class="vt-chip" style="background:' + COL[v.level] + '">' + esc(state.names[v.user_id] || "؟") + "</span>"; }).join(" ") + "</p>";
+    }).join("") : "") + "</div>";
+    app.innerHTML = h; bindT();
+  }
+
+  function bindT() {
+    var $ = function (id) { return document.getElementById(id); };
+    $("tSel") && $("tSel").addEventListener("change", async function () { sessionStorage.setItem("vtPoll", this.value); await loadPolls(); await loadPoll(); teacherView(); });
+    $("tNew") && $("tNew").addEventListener("click", async function () {
+      var t = prompt("عنوان الاستفتاء (مثال: اختيار مواعيد دفعة ديسمبر)"); if (!t) return;
+      var r = await sb.from("vote_polls").insert({ title: t }).select().single();
+      if (r.error) { alert(r.error.message); return; }
+      sessionStorage.setItem("vtPoll", r.data.id); await loadPolls(); await loadPoll(); teacherView();
+    });
+    var p = state.poll; if (!p) return;
+    $("tSave").addEventListener("click", async function () {
+      var c = $("tClose").value ? new Date($("tClose").value).toISOString() : null;
+      var r = await sb.from("vote_polls").update({ title: $("tTitle").value.trim(), note: $("tNote").value.trim() || null, picks: Number($("tPicks").value), closes_at: c }).eq("id", p.id);
+      $("tMsg").textContent = r.error ? r.error.message : "✅ تم الحفظ"; if (!r.error) { await loadPolls(); }
+    });
+    $("tOpen") && $("tOpen").addEventListener("click", async function () {
+      if (!state.slots.length) { $("tMsg").textContent = "أضف مواعيد أولاً."; return; }
+      var ok = await KZ.confirmBox("فتح التصويت؟", "سيظهر الاستفتاء لكل الطلاب، وكل طالب يختار " + p.picks + " مواعيد.", "نعم، افتح", "إلغاء"); if (!ok) return;
+      await sb.from("vote_polls").update({ status: "open" }).eq("id", p.id); await loadPolls(); await loadPoll(); teacherView();
+    });
+    $("tClosePoll") && $("tClosePoll").addEventListener("click", async function () {
+      var ok = await KZ.confirmBox("إغلاق التصويت؟", "لن يستطيع الطلاب التعديل بعد الإغلاق. المواعيد المعتمدة تظهر لكل مستوى.", "نعم، أغلق", "إلغاء"); if (!ok) return;
+      await sb.from("vote_polls").update({ status: "closed" }).eq("id", p.id); await loadPolls(); await loadPoll(); teacherView();
+    });
+    $("tDel").addEventListener("click", async function () {
+      var ok = await KZ.confirmBox("حذف الاستفتاء؟", "تُحذف المواعيد وكل الأصوات نهائياً.", "نعم، احذف", "إلغاء"); if (!ok) return;
+      await sb.from("vote_polls").delete().eq("id", p.id); sessionStorage.removeItem("vtPoll"); await loadPolls(); await loadPoll(); teacherView();
+    });
+    $("gAdd").addEventListener("click", async function () {
+      var days = Array.prototype.slice.call(app.querySelectorAll("[data-gd]:checked")).map(function (x) { return Number(x.getAttribute("data-gd")); });
+      var from = $("gFrom").value, to = $("gTo").value, len = Number($("gLen").value) || 90;
+      if (!days.length || !from || !to) { $("gMsg").textContent = "اختر يوماً وساعات البداية والنهاية."; return; }
+      function mins(t) { return Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5)); }
+      function hm(m) { return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
+      var rows = [];
+      days.forEach(function (d) { for (var m = mins(from); m + len <= mins(to); m += len) rows.push({ poll_id: p.id, dow: d, start_time: hm(m), end_time: hm(m + len), sort: m }); });
+      var have = state.slots.map(function (s) { return s.dow + s.start_time + s.end_time; });
+      rows = rows.filter(function (r) { return have.indexOf(r.dow + r.start_time + r.end_time) < 0; });
+      if (!rows.length) { $("gMsg").textContent = "لا مواعيد جديدة (إما موجودة أو الوقت لا يتسع لحصة)."; return; }
+      var r = await sb.from("vote_slots").insert(rows);
+      if (r.error) { $("gMsg").textContent = r.error.message; return; }
+      await loadPoll(); teacherView();
+    });
+    app.querySelectorAll("[data-xs]").forEach(function (a) { a.addEventListener("click", async function (e) {
+      e.preventDefault(); var id = Number(a.getAttribute("data-xs")); var n = Object.keys(state.counts[id] || {}).length;
+      if (n) { var ok = await KZ.confirmBox("حذف موعد عليه أصوات؟", "ستُحذف أصوات الطلاب لهذا الموعد.", "احذف", "إلغاء"); if (!ok) return; }
+      await sb.from("vote_slots").delete().eq("id", id); await loadPoll(); teacherView();
+    }); });
+    app.querySelectorAll("[data-as]").forEach(function (c) { c.addEventListener("change", async function () {
+      var a = c.getAttribute("data-as").split(":"), lv = a[0], sid = Number(a[1]);
+      if (c.checked) await sb.from("vote_assignments").insert({ poll_id: p.id, level: lv, slot_id: sid }); else await sb.from("vote_assignments").delete().match({ poll_id: p.id, level: lv, slot_id: sid });
+      await loadPoll(); teacherView();
+    }); });
+    $("tSuggest").addEventListener("click", async function () {
+      var sg = suggest(), rows = [];
+      Object.keys(sg).forEach(function (lv) { sg[lv].forEach(function (sid) { rows.push({ poll_id: p.id, level: lv, slot_id: sid }); }); });
+      await sb.from("vote_assignments").delete().eq("poll_id", p.id);
+      if (rows.length) await sb.from("vote_assignments").insert(rows);
+      await loadPoll(); teacherView(); $("tAM").textContent = "✅ طُبّق الاقتراح (يمكنك تعديل الخانات يدوياً). لم يُعلن للطلاب إلا بعد إغلاق التصويت.";
+    });
+    $("tClear").addEventListener("click", async function () { await sb.from("vote_assignments").delete().eq("poll_id", p.id); await loadPoll(); teacherView(); });
+    $("tAnnounce").addEventListener("click", async function () {
+      var t = "📅 مواعيد الحصص المعتمدة (" + p.title + ")\n";
+      LEVELS.forEach(function (lv) {
+        var l = state.asg.filter(function (a) { return a.level === lv; }).map(function (a) { var s = state.slots.find(function (x) { return x.id === a.slot_id; }); return s ? slotLabel(s) : ""; }).filter(Boolean);
+        if (l.length) t += "\n" + lv + " " + TEAM[lv].replace("الفريق ", "") + ":\n- " + l.join("\n- ") + "\n";
+      });
+      try { await navigator.clipboard.writeText(t); $("tAM").textContent = "✅ نُسخ الإعلان، الصقه في المجموعة."; } catch (e) { $("tAM").textContent = t; }
+    });
+  }
+
+  css();
+  await loadPolls(); await loadPoll();
+  if (IS_T) { teacherView(); return; }
+  if (!state.poll || state.poll.status === "draft") { app.innerHTML = "<h1>مواعيد الحصص</h1><p class=\"muted\">لا يوجد استفتاء مواعيد مفتوح الآن. سيعلن المعلم عندما يبدأ التصويت.</p>"; return; }
+  if (!MY) { app.innerHTML = "<h1>مواعيد الحصص</h1><p class=\"muted\">لم يُحدَّد مستواك بعد.</p>"; return; }
+  studentView();
+})();
+
+</script>
+</body>
+</html>
