@@ -15,9 +15,10 @@ h1{margin:0 0 8px;font-size:1.4rem}p{line-height:1.9}
 <p>اضغط الزر واختر مجلد <b>anki</b> (الذي فيه card-media-A2 و B1 و B2 و C1). سيرفع الصفحة تلقائياً <b>فقط</b> الملفات التي تحتاجها البطاقات ولم تُرفع بعد، ولا يغيّر ما هو موجود.</p>
 <label class="btn" id="pick">اختيار المجلد وبدء الرفع<input type="file" id="dir" webkitdirectory multiple style="display:none"></label>
 <div class="bar"><i id="bar"></i></div>
-<p id="st"></p><div id="log"></div>
+<p id="st"><b>ملاحظة:</b> بعد اختيار المجلد قد يطلب المتصفح تأكيد «رفع» — اضغط «رفع/Upload». ثم انتظر، فقراءة آلاف الملفات تأخذ دقيقة.</p><div id="log"></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="config.js"></script>
 <script>
 (function () {
@@ -32,8 +33,15 @@ h1{margin:0 0 8px;font-size:1.4rem}p{line-height:1.9}
   $("dir").addEventListener("change", async function (e) {
     var files = Array.prototype.slice.call(e.target.files || []);
     if (!files.length) return;
-    $("pick").style.display = "none"; $("st").textContent = "جارٍ حساب الناقص...";
-    var byName = {}; files.forEach(function (f) { if (/\.(jpg|jpeg|png|mp3)$/i.test(f.name)) byName[f.name] = f; });
+    $("st").textContent = "اخترت " + files.length + " ملفاً. جارٍ حساب الناقص..."; log("عدد الملفات المختارة: " + files.length + " (إن كان 0 أو صغيراً جداً فاختر مجلد anki نفسه)");
+    var byName = {};
+    for (var zi = 0; zi < files.length; zi++) {
+      var zf = files[zi];
+      if (/\.zip$/i.test(zf.name)) {
+        try { var zz = await JSZip.loadAsync(zf); zz.forEach(function (rp, ent) { var bn = rp.split("/").pop(); if (!ent.dir && /\.(jpg|jpeg|png|mp3)$/i.test(bn)) byName[bn] = ent; }); }
+        catch (ze) { log("تعذر فتح " + zf.name + ": " + ze.message); }
+      } else if (/\.(jpg|jpeg|png|mp3)$/i.test(zf.name)) byName[zf.name] = zf;
+    }
     var need = {}, from = 0;
     for (;;) {
       var r = await sb.from("flashcards").select("image,audio,example_audio").range(from, from + 999);
@@ -54,7 +62,8 @@ h1{margin:0 0 8px;font-size:1.4rem}p{line-height:1.9}
     var done = 0, bad = 0, i = 0;
     async function worker() {
       while (i < avail.length) {
-        var n = avail[i++], f = byName[n], ct = /\.mp3$/i.test(n) ? "audio/mpeg" : /\.png$/i.test(n) ? "image/png" : "image/jpeg";
+        var n = avail[i++], f = byName[n]; if (f && f.async) f = await f.async("blob");
+        var ct =/\.mp3$/i.test(n) ? "audio/mpeg" : /\.png$/i.test(n) ? "image/png" : "image/jpeg";
         var up = await sb.storage.from("card-media").upload(n, f, { contentType: ct, upsert: false });
         if (up.error && !/exists|duplicate/i.test(up.error.message)) { bad++; log("فشل " + n + ": " + up.error.message); }
         done++; $("bar").style.width = Math.round(done * 100 / avail.length) + "%";
