@@ -307,3 +307,40 @@
   });
   setTimeout(function () { document.querySelectorAll(".rv:not(.in)").forEach(function (t) { var r = t.getBoundingClientRect(); if (r.top < window.innerHeight) t.classList.add("in"); }); }, 1800);
 })();
+
+/* pwa: "install app" button (Android/desktop prompt, iOS hint) */
+(function () {
+  var dp = null;
+  function standalone() { return matchMedia("(display-mode: standalone)").matches || navigator.standalone; }
+  function btn(txt, fn) {
+    if (document.getElementById("kzInstall") || standalone()) return;
+    try { if (localStorage.getItem("kz-inst-x")) return; } catch (e) {}
+    var b = document.createElement("div"); b.id = "kzInstall";
+    b.style.cssText = "position:fixed;bottom:16px;inset-inline-end:16px;z-index:902;display:flex;gap:6px;align-items:center;background:#D4AF37;color:#0B1F44;border-radius:30px;padding:8px 8px 8px 16px;font:700 14px Tajawal,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.35)";
+    var a = document.createElement("button"); a.type = "button"; a.textContent = txt; a.style.cssText = "all:unset;cursor:pointer";
+    var x = document.createElement("button"); x.type = "button"; x.textContent = "✕"; x.setAttribute("aria-label", "إخفاء"); x.style.cssText = "all:unset;cursor:pointer;padding:0 8px";
+    a.onclick = function () { fn(b); }; x.onclick = function () { b.remove(); try { localStorage.setItem("kz-inst-x", "1"); } catch (e) {} };
+    b.appendChild(a); b.appendChild(x); document.body.appendChild(b);
+  }
+  addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); dp = e; btn("📲 ثبّت التطبيق", function (b) { dp.prompt(); dp.userChoice.finally(function () { b.remove(); }); }); });
+  addEventListener("load", function () {
+    if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !standalone() && document.body.classList.contains("app"))
+      btn("📲 ثبّت التطبيق", function () { alert("في سفاري: اضغط زر المشاركة ثم «إضافة إلى الشاشة الرئيسية»."); });
+  });
+})();
+
+
+/* compat: inset-inline shim for older browsers */
+(function () {
+  try { if (window.CSS && CSS.supports && CSS.supports("inset-inline-start", "0")) return; } catch (e) { return; }
+  function fix(el) {
+    if (!el || el.nodeType !== 1 || !el.style || !el.getAttribute) return;
+    var st = el.getAttribute("style"); if (!st || st.indexOf("inset-inline") < 0) return;
+    var rtl = document.documentElement.dir !== "ltr";
+    st = st.replace(/inset-inline-start\s*:\s*([^;]+)/g, function (m, v) { return (rtl ? "right:" : "left:") + v; })
+           .replace(/inset-inline-end\s*:\s*([^;]+)/g, function (m, v) { return (rtl ? "left:" : "right:") + v; });
+    el.setAttribute("style", st);
+  }
+  function all(root) { fix(root); if (root.querySelectorAll) { var l = root.querySelectorAll("[style*='inset-inline']"); for (var i = 0; i < l.length; i++) fix(l[i]); } }
+  new MutationObserver(function (ms) { ms.forEach(function (m) { m.addedNodes && Array.prototype.forEach.call(m.addedNodes, function (n) { if (n.nodeType === 1) all(n); }); }); }).observe(document.documentElement, { childList: true, subtree: true });
+})();

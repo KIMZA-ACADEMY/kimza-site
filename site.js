@@ -219,11 +219,27 @@
     if (document.getElementById("ptShortcut")) return;
     var ar = (window.KIMZA_LANG ? window.KIMZA_LANG() : "ar") !== "en";
     var a = document.createElement("a"); a.id = "ptShortcut"; a.href = "placement.html";
-    a.innerHTML = (ar ? "ابدأ اختبار المستوى المجاني" : "Take the free placement test") + "<small>" + (ar ? "5 دقائق فقط" : "only 5 minutes") + "</small>";
+    a.innerHTML = (ar ? "ابدأ اختبار المستوى المجاني" : "Take the free placement test") + "<small>" + (ar ? "10 دقائق فقط" : "only 10 minutes") + "</small>";
     a.style.cssText = "position:fixed;z-index:800;bottom:18px;inset-inline-start:50%;transform:translateX(50%);display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 26px;border-radius:40px;background:#7a1530;color:#fff;border:2px solid #D4AF37;font:700 17px Tajawal,sans-serif;text-decoration:none;box-shadow:0 10px 30px rgba(0,0,0,.45);white-space:nowrap";
     if (document.documentElement.dir === "ltr") a.style.transform = "translateX(-50%)";
     a.querySelector("small").style.cssText = "font-size:12px;font-weight:500;color:#F8F4E9";
     document.body.appendChild(a);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mk); else mk();
+})();
+
+
+/* compat: inset-inline shim for older browsers */
+(function () {
+  try { if (window.CSS && CSS.supports && CSS.supports("inset-inline-start", "0")) return; } catch (e) { return; }
+  function fix(el) {
+    if (!el || el.nodeType !== 1 || !el.style || !el.getAttribute) return;
+    var st = el.getAttribute("style"); if (!st || st.indexOf("inset-inline") < 0) return;
+    var rtl = document.documentElement.dir !== "ltr";
+    st = st.replace(/inset-inline-start\s*:\s*([^;]+)/g, function (m, v) { return (rtl ? "right:" : "left:") + v; })
+           .replace(/inset-inline-end\s*:\s*([^;]+)/g, function (m, v) { return (rtl ? "left:" : "right:") + v; });
+    el.setAttribute("style", st);
+  }
+  function all(root) { fix(root); if (root.querySelectorAll) { var l = root.querySelectorAll("[style*='inset-inline']"); for (var i = 0; i < l.length; i++) fix(l[i]); } }
+  new MutationObserver(function (ms) { ms.forEach(function (m) { m.addedNodes && Array.prototype.forEach.call(m.addedNodes, function (n) { if (n.nodeType === 1) all(n); }); }); }).observe(document.documentElement, { childList: true, subtree: true });
 })();

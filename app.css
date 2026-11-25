@@ -188,3 +188,21 @@ table.t td,table.t th,.stat,[data-num]{font-variant-numeric:tabular-nums}
   html.js-rv .rv{opacity:1;transform:none}
   @view-transition{navigation:none}
 }
+
+/* ===== compat: older Android / iOS browsers ===== */
+:root{--font-display:"Playfair Display",Georgia,"Times New Roman",serif;--font-body:Manrope,Tajawal,"Segoe UI",Tahoma,Arial,sans-serif}
+html[lang="ar"] body,html[lang="ar"] input,html[lang="ar"] button,html[lang="ar"] select,html[lang="ar"] textarea{font-family:Tajawal,"Segoe UI",Tahoma,Arial,sans-serif}
+@supports not (inset-inline:0){
+  .skip{left:-9999px}.hp{left:-9999px}
+  .skip:focus{left:12px}
+  .nav-links{left:0;right:0}
+  html[dir="rtl"] .pane.dlg{right:0}html[dir="ltr"] .pane.dlg{left:0}
+  html[dir="rtl"] .pane.card1{left:0}html[dir="ltr"] .pane.card1{right:0}
+  html[dir="rtl"] .pane.card1 .lv{right:12px}html[dir="ltr"] .pane.card1 .lv{left:12px}
+  html[dir="rtl"] .pane.chip2{right:4%}html[dir="ltr"] .pane.chip2{left:4%}
+  .rail4::before{left:6%;right:6%}
+  html[dir="rtl"] .tl::before{right:23px}html[dir="ltr"] .tl::before{left:23px}
+  .toast{left:16px;right:16px}
+  html[dir="rtl"] .welcome::after{left:-60px}html[dir="ltr"] .welcome::after{right:-60px}
+  html[dir="rtl"] .wplay,html[dir="rtl"] .wplay2{left:12px}html[dir="ltr"] .wplay,html[dir="ltr"] .wplay2{right:12px}
+}
