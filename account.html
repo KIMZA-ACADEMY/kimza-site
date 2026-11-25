@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>حسابي · KIMZA Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
+<script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
+<link rel="stylesheet" href="site.css?v=mwwjhbzt">
+<link rel="stylesheet" href="app.css?v=mwwjhbzt">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B1F44">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<script>if("serviceWorker"in navigator&&location.protocol!=="file:")addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})</script>
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="supabase-lib.js"></script>
+<script src="config.js"></script>
+<script src="app.js?v=mwwjhbzt"></script>
+<script src="portal-i18n.js?v=mwwjhbzt"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("any");
+  if (!prof) return;
+  KZ.shell("account");
+  var sb = KZ.sb, esc = KZ.esc, IS_T = prof.role === "teacher";
+  var app = document.getElementById("app");
+  var uid = (await sb.auth.getSession()).data.session.user.id;
+  var ST = { pending: "بانتظار موافقة المعلم", approved: "تمت الموافقة", rejected: "رُفض" };
+  function when(d) { return d ? new Date(d).toLocaleString("ar", { dateStyle: "medium", timeStyle: "short" }) : ""; }
+
+  async function student() {
+    var me = (await sb.from("profiles").select("full_name,level").eq("id", uid).single()).data || {};
+    var rs = (await sb.from("name_requests").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(5)).data || [];
+    var pend = rs.find(function (r) { return r.status === "pending"; });
+    var h = "<h1>حسابي</h1><div class=\"tile\"><p class=\"muted\" style=\"margin-top:0\">اسمك الحالي</p><h2 style=\"margin:0\">" + esc(me.full_name || "") + "</h2><p class=\"muted\">المستوى: " + esc(String(me.level || "")) + "</p></div>";
+    h += "<div class=\"tile\" style=\"margin-top:14px\"><h2 style=\"margin-top:0\">طلب تغيير الاسم</h2>";
+    if (pend) h += "<p>طلبك الحالي: <strong>" + esc(pend.new_name) + "</strong><br><span class=\"muted\">" + ST.pending + " · " + when(pend.created_at) + "</span></p><p class=\"muted\">لا يمكنك إرسال طلب جديد حتى يردّ المعلم.</p>";
+    else h += "<p class=\"muted\">اكتب اسمك الكامل الحقيقي كما تريده أن يظهر في النظام وعلى شهادتك (اسمان على الأقل). يصل الطلب للمعلم ولا يتغير الاسم حتى يوافق.</p>" +
+      "<div class=\"form\"><div><label for=\"nn\">الاسم الجديد</label><input id=\"nn\" maxlength=\"120\" autocomplete=\"name\"></div><div id=\"nm\" class=\"msg\" role=\"alert\" hidden></div><div class=\"btns\"><button class=\"btn btn-primary\" id=\"nsend\" type=\"button\">إرسال الطلب للمعلم</button></div></div>";
+    h += "</div>";
+    var old = rs.filter(function (r) { return r.status !== "pending"; });
+    if (old.length) h += "<div class=\"tile\" style=\"margin-top:14px\"><h3 style=\"margin-top:0\">طلبات سابقة</h3>" + old.map(function (r) { return "<p>" + esc(r.new_name) + " — <strong>" + ST[r.status] + "</strong> <span class=\"muted\">" + when(r.decided_at) + "</span></p>"; }).join("") + "</div>";
+    app.innerHTML = h;
+    var b = document.getElementById("nsend");
+    if (b) b.addEventListener("click", async function () {
+      var v = document.getElementById("nn").value.trim().replace(/\s+/g, " "), m = document.getElementById("nm");
+      if (v.length < 5 || v.indexOf(" ") < 0) { m.textContent = "اكتب اسمك الكامل (اسمان على الأقل)."; m.className = "msg bad"; m.hidden = false; return; }
+      b.disabled = true;
+      var r = await sb.rpc("request_name_change", { p_name: v });
+      if (r.error) { m.textContent = /pending/.test(r.error.message) ? "لديك طلب قيد المراجعة." : /already your name/.test(r.error.message) ? "هذا هو اسمك الحالي." : "تعذر الإرسال: " + r.error.message; m.className = "msg bad"; m.hidden = false; b.disabled = false; return; }
+      student();
+    });
+  }
+
+  async function teacher() {
+    var all = (await sb.from("name_requests").select("*").order("created_at", { ascending: false }).limit(60)).data || [];
+    var ids = Array.from(new Set(all.map(function (r) { return r.user_id; })));
+    var lv = {};
+    if (ids.length) ((await sb.from("profiles").select("id,level").in("id", ids)).data || []).forEach(function (p) { lv[p.id] = p.level; });
+    var pend = all.filter(function (r) { return r.status === "pending"; });
+    var h = "<h1>طلبات تغيير الأسماء</h1>";
+    h += pend.length ? pend.map(function (r) {
+      return "<div class=\"tile\" style=\"margin-bottom:12px\"><p style=\"margin:0\"><span class=\"muted\">الاسم الحالي:</span> <strong>" + esc(r.old_name || "") + "</strong> " + (lv[r.user_id] ? "(" + esc(String(lv[r.user_id])) + ")" : "") + "</p>" +
+        "<p style=\"margin:6px 0 12px\"><span class=\"muted\">الاسم المطلوب:</span> <strong style=\"font-size:1.15rem\">" + esc(r.new_name) + "</strong> <span class=\"muted\">· " + when(r.created_at) + "</span></p>" +
+        "<div class=\"btns\"><button class=\"btn btn-primary\" data-ok=\"" + r.id + "\" type=\"button\">✅ موافقة</button><button class=\"btn danger\" data-no=\"" + r.id + "\" type=\"button\">رفض</button></div></div>";
+    }).join("") : "<p class=\"muted\">لا توجد طلبات جديدة 🎉</p>";
+    var done = all.filter(function (r) { return r.status !== "pending"; }).slice(0, 15);
+    if (done.length) h += "<div class=\"tile\" style=\"margin-top:18px\"><h3 style=\"margin-top:0\">آخر القرارات</h3>" + done.map(function (r) { return "<p>" + esc(r.old_name || "") + " ← " + esc(r.new_name) + " — <strong>" + ST[r.status] + "</strong> <span class=\"muted\">" + when(r.decided_at) + "</span></p>"; }).join("") + "</div>";
+    app.innerHTML = h;
+    app.querySelectorAll("[data-ok],[data-no]").forEach(function (b) {
+      b.addEventListener("click", async function () {
+        var ok = b.hasAttribute("data-ok"), id = Number(b.getAttribute(ok ? "data-ok" : "data-no"));
+        var go = await KZ.confirmBox(ok ? "الموافقة على الاسم؟" : "رفض الطلب؟", ok ? "سيتغير اسم الطالب في كل النظام وعلى شهاداته القادمة." : "يبقى اسمه كما هو.", ok ? "نعم، وافق" : "نعم، ارفض", "إلغاء");
+        if (!go) return;
+        var r = await sb.rpc("decide_name_change", { p_id: id, p_ok: ok });
+        if (r.error) { alert(r.error.message); return; }
+        teacher();
+      });
+    });
+  }
+  if (IS_T) teacher(); else student();
+})();
+
+</script>
+</body>
+</html>
