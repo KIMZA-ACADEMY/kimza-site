@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwkxkzg">
-<link rel="stylesheet" href="app.css?v=mwwkxkzg">
+<link rel="stylesheet" href="site.css?v=mwwl1t15">
+<link rel="stylesheet" href="app.css?v=mwwl1t15">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwkxkzg"></script>
-<script src="portal-i18n.js?v=mwwkxkzg"></script>
-<script src="i18n.js?v=mwwkxkzg"></script>
+<script src="app.js?v=mwwl1t15"></script>
+<script src="portal-i18n.js?v=mwwl1t15"></script>
+<script src="i18n.js?v=mwwl1t15"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -491,19 +491,32 @@
   VIEWS.certs = async function () {
     var nm = await nameMap();
     var cs = (await sb.from("certificates").select("*").order("created_at", { ascending: false }).limit(100)).data || [];
+    var PRE = { completion: ["CERTIFICATE OF COMPLETION", "has successfully completed the English course level"], participation: ["CERTIFICATE OF PARTICIPATION", "has actively participated in English classes at KIMZA Academy"], excellence: ["CERTIFICATE OF EXCELLENCE", "has shown outstanding performance and dedication in the English course"], attendance: ["CERTIFICATE OF ATTENDANCE", "has attended English classes at KIMZA Academy"], custom: ["", ""] };
     var h = '<form class="tile form" id="cf"><h3>إصدار شهادة</h3><p class="muted">تُصدر بعد نجاح الطالب في المستوى وفق التقييم. يُولَّد رقم فريد ورمز QR تلقائياً.</p><div><label for="cu">الطالب</label><select id="cu">' +
-      opts(nm.list.map(function (p) { return [p.id, p.full_name + " (" + p.level + ")"]; })) + '</select></div><div><label for="cl">المستوى المكتمل</label><select id="cl">' + opts(LEVELS) + '</select></div><div><button class="btn btn-primary" type="submit">إصدار</button></div></form>';
-    h += '<h2 style="margin-top:24px">الشهادات الصادرة</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>المستوى</th><th>الرقم</th><th>التاريخ</th><th>الحالة</th><th></th></tr></thead><tbody>';
+      opts(nm.list.map(function (p) { return [p.id, p.full_name + " (" + p.level + ")"]; })) + '</select></div>' +
+      '<div><label for="ck">نوع الشهادة</label><select id="ck"><option value="completion">شهادة إتمام مستوى (تُسجّل المستوى كمكتمل)</option><option value="participation">شهادة مشاركة</option><option value="excellence">شهادة تفوّق</option><option value="attendance">شهادة حضور</option><option value="custom">نوع آخر (أسمّيه بنفسي)</option></select></div>' +
+      '<div><label for="ct">عنوان الشهادة (يُطبع في أعلاها)</label><input id="ct" maxlength="80" dir="auto" value="CERTIFICATE OF COMPLETION"></div>' +
+      '<div><label for="cb">الوصف (جملة تظهر تحت اسم الطالب)</label><textarea id="cb" rows="3" maxlength="500" dir="auto">has successfully completed the English course level</textarea></div>' +
+      '<div><label for="cl">المستوى</label><select id="cl"><option value="">— بدون مستوى —</option>' + opts(LEVELS) + '</select></div>' +
+      '<div><label for="chh">عدد ساعات الدراسة (اختياري)</label><input id="chh" type="number" min="0" max="2000" step="0.5" dir="ltr" placeholder="مثلاً 20"></div>' +
+      '<div><label for="cd">تاريخ الإصدار</label><input id="cd" type="date" dir="ltr" value="' + new Date().toISOString().slice(0, 10) + '"></div>' +
+      '<div><button class="btn btn-primary" type="submit">إصدار</button></div></form>';
+    h += '<h2 style="margin-top:24px">الشهادات الصادرة</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>النوع</th><th>المستوى</th><th>الرقم</th><th>التاريخ</th><th>الحالة</th><th></th></tr></thead><tbody>';
     cs.forEach(function (c) {
-      h += "<tr><td>" + esc(c.holder_name) + '</td><td class="en">' + esc(c.level) + '</td><td class="en">' + esc(c.number) + "</td><td>" + esc(c.issued_on) + '</td><td><span class="badge ' + (c.status === "valid" ? "ok" : "bad") + '">' + (c.status === "valid" ? "سارية" : "ملغاة") + "</span></td><td>" +
+      h += "<tr><td>" + esc(c.holder_name) + '</td><td class="en">' + esc(c.title || "COMPLETION") + (c.hours ? " · " + esc(String(c.hours)) + "h" : "") + '</td><td class="en">' + esc(c.level || "—") + '</td><td class="en">' + esc(c.number) + "</td><td>" + esc(c.issued_on) + '</td><td><span class="badge ' + (c.status === "valid" ? "ok" : "bad") + '">' + (c.status === "valid" ? "سارية" : "ملغاة") + "</span></td><td>" +
         '<a class="btn btn-ghost sm" href="certificate.html?c=' + encodeURIComponent(c.number) + '">عرض</a> ' + (c.status === "valid" ? '<button class="btn danger sm" data-rv="' + c.id + '" type="button">إلغاء</button>' : "") + "</td></tr>";
     });
     h += "</tbody></table></div>";
     view.innerHTML = h;
+    $("ck").addEventListener("change", function () { var t = PRE[$("ck").value]; $("ct").value = t[0]; $("cb").value = t[1]; if ($("ck").value === "custom") $("ct").focus(); });
     $("cf").addEventListener("submit", async function (e) {
       e.preventDefault();
-      if (!confirm("إصدار شهادة المستوى " + $("cl").value + " لهذا الطالب؟")) return;
-      var r = await sb.rpc("issue_certificate", { p_user: $("cu").value, p_level: $("cl").value });
+      var kind = $("ck").value, lvl = $("cl").value, hrs = $("chh").value === "" ? null : Number($("chh").value);
+      if (kind === "completion" && !lvl) { KZ.toast("اختر المستوى لشهادة الإتمام.", true); return; }
+      if (!confirm("إصدار «" + $("ct").value + "» لهذا الطالب؟")) return;
+      var r;
+      if (kind === "completion" && $("ct").value === PRE.completion[0] && $("cb").value === PRE.completion[1] && hrs === null) r = await sb.rpc("issue_certificate", { p_user: $("cu").value, p_level: lvl });
+      else r = await sb.rpc("issue_custom_certificate", { p_user: $("cu").value, p_kind: kind, p_title: $("ct").value.trim(), p_body: $("cb").value.trim(), p_level: lvl || null, p_hours: hrs, p_date: $("cd").value || null });
       KZ.toast(r.error ? "تعذر الإصدار." : "تم الإصدار: " + r.data.number, !!r.error); if (!r.error) VIEWS.certs();
     });
     view.querySelectorAll("[data-rv]").forEach(function (b) { b.addEventListener("click", async function () {
