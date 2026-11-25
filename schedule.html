@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwkxkzg">
-<link rel="stylesheet" href="app.css?v=mwwkxkzg">
+<link rel="stylesheet" href="site.css?v=mwwozp5x">
+<link rel="stylesheet" href="app.css?v=mwwozp5x">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwkxkzg"></script>
-<script src="portal-i18n.js?v=mwwkxkzg"></script>
+<script src="app.js?v=mwwozp5x"></script>
+<script src="portal-i18n.js?v=mwwozp5x"></script>
 
 <script>
 (async function () {
@@ -88,6 +88,7 @@
     state.sel = state.mine.slice();
   }
   async function loadPoll() {
+    try { state.blocked = !IS_T && ((await sb.rpc("my_blocked_actions")).data || []).indexOf("vote") >= 0; } catch (e) { state.blocked = false; }
     var p = state.poll; state.slots = []; state.counts = {}; state.mine = []; state.progress = {}; state.asg = []; state.sel = []; state.names = {};
     if (!p) return;
     var res = await Promise.all([
@@ -130,7 +131,7 @@
 
   // ---------- student board ----------
   function studentView() {
-    var p = state.poll, open = isOpen(p), picks = p.picks;
+    var p = state.poll, wasOpen = isOpen(p), open = wasOpen && !state.blocked, picks = p.picks;
     var h = '<div class="row" style="border:0;padding:0"><h1 style="margin:0">' + esc(p.title) + "</h1>" +
       '<span class="vt-badge" style="background:' + (COL[MY] || "#555") + '">' + (MY ? "أنت في " + esc(TEAM[MY] || "") + " (" + esc(MY) + ")" : "") + "</span></div>";
     if (MYL.length > 1) h += '<div class="tile" style="margin:10px 0"><strong>أنت تمثّل أكثر من مستوى. صوّت لكل مستوى على حدة:</strong><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' + MYL.map(function (lv) { var done = (state.myVotes || []).some(function (v) { return v.level === lv; }); return '<button type="button" class="btn ' + (lv === MY ? 'btn-primary' : 'btn-ghost') + ' sm" data-lvsw="' + lv + '" style="border-color:' + COL[lv] + '">' + lv + ' ' + esc(TEAM[lv].replace('الفريق ', '')) + (done ? ' ✅' : '') + '</button>'; }).join('') + '</div></div>';
@@ -142,6 +143,7 @@
       h += '<div class="tile" style="border:3px solid ' + COL[MY] + ';margin:14px 0"><h2 style="margin-top:0">🎉 مواعيد حصصكم المعتمدة</h2><ul>' +
         mineFinal.map(function (a) { var s = state.slots.find(function (x) { return x.id === a.slot_id; }); return s ? "<li><strong>" + esc(slotLabel(s)) + "</strong></li>" : ""; }).join("") + "</ul></div>";
     } else if (p.status === "closed") h += '<div class="tile" style="margin:14px 0">أُغلق التصويت. سيعلن المعلم مواعيد كل مستوى قريباً.</div>';
+    if (state.blocked && wasOpen) h += '<div class="warnbox" style="margin:14px 0">🚫 تصويتك متوقف حالياً من المعلم. تواصل معه إن كان لديك استفسار. سيُفتح لك التصويت عندما يرفع المعلم الإيقاف.</div>';
     h += '<div class="vt-legend">' + LEVELS.map(function (lv) { return '<span class="vt-chip' + (lv === MY ? " me" : "") + '" style="background:' + COL[lv] + '">' + lv + " " + esc(TEAM[lv].replace("الفريق ", "")) + "</span>"; }).join("") + "</div>";
     if (open) h += '<div class="tile" style="margin-bottom:14px"><strong>اختر ' + picks + " من المواعيد المناسبة لك.</strong> اخترت الآن: <span id=\"vtCnt\">" + state.sel.length + "</span> من " + picks +
       ' <button class="btn btn-primary" id="vtSave" type="button" style="margin-inline-start:10px">' + (state.mine.length ? "حفظ تعديل اختياري" : "حفظ اختياري") + '</button> <span id="vtMsg" class="muted"></span></div>';

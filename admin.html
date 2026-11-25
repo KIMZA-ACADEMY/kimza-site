@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwworgp2">
-<link rel="stylesheet" href="app.css?v=mwworgp2">
+<link rel="stylesheet" href="site.css?v=mwwozp5x">
+<link rel="stylesheet" href="app.css?v=mwwozp5x">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwworgp2"></script>
-<script src="portal-i18n.js?v=mwworgp2"></script>
-<script src="i18n.js?v=mwworgp2"></script>
+<script src="app.js?v=mwwozp5x"></script>
+<script src="portal-i18n.js?v=mwwozp5x"></script>
+<script src="i18n.js?v=mwwozp5x"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -1004,6 +1004,8 @@
     var nm = await nameMap();
     var allL = (await sb.from("lessons").select("id,level,num,title").order("level").order("num").limit(1000)).data || [];
     var groups = (await sb.from("student_groups").select("*").order("created_at")).data || [];
+    var GB = [["vote", "التصويت على مواعيد الحصص"]], blk = {};
+    ((await sb.from("group_blocks").select("group_id,action")).data || []).forEach(function (b) { (blk[b.group_id] = blk[b.group_id] || {})[b.action] = 1; });
     var mem = (await sb.from("group_members").select("group_id,user_id")).data || [];
     var by = {}; mem.forEach(function (m) { (by[m.group_id] = by[m.group_id] || []).push(m.user_id); });
     var h = '<h2>مجموعات الطلاب</h2><p class="muted">أنشئ مجموعة بأي اسم (مثل «حصة السبت» أو «المتفوقون»)، ثم أضف إليها طلاباً. بعدها تفتح لهم درساً دفعة واحدة، أو ترسل لهم إعلاناً، أو تعطيهم لوناً خاصاً من «الألوان والثيمات».</p>' +
@@ -1011,9 +1013,10 @@
     if (!groups.length) h += '<p class="muted" style="margin-top:14px">لا توجد مجموعات بعد.</p>';
     groups.forEach(function (g) {
       var ids = by[g.id] || [], open = grpOpen === g.id;
-      h += '<div class="tile" style="margin-top:12px"><div class="row" style="border:0;padding:0"><div><strong style="font-size:1.1rem">' + esc(g.name) + '</strong> <span class="badge">' + ids.length + ' طالب</span></div><div class="btns"><button class="btn btn-ghost sm" data-gopen="' + g.id + '" type="button">' + (open ? "طيّ" : "إدارة") + '</button> <button class="btn danger sm" data-gdel="' + g.id + '" type="button">حذف المجموعة</button></div></div>';
+      h += '<div class="tile" style="margin-top:12px"><div class="row" style="border:0;padding:0"><div><strong style="font-size:1.1rem">' + esc(g.name) + '</strong> <span class="badge">' + ids.length + ' طالب</span>' + GB.filter(function (a) { return (blk[g.id] || {})[a[0]]; }).map(function (a) { return ' <span class="badge bad">🚫 ' + esc(a[1]) + ' موقوف</span>'; }).join("") + '</div><div class="btns"><button class="btn btn-ghost sm" data-gopen="' + g.id + '" type="button">' + (open ? "طيّ" : "إدارة") + '</button> <button class="btn danger sm" data-gdel="' + g.id + '" type="button">حذف المجموعة</button></div></div>';
       if (open) {
-        h += '<h4 style="margin:14px 0 6px">الأعضاء</h4><div>' + (ids.length ? ids.map(function (u) { var p = nm.map[u]; return '<span class="badge" style="margin:2px">' + esc(p ? p.full_name : "؟") + ' <button type="button" data-grm="' + g.id + ":" + u + '" aria-label="إزالة" style="border:0;background:transparent;cursor:pointer;color:inherit">✕</button></span>'; }).join("") : '<span class="muted">لا أعضاء بعد.</span>') + '</div>' +
+        h += '<h4 style="margin:14px 0 6px">القيود على المجموعة</h4><p class="muted" style="margin:0 0 6px">إيقاف إجراء عن كل أعضاء المجموعة حتى ترفع الإيقاف.</p><div class="btns">' + GB.map(function (a) { var on = (blk[g.id] || {})[a[0]]; return '<button type="button" class="btn ' + (on ? 'btn-primary' : 'danger') + ' sm" data-gblk="' + g.id + ':' + a[0] + ':' + (on ? 0 : 1) + '">' + (on ? '✅ رفع الإيقاف: ' : '🚫 إيقاف: ') + esc(a[1]) + '</button>'; }).join(' ') + '</div>' +
+          '<h4 style="margin:14px 0 6px">الأعضاء</h4><div>' + (ids.length ? ids.map(function (u) { var p = nm.map[u]; return '<span class="badge" style="margin:2px">' + esc(p ? p.full_name : "؟") + ' <button type="button" data-grm="' + g.id + ":" + u + '" aria-label="إزالة" style="border:0;background:transparent;cursor:pointer;color:inherit">✕</button></span>'; }).join("") : '<span class="muted">لا أعضاء بعد.</span>') + '</div>' +
           '<div class="form" style="margin-top:10px"><div><label for="gSearch">🔎 ابحث عن طالب لإضافته (اكتب أول حرفين من الاسم أو الرقم)</label><input id="gSearch" dir="auto" autocomplete="off" placeholder="مثلاً: سا أو 7762"></div><div id="gRes" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div></div>' +
           '<div class="form" style="margin-top:10px"><div><label for="gAdd">أو ألصق عدة أسماء مستخدمين/أرقام دفعة واحدة (أسماء المستخدمين أو الأرقام، افصل بفاصلة أو سطر)</label><textarea id="gAdd" rows="2" dir="ltr"></textarea></div><div class="btns"><button class="btn btn-primary sm" data-gadd="' + g.id + '" type="button">إضافة</button> <select id="gLv" style="width:auto">' + opts(LEVELS) + '</select> <button class="btn btn-ghost sm" data-gaddlv="' + g.id + '" type="button">إضافة كل طلاب هذا المستوى</button></div></div>' +
           '<h4 style="margin:16px 0 6px">فتح دروس لكل المجموعة (من عدة مستويات في وقت واحد)</h4><p class="muted" style="margin:0 0 8px">اختر مستوى، علّم الدروس التي تريدها، ثم انتقل إلى مستوى آخر وعلّم منه أيضاً. بضغطة واحدة تُفتح كلها لكل أعضاء المجموعة.</p><div id="gLs"></div>' +
@@ -1023,6 +1026,11 @@
     });
     view.innerHTML = h;
     $("gNew").addEventListener("submit", async function (e) { e.preventDefault(); var r = await sb.from("student_groups").insert({ name: $("gName").value.trim() }); KZ.toast(r.error ? "تعذر الإنشاء." : "تم إنشاء المجموعة.", !!r.error); VIEWS.groups(); });
+    view.querySelectorAll("[data-gblk]").forEach(function (b) { b.addEventListener("click", async function () {
+      var p = b.getAttribute("data-gblk").split(":"), gid = Number(p[0]), act = p[1], on = p[2] === "1", r;
+      if (on && !confirm("إيقاف «" + (GB.find(function (a) { return a[0] === act; }) || [0, act])[1] + "» عن كل أعضاء هذه المجموعة؟")) return;
+      r = on ? await sb.from("group_blocks").upsert({ group_id: gid, action: act }, { onConflict: "group_id,action" }) : await sb.from("group_blocks").delete().eq("group_id", gid).eq("action", act);
+      KZ.toast(r.error ? "تعذر التنفيذ." : (on ? "أُوقف عن المجموعة." : "رُفع الإيقاف."), !!r.error); VIEWS.groups(); }); });
     view.querySelectorAll("[data-gopen]").forEach(function (b) { b.addEventListener("click", function () { var id = Number(b.getAttribute("data-gopen")); grpOpen = grpOpen === id ? null : id; VIEWS.groups(); }); });
     view.querySelectorAll("[data-gdel]").forEach(function (b) { b.addEventListener("click", async function () { if (!confirm("حذف هذه المجموعة؟ (لا يُحذف الطلاب)")) return; await sb.from("student_groups").delete().eq("id", Number(b.getAttribute("data-gdel"))); grpOpen = null; VIEWS.groups(); }); });
     view.querySelectorAll("[data-grm]").forEach(function (b) { b.addEventListener("click", async function () { var p = b.getAttribute("data-grm").split(":"); await sb.from("group_members").delete().eq("group_id", Number(p[0])).eq("user_id", p[1]); VIEWS.groups(); }); });
