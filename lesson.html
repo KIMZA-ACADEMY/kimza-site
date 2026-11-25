@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwvynmjr">
-<link rel="stylesheet" href="app.css?v=mwvynmjr">
+<link rel="stylesheet" href="site.css?v=mww5n2sd">
+<link rel="stylesheet" href="app.css?v=mww5n2sd">
 
 </head>
 <body class="app">
@@ -17,8 +17,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvynmjr"></script>
-<script src="portal-i18n.js?v=mwvynmjr"></script>
+<script src="app.js?v=mww5n2sd"></script>
+<script src="portal-i18n.js?v=mww5n2sd"></script>
 
 <script>
 (async function () {
@@ -31,7 +31,7 @@
   var IS_T = prof.role === "teacher"; // the teacher previews the lesson exactly as the student sees it (nothing is saved)
   var BACK = IS_T ? "admin.html#lessons" : "dashboard.html";
 
-  var l = await sb.from("lessons").select("id,num,level,title,open_words,open_story,open_audio,open_exercises,open_homework").eq("id", id).maybeSingle();
+  var l = await sb.from("lessons").select("id,num,level,title,open_words,open_story,open_audio,open_exercises,open_homework,hidden_tabs").eq("id", id).maybeSingle();
   if (!l.data) {
     app.innerHTML = '<h1>الدرس غير متاح</h1><p><a class="btn btn-primary" href="dashboard.html">العودة</a></p>';
     return;
@@ -44,6 +44,9 @@
     ["homework", "الواجب", (L.open_homework && KZ.on("homework")) || IS_T],
     ["files", "المجلد", true]
   ];
+  var HID = L.hidden_tabs || [];
+  if (!IS_T) TABS = TABS.filter(function (t) { return HID.indexOf(t[0]) < 0; });
+  if (!TABS.length) TABS = [["words", "الكلمات", false]];
   var first = (TABS.filter(function (t) { return t[2]; })[0] || TABS[0])[0];
   var content = {};
   var c = await sb.from("lesson_content").select("kind,body").eq("lesson_id", id);
@@ -120,7 +123,13 @@
       var h = "";
       if (L.open_story || IS_T) {
         h += '<div id="simgs" class="simgs"></div>';
-        h += '<div class="tile"><pre class="story" style="white-space:pre-wrap;font-family:inherit;direction:auto;margin:0;line-height:2;font-size:1.1rem">' + esc(content.story || "") + "</pre></div>";
+        var sl = String(content.story || "").split("\n"), sh = "";
+        sl.forEach(function (ln) {
+          if (!ln.trim()) { sh += '<div style="height:10px"></div>'; return; }
+          if (/[؀-ۿ]/.test(ln)) sh += '<div dir="rtl" style="color:#8a6d00;font-family:Tajawal,sans-serif;line-height:1.9;font-size:1.05rem;margin:0 0 4px">' + esc(ln) + "</div>";
+          else sh += '<div dir="ltr" style="line-height:1.9;font-size:1.1rem;font-weight:600">' + esc(ln) + "</div>";
+        });
+        h += '<div class="tile story">' + sh + "</div>";
       }
       h += '<div id="saudio"></div>';
       pane.innerHTML = h;

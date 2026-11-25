@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mww122q4">
-<link rel="stylesheet" href="app.css?v=mww122q4">
+<link rel="stylesheet" href="site.css?v=mww5n2sd">
+<link rel="stylesheet" href="app.css?v=mww5n2sd">
 
 </head>
 <body class="app">
@@ -17,9 +17,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mww122q4"></script>
-<script src="portal-i18n.js?v=mww122q4"></script>
-<script src="i18n.js?v=mww122q4"></script>
+<script src="app.js?v=mww5n2sd"></script>
+<script src="portal-i18n.js?v=mww5n2sd"></script>
+<script src="i18n.js?v=mww5n2sd"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -138,14 +138,19 @@
 
   // ================= Lessons: open or lock every part of every lesson =================
   var lessonLevel = "A1";
+  var TABL = [["words", "الكلمات"], ["story", "القصة والصوت"], ["exercises", "التمارين"], ["homework", "الواجب"], ["files", "المجلد"]];
   var PARTS = [["words", "الكلمات"], ["story", "القصة"], ["audio", "الصوت"], ["exercises", "التمارين"], ["homework", "الواجب"]];
   VIEWS.lessons = async function () {
-    var r = await sb.from("lessons").select("id,num,title,open_words,open_story,open_audio,open_exercises,open_homework").eq("level", lessonLevel).order("num");
+    var r = await sb.from("lessons").select("id,num,title,open_words,open_story,open_audio,open_exercises,open_homework,hidden_tabs").eq("level", lessonLevel).order("num");
     var ls = r.data || [];
     var audioSet = {}, imgSet = {};
     try { ((await sb.storage.from("lesson-audio").list("", { limit: 1000 })).data || []).forEach(function (o) { audioSet[o.name] = true; }); } catch (e) {}
     try { ((await sb.storage.from("lesson-images").list("", { limit: 1000 })).data || []).forEach(function (o) { var m = /^(.*)-story-d+./.exec(o.name); if (m) { (imgSet[m[1]] = imgSet[m[1]] || []).push(o.name); } }); } catch (e) {}
     var h = '<div class="form" style="max-width:240px"><label for="lv">المستوى</label><select id="lv">' + opts(LEVELS, lessonLevel) + "</select></div>";
+    h += '<div class="tile" style="margin:12px 0"><strong>إظهار أو إخفاء الأزرار (التبويبات) عن الطلاب في كل دروس ' + lessonLevel + ':</strong><div class="btns" style="margin-top:8px">';
+    TABL.forEach(function (t) { var allHid = ls.length && ls.every(function (l) { return (l.hidden_tabs || []).indexOf(t[0]) >= 0; });
+      h += '<button class="btn ' + (allHid ? "btn-ghost" : "btn-primary") + ' sm" data-htall="' + t[0] + "|" + (allHid ? "0" : "1") + '" type="button">' + (allHid ? "🚫 " : "✓ ") + t[1] + "</button>"; });
+    h += "</div><p class=\"muted\" style=\"margin:8px 0 0\">الأزرق = ظاهر للطلاب، الرمادي = مخفي. يمكنك أيضاً التحكم في كل درس على حدة أسفل.</p></div>";
     h += '<p class="muted">تحكّم في كل جزء من كل درس على حدة: الكلمات، القصة، الصوت، التمارين (صفحة الحصة التفاعلية)، والواجب. الأجزاء المقفلة تظهر للطالب بقفل.</p>';
     var weeks = {}; ls.forEach(function (l) { var w = Math.ceil(l.num / 4); (weeks[w] = weeks[w] || []).push(l); });
     Object.keys(weeks).forEach(function (w) {
@@ -161,6 +166,9 @@
           var on = l["open_" + p[0]];
           h += '<button class="btn ' + (on ? "btn-primary" : "btn-ghost") + ' sm" data-tg="' + esc(l.id) + "|" + p[0] + "|" + (on ? "0" : "1") + '" type="button">' + (on ? "✓ " : "🔒 ") + p[1] + "</button>";
         });
+        h += '</div><div class="btns" style="margin-top:6px"><span class="muted" style="font-size:.85rem">الأزرار الظاهرة للطلاب:</span>';
+        TABL.forEach(function (t) { var hid = (l.hidden_tabs || []).indexOf(t[0]) >= 0;
+          h += '<button class="btn ' + (hid ? "btn-ghost" : "btn-primary") + ' sm" data-ht="' + esc(l.id) + "|" + t[0] + "|" + (hid ? "0" : "1") + '" type="button">' + (hid ? "🚫 " : "✓ ") + t[1] + "</button>"; });
         h += '</div></div><div style="text-align:end"><a class="btn btn-primary sm" href="lesson.html?id=' + esc(l.id) + '">معاينة الدرس والواجب</a> <a class="btn btn-ghost sm" href="class.html?id=' + esc(l.id) + '">صفحة الحصة</a> <button class="btn btn-ghost sm" data-lf="' + esc(l.id) + '" type="button">ملفات الدرس</button>' +
           '<div style="margin-top:8px"><label class="btn btn-ghost sm" style="display:inline-flex;margin:0;cursor:pointer">' + (audioSet[l.id + ".mp3"] ? "استبدال الصوت" : "رفع الصوت") +
           '<input type="file" accept="audio/*" data-au="' + esc(l.id) + '" style="display:none"></label> ' + (audioSet[l.id + ".mp3"] ? '<span class="badge ok">الصوت مرفوع</span> <button class="btn danger sm" data-dau="' + esc(l.id) + '" type="button">حذف الصوت</button>' : '<span class="badge">لا صوت</span>') + "</div>" +
@@ -174,6 +182,15 @@
       var p = b.getAttribute("data-tg").split("|"), patch = {}; patch["open_" + p[1]] = p[2] === "1";
       var r2 = await sb.from("lessons").update(patch).eq("id", p[0]);
       if (r2.error) KZ.toast("تعذر الحفظ.", true); VIEWS.lessons(); }); });
+    function nextHidden(cur, tab, hide) { var a2 = (cur || []).filter(function (x) { return x !== tab; }); if (hide) a2.push(tab); return a2; }
+    view.querySelectorAll("[data-ht]").forEach(function (b) { b.addEventListener("click", async function () {
+      var p = b.getAttribute("data-ht").split("|"), l0 = ls.filter(function (x) { return x.id === p[0]; })[0];
+      var r2 = await sb.from("lessons").update({ hidden_tabs: nextHidden(l0 && l0.hidden_tabs, p[1], p[2] === "1") }).eq("id", p[0]);
+      if (r2.error) KZ.toast("تعذر الحفظ: " + r2.error.message, true); VIEWS.lessons(); }); });
+    view.querySelectorAll("[data-htall]").forEach(function (b) { b.addEventListener("click", async function () {
+      var p = b.getAttribute("data-htall").split("|"), bad = 0;
+      for (var i2 = 0; i2 < ls.length; i2++) { var r3 = await sb.from("lessons").update({ hidden_tabs: nextHidden(ls[i2].hidden_tabs, p[0], p[1] === "1") }).eq("id", ls[i2].id); if (r3.error) bad++; }
+      if (bad) KZ.toast("تعذر حفظ " + bad + " درس.", true); VIEWS.lessons(); }); });
     view.querySelectorAll("[data-wk]").forEach(function (b) { b.addEventListener("click", async function () {
       var p = b.getAttribute("data-wk").split("|"), ids = (weeks[Number(p[0])] || []).map(function (l) { return l.id; }), patch = {}; patch["open_" + p[1]] = p[2] === "1";
       var r2 = await sb.from("lessons").update(patch).in("id", ids);
