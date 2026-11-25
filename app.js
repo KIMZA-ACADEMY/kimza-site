@@ -85,6 +85,7 @@
       '<span class="who">' + esc(prof ? prof.full_name : "") + '</span><button class="btn btn-ghost sm" id="logoutBtn" type="button" style="color:var(--cream)">خروج</button></nav></div>';
     var el = document.getElementById("appHeader");
     if (el) el.innerHTML = h;
+    try { KZ.mountBoardButton(); } catch (e) {}
     var lb = document.getElementById("logoutBtn");
     if (lb) lb.addEventListener("click", async function () { await sb.auth.signOut(); location.href = "login.html"; });
     if (window.KZ_PORTAL) window.KZ_PORTAL.mount();
@@ -92,6 +93,46 @@
 
   var KZ = { sb: sb, esc: esc, fmtDate: fmtDate, toast: toast, errMsg: errMsg, requireAuth: requireAuth, shell: shell, DOMAIN: DOMAIN, profile: null, user: null };
   window.KZ = KZ;
+  // ---- personal whiteboard (every signed-in user, every page) ----
+  KZ.loadBoard = function () {
+    if (window.KZBoard) return Promise.resolve();
+    if (KZ._bp) return KZ._bp;
+    KZ._bp = new Promise(function (res, rej) {
+      var s0 = document.querySelector('script[src*="app.js"]'), src = s0 ? s0.getAttribute("src").replace("app.js", "board.js") : "board.js";
+      var s = document.createElement("script"); s.src = src; s.onload = function () { res(); }; s.onerror = function () { KZ._bp = null; rej(new Error("board")); }; document.head.appendChild(s);
+    });
+    return KZ._bp;
+  };
+  KZ.openBoard = async function () {
+    try { await KZ.loadBoard(); } catch (e) { toast("تعذر تحميل السبورة.", true); return; }
+    var ov = document.getElementById("kzbOv");
+    if (!ov) {
+      ov = document.createElement("div"); ov.id = "kzbOv"; ov.style.cssText = "position:fixed;inset:0;z-index:9998;background:#0B1F44;display:none;flex-direction:column";
+      ov.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;color:#F8F4E9;font-weight:700"><span style="flex:1">🧑‍🏫 سبورتي (تُحفظ في حسابك تلقائياً)</span><button type="button" id="kzbFs" style="font:inherit;border:1px solid #D4AF37;background:transparent;color:#F8F4E9;border-radius:9px;padding:6px 12px;cursor:pointer">⛶ ملء الشاشة</button><button type="button" id="kzbClose" style="font:inherit;border:0;background:#D4AF37;color:#0B1F44;border-radius:9px;padding:6px 14px;cursor:pointer;font-weight:700">✕ رجوع إلى الدرس</button></div><div id="kzbHost" style="flex:1;min-height:0;position:relative"></div>';
+      document.body.appendChild(ov);
+      var sess = (await sb.auth.getSession()).data.session;
+      KZ._boardInst = KZBoard.mount(document.getElementById("kzbHost"), { sb: sb, table: "user_boards", col: "user_id", val: sess.user.id });
+      KZ._boardInst.setFull(true);
+      document.getElementById("kzbClose").addEventListener("click", KZ.closeBoard);
+      document.getElementById("kzbFs").addEventListener("click", function () { if (document.fullscreenElement) document.exitFullscreen(); else if (ov.requestFullscreen) ov.requestFullscreen().catch(function () {}); });
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ov.style.display !== "none" && !document.fullscreenElement && !document.querySelector(".kzb-ed")) KZ.closeBoard(); });
+    }
+    ov.style.display = "flex"; document.body.style.overflow = "hidden";
+    var fab = document.getElementById("kzbFab"); if (fab) fab.style.display = "none";
+    setTimeout(function () { if (KZ._boardInst) { KZ._boardInst.resize(); KZ._boardInst.setFull(true); } }, 60);
+  };
+  KZ.closeBoard = function () {
+    var ov = document.getElementById("kzbOv"); if (!ov) return;
+    try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
+    if (KZ._boardInst) KZ._boardInst.flush(); ov.style.display = "none"; document.body.style.overflow = "";
+    var fab = document.getElementById("kzbFab"); if (fab) fab.style.display = "";
+  };
+  KZ.mountBoardButton = function () {
+    if (document.getElementById("kzbFab")) return;
+    var b = document.createElement("button"); b.id = "kzbFab"; b.type = "button"; b.title = "افتح سبورتي للكتابة والتدرب";
+    b.style.cssText = "position:fixed;bottom:16px;inset-inline-start:16px;z-index:900;font:inherit;font-weight:700;border:2px solid #D4AF37;background:#0B1F44;color:#F8F4E9;border-radius:30px;padding:10px 16px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4);display:flex;gap:6px;align-items:center";
+    b.innerHTML = "🧑‍🏫 <span>السبورة</span>"; b.addEventListener("click", KZ.openBoard); document.body.appendChild(b);
+  };
   KZ.features = {};
   // A feature is on unless the teacher switched it off.
   KZ.on = function (k) { return KZ.features[k] !== false; };
