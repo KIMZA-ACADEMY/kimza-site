@@ -7,8 +7,8 @@
 <title>المراجعة · KIMZA Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvttfqu">
-<link rel="stylesheet" href="app.css?v=mwvttfqu">
+<link rel="stylesheet" href="site.css?v=mwvum8yn">
+<link rel="stylesheet" href="app.css?v=mwvum8yn">
 
 </head>
 <body class="app">
@@ -16,7 +16,7 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvttfqu"></script>
+<script src="app.js?v=mwvum8yn"></script>
 
 <script>
 (async function () {
@@ -26,7 +26,7 @@
   var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
   var NEW_LIMIT = 10; // new cards per day
 
-  var cards = (await sb.from("flashcards").select("id,lesson_num,english,arabic,example_en,example_ar").eq("level", prof.level).order("lesson_num").order("id")).data || [];
+  var cards = (await sb.from("flashcards").select("id,lesson_num,english,arabic,example_en,example_ar,image,audio,example_audio").eq("level", prof.level).order("lesson_num").order("id")).data || [];
   var progRows = (await sb.from("card_progress").select("*")).data || [];
   var prog = {}; progRows.forEach(function (p) { prog[p.card_id] = p; });
   var byId = {}; cards.forEach(function (c) { byId[c.id] = c; });
@@ -87,6 +87,15 @@
   var stat = { nw: Math.min(fresh.length, newAllowed), lr: learningDue.length, rv: reviewDue.length };
   var total = queue.length, doneCount = 0, showing = false;
 
+  var BASE = window.KIMZA_SUPABASE.url + "/storage/v1/object/public/card-media/";
+  var cur = null;
+  function playFile(file, fallbackText, then) {
+    try { if (cur) cur.pause(); } catch (e) {}
+    if (!file) { if (fallbackText) speak(fallbackText); if (then) then(); return; }
+    cur = new Audio(BASE + file);
+    if (then) cur.addEventListener("ended", then);
+    cur.play().catch(function () { if (fallbackText) speak(fallbackText); });
+  }
   function speak(text) {
     if (!("speechSynthesis" in window)) { KZ.toast("متصفحك لا يدعم النطق.", true); return; }
     var u = new SpeechSynthesisUtterance(text); u.lang = "en-GB"; u.rate = 0.9; speechSynthesis.cancel(); speechSynthesis.speak(u);
@@ -107,9 +116,8 @@
     var c = byId[queue[0]], p = prog[c.id];
     var counts = '<div class="row" style="border:0;padding:0"><span class="badge gold">جديد ' + queue.filter(function (id) { return !prog[id]; }).length + '</span><span class="badge">تعلّم ' + queue.filter(function (id) { return prog[id] && prog[id].state === "learning"; }).length + '</span><span class="badge ok">مراجعة ' + queue.filter(function (id) { return prog[id] && prog[id].state === "review"; }).length + "</span></div>";
     var bar = '<div class="bar" style="margin:10px 0"><i style="width:' + Math.round(doneCount / Math.max(1, total) * 100) + '%"></i></div>';
-    var front = '<div class="face" id="face" style="min-height:260px"><div><div class="en" style="font-size:2.6rem;font-family:var(--font-display);font-weight:700">' + esc(c.english) + '</div><button class="btn btn-ghost sm" id="spk" type="button" style="margin-top:14px" aria-label="نطق الكلمة">🔊 استمع</button></div></div>';
-    var back = '<div class="face" id="face" style="min-height:260px"><div><div class="en" style="font-size:2rem;font-family:var(--font-display);font-weight:700;margin-bottom:6px">' + esc(c.english) + '</div><div style="font-size:1.5rem;font-weight:700;color:var(--link)">' + esc(c.arabic || "") + '</div>' +
-      '<p class="en muted" style="margin:14px 0 4px">' + esc(c.example_en || "") + '</p><p class="muted" style="margin:0">' + esc(c.example_ar || "") + '</p><button class="btn btn-ghost sm" id="spk2" type="button" style="margin-top:12px">🔊 استمع للمثال</button></div></div>';
+    var front = '<div class="face" id="face" style="min-height:260px"><div>' + (c.image ? '<img src="' + esc(BASE + c.image) + '" alt="" style="max-width:220px;max-height:180px;border-radius:12px;margin-bottom:14px">' : "") + '<div style="font-size:2.6rem;font-weight:800">' + esc(c.arabic || "") + '</div></div></div>';
+    var back = '<div class="face" id="face" style="min-height:260px"><div>' + (c.image ? '<img src="' + esc(BASE + c.image) + '" alt="" style="max-width:160px;max-height:120px;border-radius:10px;margin-bottom:10px">' : "") + '<div style="font-size:1.3rem;color:var(--link);font-weight:700">' + esc(c.arabic || "") + '</div><div dir="ltr" style="display:block;clear:both;font-size:2.4rem;font-family:var(--font-display);font-weight:700;margin:6px 0">' + esc(c.english) + '</div><button class="btn btn-ghost sm" id="spk" type="button">🔊 استمع</button><p dir="ltr" class="muted" style="display:block;margin:14px 0 4px">' + esc(c.example_en || "") + '</p><p class="muted" style="margin:0">' + esc(c.example_ar || "") + '</p><button class="btn btn-ghost sm" id="spk2" type="button" style="margin-top:12px">🔊 استمع للمثال</button></div></div>';
     var now = Date.now();
     var btns = showing
       ? ["again|مرة أخرى|bad", "hard|صعبة|", "good|جيدة|ok", "easy|سهلة|gold"].map(function (x) {
@@ -117,9 +125,10 @@
         }).join("")
       : '<button class="btn btn-primary" id="show" type="button" style="flex:1">اعرض الإجابة</button>';
     app.innerHTML = '<h1>مراجعة البطاقات</h1>' + counts + bar + '<div class="flash" style="max-width:560px;margin:14px auto">' + (showing ? back : front) + '</div><div class="btns" style="max-width:560px;margin:0 auto;gap:8px">' + btns + '</div>';
-    var spk = document.getElementById("spk"); if (spk) spk.addEventListener("click", function () { speak(c.english); });
-    var spk2 = document.getElementById("spk2"); if (spk2) spk2.addEventListener("click", function () { speak(c.example_en || c.english); });
-    if (!showing) { document.getElementById("show").addEventListener("click", function () { showing = true; render(); speak(c.english); }); document.getElementById("face").addEventListener("click", function (e) { if (e.target.id !== "spk") { showing = true; render(); } }); }
+    var spk = document.getElementById("spk"); if (spk) spk.addEventListener("click", function () { playFile(c.audio, c.english); });
+    var spk2 = document.getElementById("spk2"); if (spk2) spk2.addEventListener("click", function () { playFile(c.example_audio, c.example_en || c.english); });
+    function reveal() { showing = true; render(); playFile(c.audio, c.english, function () { setTimeout(function () { if (showing && queue[0] === c.id) playFile(c.example_audio, c.example_en); }, 400); }); }
+    if (!showing) { document.getElementById("show").addEventListener("click", reveal); document.getElementById("face").addEventListener("click", reveal); }
     else app.querySelectorAll("[data-r]").forEach(function (b) { b.addEventListener("click", function () { answer(c, b.getAttribute("data-r")); }); });
   }
 

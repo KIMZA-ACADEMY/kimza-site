@@ -53,6 +53,28 @@
       mb.setAttribute("aria-expanded", open ? "true" : "false");
     });
   });
+  // Feature switches: the teacher can turn the placement test or the registration form off.
+  window.KIMZA_FEATURES = {};
+  (function () {
+    var cfg = window.KIMZA_SUPABASE; if (!cfg || !window.fetch) return;
+    var pages = { placement: "placement.html", register: "register.html" };
+    window.KIMZA_FEATURES_READY = fetch(cfg.url + "/rest/v1/site_features?select=key,enabled", { headers: { apikey: cfg.publishableKey } })
+      .then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }).then(function (rows) {
+        rows.forEach(function (f) { window.KIMZA_FEATURES[f.key] = f.enabled; });
+        var here = location.pathname.split("/").pop() || "index.html";
+        function apply() {
+          Object.keys(pages).forEach(function (k) {
+            if (window.KIMZA_FEATURES[k] !== false) return;
+            document.querySelectorAll('a[href="' + pages[k] + '"]').forEach(function (a) { a.style.display = "none"; });
+            if (here === pages[k]) {
+              var m = document.querySelector("main");
+              if (m) m.innerHTML = '<section class="section"><div class="wrap" style="text-align:center;padding:80px 0"><h1>' + (window.KIMZA_LANG() === "ar" ? "هذه الصفحة متوقفة مؤقتاً" : "This page is temporarily unavailable") + '</h1><p><a class="btn btn-primary" href="index.html">' + (window.KIMZA_LANG() === "ar" ? "العودة للرئيسية" : "Back to home") + '</a></p></div></section>';
+            }
+          });
+        }
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", apply); else apply();
+      });
+  })();
   window.KIMZA_LANG = function () { return root.getAttribute("lang") || "ar"; };
   window.KIMZA_T = function (k) { var d = (window.I18N || {})[window.KIMZA_LANG()] || {}; return d[k] !== undefined ? d[k] : k; };
 })();

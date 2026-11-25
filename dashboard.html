@@ -7,8 +7,8 @@
 <title>لوحة الطالب · KIMZA Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvttfqu">
-<link rel="stylesheet" href="app.css?v=mwvttfqu">
+<link rel="stylesheet" href="site.css?v=mwvum8yn">
+<link rel="stylesheet" href="app.css?v=mwvum8yn">
 
 </head>
 <body class="app">
@@ -16,7 +16,7 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvttfqu"></script>
+<script src="app.js?v=mwvum8yn"></script>
 
 <script>
 (async function () {
@@ -68,14 +68,14 @@
   if (absences > 3) html += '<div class="warnbox">لديك ' + absences + ' غيابات. أكثر من 3 غيابات قد تعرّضك لعدم اجتياز الاختبار النهائي. تواصل مع المعلم، ويمكنك متابعة مواد الدروس وحل الواجبات لتعويض ما فاتك.</div>';
 
   var todo = [];
-  if (dueCards + newAvail > 0) todo.push('<div class="row"><div><strong>مراجعة البطاقات</strong><div class="muted">' + dueCards + ' للمراجعة · ' + newAvail + ' جديدة اليوم</div></div><a class="btn btn-primary sm" href="review.html">ابدأ</a></div>');
-  lessons.filter(function (l) { return l.open_homework && !hwMap[l.id]; }).forEach(function (l) {
+  if (KZ.on("review") && dueCards + newAvail > 0) todo.push('<div class="row"><div><strong>مراجعة البطاقات</strong><div class="muted">' + dueCards + ' للمراجعة · ' + newAvail + ' جديدة اليوم</div></div><a class="btn btn-primary sm" href="review.html">ابدأ</a></div>');
+  (KZ.on("homework") && KZ.on("lessons") ? lessons.filter(function (l) { return l.open_homework && !hwMap[l.id]; }) : []).forEach(function (l) {
     todo.push('<div class="row"><div><strong>واجب الدرس ' + l.num + '</strong><div class="muted">لم يُسلَّم بعد</div></div><a class="btn btn-primary sm" href="lesson.html?id=' + esc(l.id) + '">افتح</a></div>');
   });
-  tests.filter(function (t) { return t.is_open && !atMap[t.id]; }).forEach(function (t) {
+  (KZ.on("tests") ? tests.filter(function (t) { return t.is_open && !atMap[t.id]; }) : []).forEach(function (t) {
     todo.push('<div class="row"><div><strong>' + esc(KINDS[t.kind]) + '</strong><div class="muted">مفتوح الآن · ' + t.minutes + ' دقيقة</div></div><a class="btn btn-primary sm" href="test.html?id=' + esc(t.id) + '">ابدأ</a></div>');
   });
-  html += '<h2 style="margin-top:18px">مهامك اليوم</h2><div class="tile">' + (todo.length ? todo.join("") : '<p class="muted">🎉 لا مهام متبقية اليوم. أحسنت!</p>') + '</div>';
+  if (KZ.on("todo")) html += '<h2 style="margin-top:18px">مهامك اليوم</h2><div class="tile">' + (todo.length ? todo.join("") : '<p class="muted">🎉 لا مهام متبقية اليوم. أحسنت!</p>') + '</div>';
 
   html += '<div class="cards" style="margin:18px 0">';
   html += '<div class="tile"><h3>تقدمك</h3><div class="bar"><i style="width:' + pct + '%"></i></div><p class="muted" style="margin-top:8px">' + doneHw + ' من ' + openLessons.length + ' واجباً مفتوحاً تم تسليمه</p>';
@@ -87,19 +87,20 @@
     if (info.community_url) html += '<p><a class="btn btn-ghost sm" href="' + esc(info.community_url) + '" target="_blank" rel="noopener">مجتمع المستوى</a></p>';
     html += '</div>';
   }
-  html += '<div class="tile"><h3>بطاقات AnkiDroid</h3>' + (info && info.deck_open
+  if (KZ.on("deck_download")) html += '<div class="tile"><h3>بطاقات AnkiDroid</h3>' + (info && info.deck_open
     ? '<p class="muted">حمّل حزمة بطاقات مستواك وافتحها في تطبيق AnkiDroid.</p><p><button class="btn btn-primary sm" id="deckBtn" type="button">تحميل الحزمة (' + esc(prof.level) + ')</button></p>'
     : '<p class="muted">🔒 ستُفتح الحزمة عندما يقرر المعلم ذلك.</p>') + '</div>';
-  html += '<a class="tile link" href="flashcards.html"><h3>بطاقات المفردات</h3><p class="muted">راجع كلمات دروسك المفتوحة.</p></a>';
-  html += '<a class="tile link" href="speaking.html"><h3>المحادثة</h3><p class="muted">احجز جلسة محادثة مع زميل أو مع المعلم.</p></a>';
+  if (KZ.on("flashcards")) html += '<a class="tile link" href="flashcards.html"><h3>بطاقات المفردات</h3><p class="muted">راجع كلمات دروسك المفتوحة.</p></a>';
+  if (KZ.on("speaking")) html += '<a class="tile link" href="speaking.html"><h3>المحادثة</h3><p class="muted">احجز جلسة محادثة مع زميل أو مع المعلم.</p></a>';
   html += '</div>';
 
-  if (news.length) {
+  if (news.length && KZ.on("announcements")) {
     html += '<h2>إعلانات</h2><div class="tile">' + news.map(function (n) {
       return '<div class="row"><div><strong>' + esc(n.title) + '</strong><div class="muted">' + esc(n.body || "") + '</div></div><span class="muted">' + KZ.fmtDate(n.created_at) + '</span></div>';
     }).join("") + '</div>';
   }
 
+  var testsStart = html.length;
   html += '<h2 style="margin-top:28px">اختباراتك</h2><div class="tile">';
   var order = { weekly: 1, monthly: 2, final: 3 };
   tests.sort(function (a, b) { return (order[a.kind] - order[b.kind]) || a.id.localeCompare(b.id); });
@@ -114,7 +115,9 @@
     html += '<div class="row"><div><strong>' + esc(KINDS[t.kind]) + '</strong> <span class="muted en">' + esc(t.id) + '</span><div class="muted">' + t.minutes + ' دقيقة</div></div><div>' + state + " " + action + "</div></div>";
   });
   html += '</div>';
+  if (!KZ.on("tests")) html = html.slice(0, testsStart);
 
+  var lessonsStart = html.length;
   html += '<h2 style="margin-top:28px">دروسك</h2>';
   var weeks = {};
   lessons.forEach(function (l) { var w = Math.ceil(l.num / 4); (weeks[w] = weeks[w] || []).push(l); });
@@ -133,6 +136,7 @@
     });
     html += "</div>";
   });
+  if (!KZ.on("lessons")) html = html.slice(0, lessonsStart);
   app.innerHTML = html;
 
   var deck = document.getElementById("deckBtn");

@@ -7,8 +7,8 @@
 <title>لوحة المعلم · KIMZA Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvfim8f">
-<link rel="stylesheet" href="app.css?v=mwvfim8f">
+<link rel="stylesheet" href="site.css?v=mwvum8yn">
+<link rel="stylesheet" href="app.css?v=mwvum8yn">
 
 </head>
 <body class="app">
@@ -16,7 +16,7 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvfim8f"></script>
+<script src="app.js?v=mwvum8yn"></script>
 
 <script>
 (async function () {
@@ -25,7 +25,7 @@
   KZ.shell("admin");
   var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
   var LEVELS = ["A1", "A2", "B1", "B2", "C1"];
-  var TABS = [["students", "الطلاب"], ["lessons", "الدروس"], ["tests", "الاختبارات"], ["results", "النتائج"], ["attendance", "الحضور"], ["payments", "المدفوعات"], ["applications", "الطلبات"], ["speaking", "المحادثة"], ["certs", "الشهادات"], ["news", "الإعلانات"], ["settings", "المستويات"]];
+  var TABS = [["students", "الطلاب"], ["lessons", "الدروس"], ["tests", "الاختبارات"], ["results", "النتائج"], ["attendance", "الحضور"], ["payments", "المدفوعات"], ["applications", "الطلبات"], ["speaking", "المحادثة"], ["certs", "الشهادات"], ["news", "الإعلانات"], ["features", "الميزات"], ["settings", "المستويات"]];
   var KIND = { weekly: "أسبوعي", monthly: "شهري", final: "نهاية المستوى" };
   var ST = { active: "نشط", paused: "متوقف مؤقتاً", graduated: "خريج", stopped: "موقوف" };
   var AT = { present: "حاضر", absent: "غائب", late: "متأخر", excused: "بعذر" };
@@ -397,6 +397,23 @@
       KZ.toast(r.error ? "تعذر النشر." : "تم النشر.", !!r.error); if (!r.error) VIEWS.news();
     });
     view.querySelectorAll("[data-dn]").forEach(function (b) { b.addEventListener("click", async function () { await sb.from("announcements").delete().eq("id", Number(b.getAttribute("data-dn"))); VIEWS.news(); }); });
+  };
+
+  // ================= Feature switches =================
+  VIEWS.features = async function () {
+    var fs_ = (await sb.from("site_features").select("*").order("sort")).data || [];
+    function group(area, title) {
+      var rows = fs_.filter(function (f) { return f.area === area; });
+      return '<h2 style="margin-top:18px">' + title + '</h2><div class="tile">' + rows.map(function (f) {
+        return '<div class="row"><div><strong>' + esc(f.label) + '</strong><div class="muted en" style="font-size:.8rem">' + esc(f.key) + '</div></div><div><span class="badge ' + (f.enabled ? 'ok' : 'bad') + '">' + (f.enabled ? 'مفعّلة' : 'متوقفة') + '</span> <button class="btn ' + (f.enabled ? 'danger' : 'btn-primary') + ' sm" data-ft="' + esc(f.key) + '" data-on="' + (f.enabled ? '1' : '0') + '" type="button">' + (f.enabled ? 'إيقاف' : 'تشغيل') + '</button></div></div>';
+      }).join('') + '</div>';
+    }
+    view.innerHTML = '<p class="muted">شغّل أو أوقف أي جزء من الموقع. الإيقاف يخفي الميزة ويعرض للزائر أنها متوقفة مؤقتاً، ويمكنك إعادتها في أي وقت. (هذه المفاتيح تتحكم في الواجهة، وفتح الدروس والاختبارات يبقى من تبويب الدروس والاختبارات.)</p>' + group('public', 'الموقع العام') + group('student', 'منصة الطلاب');
+    view.querySelectorAll('[data-ft]').forEach(function (b) { b.addEventListener('click', async function () {
+      var on = b.getAttribute('data-on') === '1';
+      if (on && b.getAttribute('data-ft') === 'portal' && !confirm('إيقاف هذه الميزة يغلق المنصة على كل الطلاب. هل أنت متأكد؟')) return;
+      var r = await sb.from('site_features').update({ enabled: !on }).eq('key', b.getAttribute('data-ft'));
+      KZ.toast(r.error ? 'تعذر الحفظ.' : (on ? 'تم الإيقاف.' : 'تم التشغيل.'), !!r.error); VIEWS.features(); }); });
   };
 
   // ================= Level settings, AnkiDroid decks =================

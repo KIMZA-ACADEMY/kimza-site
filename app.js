@@ -53,15 +53,32 @@
     if (role === "teacher" && prof.role !== "teacher") { location.replace("dashboard.html"); return null; }
     if (role === "student" && prof.role === "teacher") { location.replace("admin.html"); return null; }
     KZ.profile = prof; KZ.user = session.user;
+    KZ.features = {};
+    try {
+      var fr = await sb.from("site_features").select("key,enabled");
+      (fr.data || []).forEach(function (f) { KZ.features[f.key] = f.enabled; });
+    } catch (e) {}
+    if (prof.role === "student") {
+      var page = (location.pathname.split("/").pop() || "").replace(".html", "");
+      var PAGE_FEATURE = { review: "review", flashcards: "flashcards", attendance: "attendance", speaking: "speaking", certificates: "certificates", lesson: "lessons", test: "tests" };
+      var key = !KZ.on("portal") ? "portal" : PAGE_FEATURE[page];
+      if (key && !KZ.on(key)) {
+        shell("");
+        var ap = document.getElementById("app");
+        if (ap) ap.innerHTML = '<div class="tile" style="text-align:center;padding:36px"><div style="font-size:2.4rem">🔒</div><h2>هذه الميزة متوقفة مؤقتاً</h2><p class="muted">سيعيد المعلم تشغيلها قريباً.</p>' + (key === "portal" ? "" : '<p><a class="btn btn-primary" href="dashboard.html">العودة للرئيسية</a></p>') + "</div>";
+        return null;
+      }
+    }
     return prof;
   }
 
   function shell(active) {
     var prof = KZ.profile;
     var isT = prof && prof.role === "teacher";
+    var FOFF = { "review.html": "review", "flashcards.html": "flashcards", "attendance.html": "attendance", "speaking.html": "speaking", "certificates.html": "certificates" };
     var links = isT
       ? [["admin.html", "لوحة المعلم", "admin"]]
-      : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"]];
+      : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"]].filter(function (l) { return !FOFF[l[0]] || KZ.on(FOFF[l[0]]); });
     var h = '<div class="wrap"><a href="' + (isT ? "admin.html" : "dashboard.html") + '"><img src="kimza-logo-gold.png" alt="KIMZA Academy"></a>' +
       '<nav class="links" aria-label="Main">' + links.map(function (l) { return '<a href="' + l[0] + '"' + (l[2] === active ? ' aria-current="page"' : "") + ">" + l[1] + "</a>"; }).join("") +
       '<span class="who">' + esc(prof ? prof.full_name : "") + '</span><button class="btn btn-ghost sm" id="logoutBtn" type="button" style="color:var(--cream)">خروج</button></nav></div>';
@@ -73,6 +90,9 @@
 
   var KZ = { sb: sb, esc: esc, fmtDate: fmtDate, toast: toast, errMsg: errMsg, requireAuth: requireAuth, shell: shell, DOMAIN: DOMAIN, profile: null, user: null };
   window.KZ = KZ;
+  KZ.features = {};
+  // A feature is on unless the teacher switched it off.
+  KZ.on = function (k) { return KZ.features[k] !== false; };
 
   // Copy protection helper for exam pages
   KZ.blockCopy = function () {
