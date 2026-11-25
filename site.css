@@ -264,3 +264,7 @@ html[lang="ar"] .kicker{letter-spacing:0}
 :root[data-theme="dark"] .lv-head .code{color:var(--gold)}
 .metas{display:flex;gap:8px;flex-wrap:wrap}
 .metas span{border:1px solid var(--line);border-radius:999px;padding:3px 14px;font-size:14px;color:var(--muted);background:var(--surface)}
+
+.sec-title{margin:28px 0 6px;font-size:1.4rem}
+.passage{background:var(--surface);border-inline-start:4px solid var(--gold);margin-top:14px}
+.passage p{font-size:1.05rem;line-height:1.8}

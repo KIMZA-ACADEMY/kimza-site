@@ -7,8 +7,8 @@
 <title>لوحة المعلم · KIMZA Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvf7qrm">
-<link rel="stylesheet" href="app.css?v=mwvf7qrm">
+<link rel="stylesheet" href="site.css?v=mwvfim8f">
+<link rel="stylesheet" href="app.css?v=mwvfim8f">
 
 </head>
 <body class="app">
@@ -16,7 +16,7 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvf7qrm"></script>
+<script src="app.js?v=mwvfim8f"></script>
 
 <script>
 (async function () {
@@ -297,13 +297,20 @@
         '<td><button class="btn btn-ghost sm" data-mk="' + a.id + '" type="button">إنشاء حساب</button></td></tr>';
     });
     h += "</tbody></table></div>";
-    h += '<h2 style="margin-top:24px">نتائج اختبار المستوى (' + pls.length + ')</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>التواصل</th><th>الموصى به</th><th>تعديل المعلم</th><th>الإجابات</th></tr></thead><tbody>';
+    h += '<h2 style="margin-top:24px">نتائج اختبار المستوى (' + pls.length + ')</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>التواصل</th><th>الموصى به</th><th>تعديل المعلم</th><th>الإجابات</th><th>الكتابة والصوت</th></tr></thead><tbody>';
     pls.forEach(function (p) {
       var by = p.by_level ? Object.keys(p.by_level).map(function (k) { return k + ":" + p.by_level[k].correct + "/" + p.by_level[k].total; }).join(" ") : "";
-      h += "<tr><td>" + esc(p.full_name || "—") + '<div class="muted">' + KZ.fmtDate(p.created_at) + '</div></td><td class="en">' + esc(p.contact || "") + '</td><td><span class="badge gold en">' + esc(p.recommended_level) + '</span></td><td><select data-pl="' + p.id + '"><option value="">—</option>' + opts(LEVELS, p.adjusted_level) + '</select></td><td class="en muted">' + esc(by) + " (" + p.correct + "/" + p.total + ", skipped " + p.skipped + ")</td></tr>";
+      var sk = p.skill_scores ? Object.keys(p.skill_scores).map(function (k) { var x = p.skill_scores[k]; return k + " " + x.correct + "/" + x.total; }).join(" · ") : "";
+      h += "<tr><td>" + esc(p.full_name || "—") + '<div class="muted">' + KZ.fmtDate(p.created_at) + '</div></td><td class="en">' + esc(p.contact || "") + '</td><td><span class="badge gold en">' + esc(p.recommended_level) + '</span></td><td><select data-pl="' + p.id + '"><option value="">—</option>' + opts(LEVELS, p.adjusted_level) + '</select></td><td class="en muted">' + esc(by) + " (" + p.correct + "/" + p.total + ", skipped " + p.skipped + ")<br>" + esc(sk) + "</td>" +
+        '<td style="min-width:220px">' + (p.writing ? '<div class="en" style="white-space:pre-wrap">' + esc(p.writing) + "</div>" : '<span class="muted">—</span>') +
+        (p.audio_path ? '<div style="margin-top:8px"><button class="btn btn-ghost sm" data-ap="' + esc(p.audio_path) + '" type="button">استمع للتسجيل</button></div>' : "") + "</td></tr>";
     });
     h += "</tbody></table></div>";
     view.innerHTML = h;
+    view.querySelectorAll("[data-ap]").forEach(function (b) { b.addEventListener("click", async function () {
+      var s = await sb.storage.from("placement-audio").createSignedUrl(b.getAttribute("data-ap"), 600);
+      if (s.error || !s.data) { KZ.toast("تعذر فتح التسجيل.", true); return; }
+      b.outerHTML = '<audio controls src="' + esc(s.data.signedUrl) + '" style="width:100%"></audio>'; }); });
     view.querySelectorAll("[data-as]").forEach(function (s) { s.addEventListener("change", async function () {
       var r = await sb.from("applications").update({ status: s.value }).eq("id", s.getAttribute("data-as")); KZ.toast(r.error ? "تعذر الحفظ." : "تم الحفظ.", !!r.error); }); });
     view.querySelectorAll("[data-pl]").forEach(function (s) { s.addEventListener("change", async function () {

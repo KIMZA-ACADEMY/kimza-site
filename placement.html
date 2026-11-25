@@ -7,7 +7,7 @@
 <meta name="description" content="KIMZA Academy: Your English. Your Future. Learn. Practise. Progress.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=mwvf7qev">
+<link rel="stylesheet" href="site.css?v=mwvfilq3">
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")||"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="ar"?"rtl":"ltr")}catch(e){}</script>
 </head>
 <body data-title="title.placement">
@@ -42,12 +42,20 @@
   <div id="ptTest" hidden>
     <div class="pt-top"><div class="muted" id="ptCount"></div><div class="bar"><i id="ptBar"></i></div></div>
     <div id="ptQs"></div>
+    <h2 class="sec-title"><span data-i18n="pt.w.h">الكتابة</span></h2>
+    <div class="card"><label for="ptWriting"><span data-i18n="pt.w.q">اكتب من 3 إلى 5 جمل بالإنجليزية عن نفسك ولماذا تريد تعلّم الإنجليزية. يراجعها المعلم.</span></label>
+      <textarea id="ptWriting" dir="ltr" maxlength="2000" placeholder="My name is..."></textarea></div>
+    <h2 class="sec-title"><span data-i18n="pt.s.h">المحادثة</span></h2>
+    <div class="card"><p style="margin-top:0"><span data-i18n="pt.s.q">سجّل صوتك لمدة 30 إلى 60 ثانية: عرّف بنفسك وتحدث عن يومك. لا بأس بالأخطاء. يستمع إليها المعلم وحده. هذا القسم اختياري.</span></p>
+      <div class="btns"><button class="btn btn-ghost" id="recBtn" type="button"><span data-i18n="pt.rec.start">ابدأ التسجيل</span></button><span id="recState" class="muted"></span></div>
+      <audio id="recPlay" controls hidden style="width:100%;margin-top:12px"></audio></div>
     <p><button class="btn btn-primary" id="ptSubmit" type="button"><span data-i18n="pt.submit">أنهِ الاختبار</span></button></p>
   </div>
   <div class="card result" id="ptResult" hidden>
     <p class="muted"><span data-i18n="pt.r.rec">المستوى الموصى به</span></p>
     <div class="big" id="ptLevel">A1</div>
     <p id="ptWhy" class="muted"></p>
+    <div id="ptSkills" style="max-width:360px;margin:0 auto 12px;text-align:start"></div>
     <p class="muted"><span data-i18n="pt.r.note">هذه توصية أولية، وسيراجعها المعلم. تواصل معنا لتأكيد مستواك.</span></p>
     <div class="btns" style="justify-content:center">
       <a class="btn btn-primary" id="ptReg" href="register.html"><span data-i18n="pt.r.reg">سجّل بهذا المستوى</span></a>
@@ -79,83 +87,152 @@
     <p class="copy">&copy; KIMZA Academy</p>
   </div>
 </footer>
-<script src="i18n.js?v=mwvf7qev"></script>
-<script src="site-config.js?v=mwvf7qev"></script>
-<script src="site.js?v=mwvf7qev"></script>
+<script src="i18n.js?v=mwvfilq3"></script>
+<script src="site-config.js?v=mwvfilq3"></script>
+<script src="site.js?v=mwvfilq3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="placement-data.js?v=mwvf7qev"></script>
+<script src="placement-data.js?v=mwvfilq3"></script>
 <script>
 (function () {
-  var Q = window.PLACEMENT || [];
+  var Q = window.PLACEMENT || [], REF = window.PLACEMENT_REF || { reading: {}, listening: {} };
   var CFG = (window.KIMZA_SITE && window.KIMZA_SITE.placement) || { passMark: 0.6, order: ["A1", "A2", "B1", "B2", "C1"] };
   var $ = function (id) { return document.getElementById(id); };
-  var answers = {};
-  var sb = null;
+  var answers = {}, sb = null, recBlob = null, recMime = "";
   try { if (window.supabase && window.KIMZA_SUPABASE) sb = window.supabase.createClient(window.KIMZA_SUPABASE.url, window.KIMZA_SUPABASE.publishableKey); } catch (e) {}
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var T = function (k) { return window.KIMZA_T(k); };
+  var SKILLS = [["vocab", "المفردات", "Vocabulary"], ["grammar", "القواعد", "Grammar"], ["reading", "القراءة", "Reading"], ["listening", "الاستماع", "Listening"]];
+
+  function qHtml(i) {
+    var q = Q[i];
+    var opts = q.o.map(function (o, j) { return '<label class="opt"><input type="radio" name="q' + i + '" value="' + j + '"> <span>' + esc(o) + "</span></label>"; }).join("");
+    var dk = '<label class="opt dk"><input type="radio" name="q' + i + '" value="-1"> <span>' + esc(T("js.dk")) + "</span></label>";
+    return '<div class="card q-card"><div class="qt">' + esc(q.q) + "</div>" + opts + dk + "</div>";
+  }
 
   function render() {
-    $("ptQs").innerHTML = Q.map(function (q, i) {
-      var opts = q.o.map(function (o, j) {
-        return '<label class="opt"><input type="radio" name="q' + i + '" value="' + j + '"> <span>' + esc(o) + "</span></label>";
-      }).join("");
-      var dk = '<label class="opt dk"><input type="radio" name="q' + i + '" value="-1"> <span data-i18n="js.dk">' + esc(window.KIMZA_T("js.dk")) + "</span></label>";
-      return '<div class="card q-card"><div class="muted">' + esc(window.KIMZA_T("js.q")) + " " + (i + 1) + " " + esc(window.KIMZA_T("js.of")) + " " + Q.length +
-        '</div><div class="qt">' + esc(q.q) + "</div>" + opts + dk + "</div>";
-    }).join("");
+    var h = "";
+    SKILLS.forEach(function (s) {
+      var idx = []; Q.forEach(function (q, i) { if (q.skill === s[0]) idx.push(i); });
+      var title = window.KIMZA_LANG() === "en" ? s[2] : s[1];
+      h += '<h2 class="sec-title">' + esc(title) + "</h2>";
+      if (s[0] === "vocab" || s[0] === "grammar") {
+        h += idx.map(qHtml).join("");
+      } else {
+        var kind = s[0], seen = {};
+        idx.forEach(function (i) {
+          var ref = Q[i].ref;
+          if (!seen[ref]) {
+            seen[ref] = 1;
+            if (kind === "reading") h += '<div class="card passage"><p dir="ltr" style="margin:0">' + esc(REF.reading[ref].text) + "</p></div>";
+            else h += '<div class="card passage"><button class="btn btn-ghost sm" type="button" data-play="' + ref + '">&#9654; ' + esc(T("pt.play")) + '</button> <span class="hint" data-left="' + ref + '"></span></div>';
+          }
+          h += qHtml(i);
+        });
+      }
+    });
+    $("ptQs").innerHTML = h;
     $("ptQs").addEventListener("change", function (e) {
-      var m = /^q(\d+)$/.exec(e.target.name || "");
-      if (m) { answers[m[1]] = Number(e.target.value); progress(); }
+      var m = /^q(\d+)$/.exec(e.target.name || ""); if (m) { answers[m[1]] = Number(e.target.value); progress(); }
+    });
+    var plays = {};
+    $("ptQs").querySelectorAll("[data-play]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var ref = b.getAttribute("data-play"); plays[ref] = plays[ref] || 0;
+        if (plays[ref] >= 2) return;
+        if (!("speechSynthesis" in window)) { alert(REF.listening[ref].text); return; }
+        plays[ref]++;
+        var u = new SpeechSynthesisUtterance(REF.listening[ref].text); u.lang = "en-GB"; u.rate = 0.92;
+        speechSynthesis.cancel(); speechSynthesis.speak(u);
+        var left = $("ptQs").querySelector('[data-left="' + ref + '"]'); if (left) left.textContent = (2 - plays[ref]) + " / 2";
+        if (plays[ref] >= 2) b.disabled = true;
+      });
     });
     progress();
   }
   function progress() {
     var n = Object.keys(answers).length;
     $("ptBar").style.width = (n / Q.length * 100) + "%";
-    $("ptCount").textContent = window.KIMZA_T("js.answered") + " " + n + " / " + Q.length;
+    $("ptCount").textContent = T("js.answered") + " " + n + " / " + Q.length;
+  }
+
+  // Speaking: record in the browser (microphone permission is asked by the browser)
+  function setupRecorder() {
+    var rec = null, chunks = [], timer = null, secs = 0;
+    var btn = $("recBtn"), st = $("recState"), pl = $("recPlay");
+    if (!navigator.mediaDevices || !window.MediaRecorder) { st.textContent = T("pt.rec.no"); btn.disabled = true; return; }
+    btn.addEventListener("click", async function () {
+      if (rec && rec.state === "recording") { rec.stop(); return; }
+      try {
+        var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        var mime = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"].filter(function (m) { return MediaRecorder.isTypeSupported(m); })[0] || "";
+        rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+        chunks = []; secs = 0;
+        rec.ondataavailable = function (e) { if (e.data.size) chunks.push(e.data); };
+        rec.onstop = function () {
+          clearInterval(timer); stream.getTracks().forEach(function (t) { t.stop(); });
+          recMime = (rec.mimeType || "audio/webm").split(";")[0];
+          recBlob = new Blob(chunks, { type: recMime });
+          pl.src = URL.createObjectURL(recBlob); pl.hidden = false;
+          btn.textContent = T("pt.rec.again"); st.textContent = T("pt.rec.done");
+        };
+        rec.start(); btn.textContent = T("pt.rec.stop"); st.textContent = "0:00";
+        timer = setInterval(function () { secs++; st.textContent = Math.floor(secs / 60) + ":" + String(secs % 60).padStart(2, "0"); if (secs >= 75) rec.stop(); }, 1000);
+      } catch (e) { st.textContent = T("pt.rec.denied"); }
+    });
   }
 
   function analyse() {
-    var by = {}, correct = 0, skipped = 0;
+    var by = {}, skill = {}, correct = 0, skipped = 0;
     CFG.order.forEach(function (l) { by[l] = { correct: 0, total: 0 }; });
+    SKILLS.forEach(function (s) { skill[s[0]] = { correct: 0, total: 0 }; });
     Q.forEach(function (q, i) {
-      by[q.level].total++;
+      by[q.level].total++; skill[q.skill].total++;
       var a = answers[i];
       if (a === undefined || a === -1) skipped++;
-      else if (a === q.a) { by[q.level].correct++; correct++; }
+      else if (a === q.a) { by[q.level].correct++; skill[q.skill].correct++; correct++; }
     });
     var rec = CFG.order[CFG.order.length - 1], strongest = "—", chain = true;
     for (var k = 0; k < CFG.order.length; k++) {
-      var l = CFG.order[k], b = by[l];
-      var acc = b.total ? b.correct / b.total : 0;
+      var l = CFG.order[k], b = by[l], acc = b.total ? b.correct / b.total : 0;
       if (acc >= CFG.passMark && chain) strongest = l;
-      else { chain = false; if (rec === CFG.order[CFG.order.length - 1] && acc < CFG.passMark) { rec = l; break; } }
+      else { chain = false; if (acc < CFG.passMark) { rec = l; break; } }
     }
-    return { by: by, correct: correct, skipped: skipped, level: rec, strongest: strongest };
+    return { by: by, skill: skill, correct: correct, skipped: skipped, level: rec, strongest: strongest };
   }
 
-  function finish() {
+  async function finish() {
     var r = analyse();
-    $("ptTest").hidden = true;
-    $("ptResult").hidden = false;
+    $("ptTest").hidden = true; $("ptResult").hidden = false;
     $("ptLevel").textContent = r.level;
-    $("ptWhy").textContent = window.KIMZA_T("js.why").replace("{c}", r.correct).replace("{t}", Q.length).replace("{s}", r.strongest);
+    $("ptWhy").textContent = T("js.why").replace("{c}", r.correct).replace("{t}", Q.length).replace("{s}", r.strongest);
+    $("ptSkills").innerHTML = SKILLS.map(function (s) {
+      var x = r.skill[s[0]], p = x.total ? Math.round(x.correct / x.total * 100) : 0;
+      return '<div class="row"><span>' + esc(window.KIMZA_LANG() === "en" ? s[2] : s[1]) + '</span><strong>' + p + "%</strong></div>";
+    }).join("");
     $("ptReg").setAttribute("href", "register.html?level=" + encodeURIComponent(r.level));
     window.scrollTo({ top: 0, behavior: "smooth" });
+    var audioPath = null;
+    if (sb && recBlob) {
+      var ext = recMime.indexOf("mp4") >= 0 ? "mp4" : recMime.indexOf("ogg") >= 0 ? "ogg" : "webm";
+      var id = (crypto.randomUUID ? crypto.randomUUID() : "00000000-0000-4000-8000-" + String(Date.now()).padStart(12, "0"));
+      var up = await sb.storage.from("placement-audio").upload(id + "." + ext, recBlob, { contentType: recMime });
+      if (!up.error) audioPath = id + "." + ext;
+    }
     var payload = {
       full_name: $("ptName").value.trim() || null, contact: $("ptContact").value.trim() || null,
-      recommended_level: r.level, correct: r.correct, skipped: r.skipped, total: Q.length, by_level: r.by,
-      answers: Q.map(function (q, i) { return { level: q.level, q: q.q, given: answers[i] === undefined ? null : answers[i], correct: q.a }; })
+      recommended_level: r.level, correct: r.correct, skipped: r.skipped, total: Q.length, by_level: r.by, skill_scores: r.skill,
+      writing: $("ptWriting").value.trim().slice(0, 2000) || null, audio_path: audioPath,
+      answers: Q.map(function (q, i) { return { skill: q.skill, level: q.level, given: answers[i] === undefined ? null : answers[i], correct: q.a }; })
     };
-    if (!sb) { $("ptSave").textContent = window.KIMZA_T("js.notsaved"); return; }
-    sb.from("placement_attempts").insert(payload).then(function (res) {
-      $("ptSave").textContent = res.error ? window.KIMZA_T("js.notsaved") : window.KIMZA_T("js.saved");
-    });
+    if (!sb) { $("ptSave").textContent = T("js.notsaved"); return; }
+    var res = await sb.from("placement_attempts").insert(payload);
+    $("ptSave").textContent = res.error ? T("js.notsaved") : T("js.saved");
   }
 
   $("ptStart").addEventListener("click", function () {
-    $("ptIntro").hidden = true; $("ptTest").hidden = false; render();
+    $("ptIntro").hidden = true; $("ptTest").hidden = false; render(); setupRecorder();
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
   $("ptSubmit").addEventListener("click", finish);
