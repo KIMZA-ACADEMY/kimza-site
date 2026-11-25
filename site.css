@@ -268,3 +268,9 @@ html[lang="ar"] .kicker{letter-spacing:0}
 .sec-title{margin:28px 0 6px;font-size:1.4rem}
 .passage{background:var(--surface);border-inline-start:4px solid var(--gold);margin-top:14px}
 .passage p{font-size:1.05rem;line-height:1.8}
+
+/* contrast fix: text on dark sections must stay light in light mode too */
+.hero2 .btn-ghost,.phero .btn-ghost,.band .btn-ghost,.sec-navy .btn-ghost,.sec-burgundy .btn-ghost{color:var(--cream);border-color:rgba(248,244,233,.7)}
+.hero2 .btn-ghost:hover,.phero .btn-ghost:hover,.band .btn-ghost:hover,.sec-navy .btn-ghost:hover,.sec-burgundy .btn-ghost:hover{color:var(--gold-soft);border-color:var(--gold)}
+.hero2 a:not(.btn),.phero a:not(.btn),.sec-navy a:not(.btn),.sec-burgundy a:not(.btn),footer a{color:var(--gold-soft)}
+.sec-navy .shot h3,.sec-navy .shot p{color:var(--cream)}
