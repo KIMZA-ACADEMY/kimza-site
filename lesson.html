@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwml7fz">
-<link rel="stylesheet" href="app.css?v=mwwml7fz">
+<link rel="stylesheet" href="site.css?v=mwwnkdma">
+<link rel="stylesheet" href="app.css?v=mwwnkdma">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwml7fz"></script>
-<script src="portal-i18n.js?v=mwwml7fz"></script>
+<script src="app.js?v=mwwnkdma"></script>
+<script src="portal-i18n.js?v=mwwnkdma"></script>
 
 <script>
 (async function () {
@@ -164,7 +164,45 @@
         h += '<div class="tile story kz-copyok" id="stText">' + sh + "</div>";
       }
       h += '<div id="saudio"></div>';
+      if (!IS_T && (L.open_story || L.open_audio)) h += '<div id="srep" class="tile" style="margin-top:16px"></div>';
       pane.innerHTML = h;
+      if (!IS_T && document.getElementById("srep")) (async function () {
+        var box = document.getElementById("srep");
+        var NSTAT = { pending: "بانتظار موافقة المعلم", approved: "تمت الموافقة", rejected: "لم يُوافَق على هذا اللقب، اختر غيره" };
+        var tc = 0, tt = 0, nk = null;
+        async function refresh() {
+          var since = new Date(); since.setHours(0, 0, 0, 0);
+          var c1 = await sb.from("story_reps").select("id", { count: "exact", head: true }).gte("created_at", since.toISOString());
+          var c2 = await sb.from("story_reps").select("id", { count: "exact", head: true });
+          tc = c1.count || 0; tt = c2.count || 0;
+          nk = (await sb.from("fluency_nicknames").select("nickname,status").maybeSingle()).data;
+          draw();
+        }
+        function draw(msg, bad) {
+          box.innerHTML = '<h3 style="margin-top:0">🔁 تكرار القصة</h3><p class="muted" style="margin-top:0">كلما أعدت قراءة القصة أو الاستماع إليها مع التكرار بصوتك، سجّل ذلك. التكرار يحسّن طلاقتك.</p>' +
+            '<div class="btns"><button class="btn btn-primary" id="repBtn" type="button">🔁 كرّرتُ القصة مرة أخرى</button> <span class="muted">اليوم: <strong>' + tc + '</strong> · المجموع: <strong>' + tt + '</strong></span></div>' +
+            '<p id="repMsg" class="muted" style="min-height:1.4em;' + (bad ? "color:#c62828" : "") + '">' + (msg || "") + '</p>' +
+            '<details><summary class="muted" style="cursor:pointer">اللقب الخاص بي</summary><div class="form" style="margin-top:8px;max-width:360px"><div><label for="nkIn">لقب لنفسك (2 إلى 20 حرفاً)</label><input id="nkIn" maxlength="20" value="' + esc(nk ? nk.nickname : "") + '"></div>' +
+            (nk ? '<p class="muted" style="margin:0">' + esc(NSTAT[nk.status] || "") + '</p>' : "") + '<div><button class="btn btn-ghost sm" id="nkBtn" type="button">حفظ اللقب</button></div></div></details>';
+          document.getElementById("repBtn").addEventListener("click", async function () {
+            var b = this; b.disabled = true;
+            var r = await sb.rpc("log_story_rep", { p_lesson: id });
+            b.disabled = false;
+            if (r.error) { draw("تعذر التسجيل. حاول لاحقاً.", true); return; }
+            var d = r.data || {};
+            if (d.ok) { tc = d.today; tt = d.total; draw("✅ تم تسجيل التكرار. أحسنت!"); }
+            else if (d.reason === "too_soon") draw("أكمل إعادة القصة أولاً ثم سجّل التكرار (بعد " + d.wait + " ثانية).", true);
+            else draw("سجّلت اليوم ما يكفي. أحسنت، عُد غداً!", false);
+          });
+          document.getElementById("nkBtn").addEventListener("click", async function () {
+            var v = document.getElementById("nkIn").value.trim();
+            var r = await sb.rpc("set_fluency_nickname", { p_name: v });
+            if (r.error) { draw("تعذر حفظ اللقب. استخدم 2 إلى 20 حرفاً بدون أرقام طويلة أو روابط.", true); return; }
+            await refresh();
+          });
+        }
+        refresh();
+      })();
       if (IS_T && document.getElementById("stEdit")) document.getElementById("stEdit").addEventListener("click", function () {
         var tx = document.getElementById("stText");
         tx.innerHTML = '<p class="muted">اكتب القصة هنا: كل سطر إنجليزي يليه سطر عربي، والأسطر الفارغة تفصل بين الأجزاء.</p><textarea id="stArea" rows="16" style="width:100%;font:inherit;line-height:1.7"></textarea><p style="margin:8px 0 0"><button class="btn btn-primary sm" id="stSave" type="button">حفظ</button> <button class="btn btn-ghost sm" id="stCancel" type="button">إلغاء</button></p>';

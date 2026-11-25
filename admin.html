@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwl1t15">
-<link rel="stylesheet" href="app.css?v=mwwl1t15">
+<link rel="stylesheet" href="site.css?v=mwwnkdma">
+<link rel="stylesheet" href="app.css?v=mwwnkdma">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwl1t15"></script>
-<script src="portal-i18n.js?v=mwwl1t15"></script>
-<script src="i18n.js?v=mwwl1t15"></script>
+<script src="app.js?v=mwwnkdma"></script>
+<script src="portal-i18n.js?v=mwwnkdma"></script>
+<script src="i18n.js?v=mwwnkdma"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -33,7 +33,7 @@
   KZ.shell("admin");
   var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
   var LEVELS = ["A1", "A2", "B1", "B2", "C1"];
-  var TABS = [["students", "الطلاب"], ["lessons", "الدروس"], ["tests", "الاختبارات"], ["results", "النتائج"], ["attendance", "الحضور"], ["payments", "المدفوعات"], ["applications", "الطلبات"], ["speaking", "المحادثة"], ["certs", "الشهادات"], ["news", "الإعلانات"], ["follow", "متابعة الطلاب"], ["designer", "تصميم الموقع"], ["texts", "النصوص"], ["courses", "الدورات والإعلانات"], ["features", "الميزات"], ["settings", "المستويات"]];
+  var TABS = [["students", "الطلاب"], ["lessons", "الدروس"], ["tests", "الاختبارات"], ["results", "النتائج"], ["attendance", "الحضور"], ["payments", "المدفوعات"], ["applications", "الطلبات"], ["speaking", "المحادثة"], ["certs", "الشهادات"], ["news", "الإعلانات"], ["follow", "متابعة الطلاب"], ["fluency", "الطلاقة والجهد"], ["designer", "تصميم الموقع"], ["texts", "النصوص"], ["courses", "الدورات والإعلانات"], ["features", "الميزات"], ["settings", "المستويات"]];
   var KIND = { weekly: "أسبوعي", monthly: "شهري", final: "نهاية المستوى" };
   var ST = { active: "نشط", paused: "متوقف مؤقتاً", graduated: "خريج", stopped: "موقوف" };
   var AT = { present: "حاضر", absent: "غائب", late: "متأخر", excused: "بعذر" };
@@ -895,6 +895,47 @@
     $("fwO").addEventListener("change", function () { fwOnly = $("fwO").checked; VIEWS.follow(); });
   };
 
+
+  // ================= Fluency effort board (teacher only: story repetitions) =================
+  var fluRange = "7", fluLevel = "";
+  VIEWS.fluency = async function () {
+    var reps = (await sb.from("story_reps").select("user_id,created_at").order("created_at", { ascending: false }).limit(20000)).data || [];
+    var nm = await nameMap();
+    var nks = {}; ((await sb.from("fluency_nicknames").select("*")).data || []).forEach(function (n) { nks[n.user_id] = n; });
+    var since30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10), tm = {};
+    ((await sb.from("study_time").select("user_id,seconds").gte("day", since30)).data || []).forEach(function (x) { tm[x.user_id] = (tm[x.user_id] || 0) + x.seconds; });
+    var cut = fluRange === "all" ? 0 : Date.now() - Number(fluRange) * 86400000;
+    var st = {};
+    reps.forEach(function (r) {
+      var t = new Date(r.created_at).getTime(); if (t < cut) return;
+      var s = st[r.user_id] = st[r.user_id] || { n: 0, days: {} }; s.n++; s.days[r.created_at.slice(0, 10)] = 1;
+    });
+    var rows = nm.list.filter(function (p) { return !fluLevel || p.level === fluLevel; }).map(function (p) {
+      var s = st[p.id] || { n: 0, days: {} };
+      return { p: p, n: s.n, d: Object.keys(s.days).length, min: Math.round((tm[p.id] || 0) / 60), nk: nks[p.id] };
+    }).sort(function (a, b) { return b.n - a.n || b.d - a.d; });
+    var h = '<h2>الطلاقة والجهد</h2><p class="muted">عدد مرات تكرار القصة التي سجّلها كل طالب (بحد أقصى مرة كل دقيقة و30 مرة يومياً). هذه اللوحة لك وحدك ولا يراها الطلاب.</p>' +
+      '<div class="tile form" style="display:flex;gap:14px;flex-wrap:wrap;align-items:end"><div><label for="flR">الفترة</label><select id="flR"><option value="7"' + (fluRange === "7" ? " selected" : "") + '>آخر 7 أيام</option><option value="30"' + (fluRange === "30" ? " selected" : "") + '>آخر 30 يوماً</option><option value="all"' + (fluRange === "all" ? " selected" : "") + '>كل الوقت</option></select></div>' +
+      '<div><label for="flL">المستوى</label><select id="flL"><option value="">الكل</option>' + opts(LEVELS, fluLevel) + '</select></div></div>' +
+      '<div class="tile tablewrap" style="margin-top:12px"><table class="t"><thead><tr><th>#</th><th>الاسم</th><th>اللقب</th><th>المستوى</th><th>التكرارات</th><th>أيام النشاط</th><th>دقائق على الموقع (30 يوماً)</th><th></th></tr></thead><tbody>';
+    rows.forEach(function (r, i) {
+      var nk = r.nk ? esc(r.nk.nickname) + (r.nk.status === "pending" ? ' <button class="btn btn-primary sm" data-nok="' + r.p.id + '" type="button">✅</button> <button class="btn danger sm" data-nno="' + r.p.id + '" type="button">✖</button>' : r.nk.status === "approved" ? ' <span class="badge ok">معتمد</span>' : ' <span class="badge bad">مرفوض</span>') : '<span class="muted">—</span>';
+      h += "<tr><td>" + (i + 1) + "</td><td>" + esc(r.p.full_name) + "</td><td>" + nk + '</td><td class="en">' + esc(r.p.level) + "</td><td><strong>" + r.n + "</strong></td><td>" + r.d + "</td><td>" + r.min + '</td><td><button class="btn btn-ghost sm" data-ex="' + r.p.id + '" type="button">🏆 شهادة تفوّق</button></td></tr>';
+    });
+    h += "</tbody></table></div>";
+    view.innerHTML = h;
+    $("flR").addEventListener("change", function () { fluRange = $("flR").value; VIEWS.fluency(); });
+    $("flL").addEventListener("change", function () { fluLevel = $("flL").value; VIEWS.fluency(); });
+    view.querySelectorAll("[data-nok],[data-nno]").forEach(function (b) { b.addEventListener("click", async function () {
+      var ok = b.hasAttribute("data-nok"), id = b.getAttribute(ok ? "data-nok" : "data-nno");
+      var r = await sb.rpc("decide_fluency_nickname", { p_user: id, p_ok: ok });
+      KZ.toast(r.error ? "تعذر الحفظ." : (ok ? "تم اعتماد اللقب." : "تم رفض اللقب."), !!r.error); VIEWS.fluency(); }); });
+    view.querySelectorAll("[data-ex]").forEach(function (b) { b.addEventListener("click", async function () {
+      var p = nm.map[b.getAttribute("data-ex")];
+      if (!confirm("إصدار «شهادة تفوّق» للطالب " + p.full_name + " تقديراً لجهده في الطلاقة؟")) return;
+      var r = await sb.rpc("issue_custom_certificate", { p_user: p.id, p_kind: "excellence", p_title: "CERTIFICATE OF EXCELLENCE", p_body: "has shown outstanding effort and dedication to improving English fluency", p_level: null, p_hours: null, p_date: null });
+      KZ.toast(r.error ? "تعذر الإصدار." : "تم الإصدار: " + r.data.number, !!r.error); }); });
+  };
 
   go((location.hash || "#students").slice(1));
 })();
