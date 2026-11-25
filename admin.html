@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwnkdma">
-<link rel="stylesheet" href="app.css?v=mwwnkdma">
+<link rel="stylesheet" href="site.css?v=mwwnpt35">
+<link rel="stylesheet" href="app.css?v=mwwnpt35">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwnkdma"></script>
-<script src="portal-i18n.js?v=mwwnkdma"></script>
-<script src="i18n.js?v=mwwnkdma"></script>
+<script src="app.js?v=mwwnpt35"></script>
+<script src="portal-i18n.js?v=mwwnpt35"></script>
+<script src="i18n.js?v=mwwnpt35"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -904,6 +904,7 @@
     var nks = {}; ((await sb.from("fluency_nicknames").select("*")).data || []).forEach(function (n) { nks[n.user_id] = n; });
     var since30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10), tm = {};
     ((await sb.from("study_time").select("user_id,seconds").gte("day", since30)).data || []).forEach(function (x) { tm[x.user_id] = (tm[x.user_id] || 0) + x.seconds; });
+    var fs0 = (await sb.from("fluency_settings").select("*").eq("id", 1).maybeSingle()).data || { min_gap_seconds: 15, audio_factor: 0.5, daily_cap: 30 };
     var cut = fluRange === "all" ? 0 : Date.now() - Number(fluRange) * 86400000;
     var st = {};
     reps.forEach(function (r) {
@@ -914,7 +915,7 @@
       var s = st[p.id] || { n: 0, days: {} };
       return { p: p, n: s.n, d: Object.keys(s.days).length, min: Math.round((tm[p.id] || 0) / 60), nk: nks[p.id] };
     }).sort(function (a, b) { return b.n - a.n || b.d - a.d; });
-    var h = '<h2>الطلاقة والجهد</h2><p class="muted">عدد مرات تكرار القصة التي سجّلها كل طالب (بحد أقصى مرة كل دقيقة و30 مرة يومياً). هذه اللوحة لك وحدك ولا يراها الطلاب.</p>' +
+    var h = '<h2>الطلاقة والجهد</h2><div class="tile form" style="display:flex;gap:14px;flex-wrap:wrap;align-items:end"><div><label for="fsG">أقل فاصل بين تكرارين (ثوانٍ)</label><input id="fsG" type="number" min="0" max="600" dir="ltr" value="' + fs0.min_gap_seconds + '"></div><div><label for="fsF">نسبة من مدة الصوت (0.5 = نصف المدة، 1 = المدة كاملة، 0 = تعطيل)</label><input id="fsF" type="number" min="0" max="2" step="0.1" dir="ltr" value="' + fs0.audio_factor + '"></div><div><label for="fsC">أقصى عدد في اليوم</label><input id="fsC" type="number" min="1" max="500" dir="ltr" value="' + fs0.daily_cap + '"></div><div><button class="btn btn-primary" id="fsS" type="button">حفظ الحدود</button></div><p class="muted" style="flex-basis:100%;margin:0">الفاصل المطلوب = الأكبر بين «أقل فاصل» و«النسبة × مدة صوت الدرس». مثال: صوت 40 ثانية، النسبة 0.5، أقل فاصل 15 ← الفاصل 20 ثانية.</p></div><p class="muted">عدد مرات تكرار القصة التي سجّلها كل طالب (بحد أقصى مرة كل دقيقة و30 مرة يومياً). هذه اللوحة لك وحدك ولا يراها الطلاب.</p>' +
       '<div class="tile form" style="display:flex;gap:14px;flex-wrap:wrap;align-items:end"><div><label for="flR">الفترة</label><select id="flR"><option value="7"' + (fluRange === "7" ? " selected" : "") + '>آخر 7 أيام</option><option value="30"' + (fluRange === "30" ? " selected" : "") + '>آخر 30 يوماً</option><option value="all"' + (fluRange === "all" ? " selected" : "") + '>كل الوقت</option></select></div>' +
       '<div><label for="flL">المستوى</label><select id="flL"><option value="">الكل</option>' + opts(LEVELS, fluLevel) + '</select></div></div>' +
       '<div class="tile tablewrap" style="margin-top:12px"><table class="t"><thead><tr><th>#</th><th>الاسم</th><th>اللقب</th><th>المستوى</th><th>التكرارات</th><th>أيام النشاط</th><th>دقائق على الموقع (30 يوماً)</th><th></th></tr></thead><tbody>';
@@ -924,6 +925,9 @@
     });
     h += "</tbody></table></div>";
     view.innerHTML = h;
+    $("fsS").addEventListener("click", async function () {
+      var r = await sb.from("fluency_settings").upsert({ id: 1, min_gap_seconds: Math.max(0, Math.min(600, Math.round(Number($("fsG").value) || 0))), audio_factor: Math.max(0, Math.min(2, Number($("fsF").value) || 0)), daily_cap: Math.max(1, Math.min(500, Math.round(Number($("fsC").value) || 30))) });
+      KZ.toast(r.error ? "تعذر الحفظ." : "تم حفظ الحدود.", !!r.error); });
     $("flR").addEventListener("change", function () { fluRange = $("flR").value; VIEWS.fluency(); });
     $("flL").addEventListener("change", function () { fluLevel = $("flL").value; VIEWS.fluency(); });
     view.querySelectorAll("[data-nok],[data-nno]").forEach(function (b) { b.addEventListener("click", async function () {

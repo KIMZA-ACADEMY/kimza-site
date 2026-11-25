@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwnkdma">
-<link rel="stylesheet" href="app.css?v=mwwnkdma">
+<link rel="stylesheet" href="site.css?v=mwwnpt35">
+<link rel="stylesheet" href="app.css?v=mwwnpt35">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwnkdma"></script>
-<script src="portal-i18n.js?v=mwwnkdma"></script>
+<script src="app.js?v=mwwnpt35"></script>
+<script src="portal-i18n.js?v=mwwnpt35"></script>
 
 <script>
 (async function () {
@@ -186,7 +186,7 @@
             (nk ? '<p class="muted" style="margin:0">' + esc(NSTAT[nk.status] || "") + '</p>' : "") + '<div><button class="btn btn-ghost sm" id="nkBtn" type="button">حفظ اللقب</button></div></div></details>';
           document.getElementById("repBtn").addEventListener("click", async function () {
             var b = this; b.disabled = true;
-            var r = await sb.rpc("log_story_rep", { p_lesson: id });
+            var r = await sb.rpc("log_story_rep", { p_lesson: id, p_audio_seconds: (function () { var a = document.getElementById("au"); return a && isFinite(a.duration) ? Math.round(a.duration) : null; })() });
             b.disabled = false;
             if (r.error) { draw("تعذر التسجيل. حاول لاحقاً.", true); return; }
             var d = r.data || {};
@@ -246,7 +246,7 @@
       var s = await sb.storage.from("lesson-audio").createSignedUrl(id + ".mp3", 3600);
       if (s.error || !s.data) { sa.innerHTML = '<div class="tile"><p class="muted">لم يرفع المعلم ملف الصوت لهذا الدرس بعد.</p></div>'; return; }
       var dl = await sb.storage.from("lesson-audio").createSignedUrl(id + ".mp3", 3600, { download: id + ".mp3" });
-      sa.innerHTML = '<div class="tile"><h3>🎧 استمع إلى القصة</h3><audio id="au" controls controlsList="nodownload" preload="none" style="width:100%" src="' + esc(s.data.signedUrl) + '"></audio>' +
+      sa.innerHTML = '<div class="tile"><h3>🎧 استمع إلى القصة</h3><audio id="au" controls controlsList="nodownload" preload="metadata" style="width:100%" src="' + esc(s.data.signedUrl) + '"></audio>' +
         '<div class="audiobar"><label for="auSpd">السرعة</label><select id="auSpd">' + SPEEDS.map(function (v) { return '<option value="' + v + '"' + (v === 1 ? " selected" : "") + ">" + v + "x</option>"; }).join("") + '</select>' +
         '<button class="btn btn-ghost sm" id="auLoop" type="button" aria-pressed="false">🔁 تكرار تلقائي</button>' +
         (dl.data ? '<a class="btn btn-primary sm" href="' + esc(dl.data.signedUrl) + '" download>⬇ تحميل الصوت</a>' : "") + '</div>' +
