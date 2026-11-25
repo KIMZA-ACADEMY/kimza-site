@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwvynmjr">
-<link rel="stylesheet" href="app.css?v=mwvynmjr">
+<link rel="stylesheet" href="site.css?v=mww122q4">
+<link rel="stylesheet" href="app.css?v=mww122q4">
 
 </head>
 <body class="app">
@@ -17,9 +17,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwvynmjr"></script>
-<script src="portal-i18n.js?v=mwvynmjr"></script>
-<script src="i18n.js?v=mwvynmjr"></script>
+<script src="app.js?v=mww122q4"></script>
+<script src="portal-i18n.js?v=mww122q4"></script>
+<script src="i18n.js?v=mww122q4"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -142,8 +142,9 @@
   VIEWS.lessons = async function () {
     var r = await sb.from("lessons").select("id,num,title,open_words,open_story,open_audio,open_exercises,open_homework").eq("level", lessonLevel).order("num");
     var ls = r.data || [];
-    var audioSet = {};
+    var audioSet = {}, imgSet = {};
     try { ((await sb.storage.from("lesson-audio").list("", { limit: 1000 })).data || []).forEach(function (o) { audioSet[o.name] = true; }); } catch (e) {}
+    try { ((await sb.storage.from("lesson-images").list("", { limit: 1000 })).data || []).forEach(function (o) { var m = /^(.*)-story-d+./.exec(o.name); if (m) { (imgSet[m[1]] = imgSet[m[1]] || []).push(o.name); } }); } catch (e) {}
     var h = '<div class="form" style="max-width:240px"><label for="lv">المستوى</label><select id="lv">' + opts(LEVELS, lessonLevel) + "</select></div>";
     h += '<p class="muted">تحكّم في كل جزء من كل درس على حدة: الكلمات، القصة، الصوت، التمارين (صفحة الحصة التفاعلية)، والواجب. الأجزاء المقفلة تظهر للطالب بقفل.</p>';
     var weeks = {}; ls.forEach(function (l) { var w = Math.ceil(l.num / 4); (weeks[w] = weeks[w] || []).push(l); });
@@ -162,8 +163,8 @@
         });
         h += '</div></div><div style="text-align:end"><a class="btn btn-primary sm" href="lesson.html?id=' + esc(l.id) + '">معاينة الدرس والواجب</a> <a class="btn btn-ghost sm" href="class.html?id=' + esc(l.id) + '">صفحة الحصة</a> <button class="btn btn-ghost sm" data-lf="' + esc(l.id) + '" type="button">ملفات الدرس</button>' +
           '<div style="margin-top:8px"><label class="btn btn-ghost sm" style="display:inline-flex;margin:0;cursor:pointer">' + (audioSet[l.id + ".mp3"] ? "استبدال الصوت" : "رفع الصوت") +
-          '<input type="file" accept="audio/*" data-au="' + esc(l.id) + '" style="display:none"></label> ' + (audioSet[l.id + ".mp3"] ? '<span class="badge ok">الصوت مرفوع</span>' : '<span class="badge">لا صوت</span>') + "</div>" +
-          '<div style="margin-top:8px"><label class="btn btn-ghost sm" style="display:inline-flex;margin:0;cursor:pointer">رفع صور القصة<input type="file" accept="image/*" multiple data-im="' + esc(l.id) + '" style="display:none"></label> <span class="muted" style="font-size:.85rem">تظهر مرتّبة حسب أسماء الملفات</span></div></div></div>';
+          '<input type="file" accept="audio/*" data-au="' + esc(l.id) + '" style="display:none"></label> ' + (audioSet[l.id + ".mp3"] ? '<span class="badge ok">الصوت مرفوع</span> <button class="btn danger sm" data-dau="' + esc(l.id) + '" type="button">حذف الصوت</button>' : '<span class="badge">لا صوت</span>') + "</div>" +
+          '<div style="margin-top:8px"><label class="btn btn-ghost sm" style="display:inline-flex;margin:0;cursor:pointer">رفع صور القصة<input type="file" accept="image/*" multiple data-im="' + esc(l.id) + '" style="display:none"></label> <span class="muted" style="font-size:.85rem">تظهر مرتّبة حسب أسماء الملفات</span> ' + (imgSet[l.id] ? '<span class="badge ok">' + imgSet[l.id].length + ' صورة</span> <button class="btn danger sm" data-dim="' + esc(l.id) + '" type="button">حذف الصور</button>' : "") + '</div></div></div>';
       });
       h += "</div>";
     });
@@ -191,6 +192,14 @@
         } catch (e) { bad++; lastErr = e.message; }
       }
       KZ.toast(bad ? "تعذر رفع " + bad + " صورة: " + lastErr : "تم رفع " + fs_.length + " صورة.", !!bad); }); });
+    view.querySelectorAll("[data-dau]").forEach(function (b) { b.addEventListener("click", async function () {
+      if (!confirm("حذف صوت هذا الدرس نهائياً؟")) return;
+      var d = await sb.storage.from("lesson-audio").remove([b.getAttribute("data-dau") + ".mp3"]);
+      KZ.toast(d.error ? "تعذر الحذف: " + d.error.message : "تم حذف الصوت.", !!d.error); VIEWS.lessons(); }); });
+    view.querySelectorAll("[data-dim]").forEach(function (b) { b.addEventListener("click", async function () {
+      var lid = b.getAttribute("data-dim"); if (!confirm("حذف كل صور هذا الدرس نهائياً؟")) return;
+      var d = await sb.storage.from("lesson-images").remove(imgSet[lid] || []);
+      KZ.toast(d.error ? "تعذر الحذف: " + d.error.message : "تم حذف الصور.", !!d.error); VIEWS.lessons(); }); });
     view.querySelectorAll("[data-au]").forEach(function (inp) { inp.addEventListener("change", async function () {
       var f = inp.files[0]; if (!f) return;
       KZ.toast("جارٍ رفع الصوت...");
@@ -532,7 +541,7 @@
     var r = (await sb.from("lesson_files").select("*").eq("lesson_id", lid).order("sort").order("id")).data || [];
     var h = '<p><button class="btn btn-ghost sm" id="fBack" type="button">← العودة إلى الدروس</button></p><h2>ملفات الدرس ' + esc(lid) + "</h2>" +
       '<p class="muted">ارفع ملفات الحصة (PDF أو صور أو صوت أو فيديو أو أي ملف، حتى 50 ميغابايت). لكل ملف تقرر أنت: يظهر للطلاب أم لا، ويُحمَّل أم للعرض فقط. العرض داخل الصفحة يعمل مع PDF والصور والصوت والفيديو.</p>' +
-      '<div class="tile"><label class="btn btn-primary" style="cursor:pointer">رفع ملفات<input type="file" id="fUp" multiple style="display:none"></label> <span id="fMsg" class="muted"></span></div>';
+      '<div class="tile"><label class="btn btn-primary" style="cursor:pointer">رفع ملفات<input type="file" id="fUp" multiple style="display:none"></label> <label class="btn btn-ghost" style="cursor:pointer">رفع مجلد كامل<input type="file" id="fUpDir" webkitdirectory multiple style="display:none"></label> <span id="fMsg" class="muted"></span></div>';
     if (!r.length) h += '<p class="muted" style="margin-top:14px">لا توجد ملفات بعد.</p>';
     r.forEach(function (f) {
       h += '<div class="tile" style="margin-top:12px"><div class="row" style="border:0"><div style="flex:1;min-width:200px"><label>العنوان</label><input data-ft="' + f.id + '" value="' + esc(f.title) + '"><div class="muted en" style="font-size:.8rem;margin-top:4px">' + esc(f.mime || "") + " · " + Math.round((f.size || 0) / 1024) + ' KB</div></div>' +
@@ -542,8 +551,8 @@
     });
     view.innerHTML = h;
     $("fBack").addEventListener("click", function () { VIEWS.lessons(); });
-    $("fUp").addEventListener("change", async function (e) {
-      var fl = Array.prototype.slice.call(e.target.files || []); if (!fl.length) return;
+    async function doUp(e) {
+      var fl = Array.prototype.slice.call(e.target.files || []).filter(function (x) { return x.name.charAt(0) !== "."; }); if (!fl.length) return;
       var bad = 0, last = "";
       for (var i = 0; i < fl.length; i++) {
         $("fMsg").textContent = "جارٍ رفع " + (i + 1) + " من " + fl.length + "...";
@@ -551,11 +560,12 @@
         var path = lid + "/" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + "." + ext;
         var up = await sb.storage.from("lesson-files").upload(path, fl[i], { contentType: fl[i].type || "application/octet-stream" });
         if (up.error) { bad++; last = up.error.message; continue; }
-        var ins = await sb.from("lesson_files").insert({ lesson_id: lid, title: fl[i].name.replace(/\.[^.]+$/, ""), path: path, mime: fl[i].type || null, size: fl[i].size, is_open: false, downloadable: false, sort: Date.now() % 1000000 });
+        var ins = await sb.from("lesson_files").insert({ lesson_id: lid, title: fl[i].name.replace(/\.[^.]+$/, ""), path: path, mime: fl[i].type || null, size: fl[i].size, is_open: true, downloadable: false, sort: Date.now() % 1000000 });
         if (ins.error) { bad++; last = ins.error.message; }
       }
-      KZ.toast(bad ? "تعذر رفع " + bad + " ملف: " + last : "تم الرفع. فعّل «يظهر للطلاب» لما تريد إظهاره.", !!bad); VIEWS.files(lid);
-    });
+      KZ.toast(bad ? "تعذر رفع " + bad + " ملف: " + last : "تم الرفع، والملفات ظاهرة للطلاب (يمكنك إخفاء أي ملف).", !!bad); VIEWS.files(lid);
+    }
+    $("fUp").addEventListener("change", doUp); $("fUpDir").addEventListener("change", doUp);
     view.querySelectorAll("[data-ft]").forEach(function (i) { i.addEventListener("change", async function () { await sb.from("lesson_files").update({ title: i.value.trim() || "ملف" }).eq("id", Number(i.getAttribute("data-ft"))); KZ.toast("تم الحفظ."); }); });
     view.querySelectorAll("[data-fo]").forEach(function (i) { i.addEventListener("change", async function () { await sb.from("lesson_files").update({ is_open: i.checked }).eq("id", Number(i.getAttribute("data-fo"))); KZ.toast(i.checked ? "صار ظاهراً للطلاب." : "أُخفي عن الطلاب."); }); });
     view.querySelectorAll("[data-fdl]").forEach(function (i) { i.addEventListener("change", async function () { await sb.from("lesson_files").update({ downloadable: i.checked }).eq("id", Number(i.getAttribute("data-fdl"))); KZ.toast(i.checked ? "صار قابلاً للتحميل." : "صار للعرض فقط."); }); });
