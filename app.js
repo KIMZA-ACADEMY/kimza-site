@@ -278,15 +278,25 @@
     });
   };
   KZ.blockCopyIn = function (doc) {
+    // the teacher can copy and paste everywhere; students only inside the story text (.kz-copyok)
+    if (KZ.profile && KZ.profile.role === "teacher") return;
     if (!doc || doc.__kzNoCopy) return; doc.__kzNoCopy = true;
-    ["copy", "cut", "paste", "contextmenu", "dragstart", "selectstart"].forEach(function (ev) { doc.addEventListener(ev, function (e) { var t = e.target; if (ev === "selectstart" && t && t.nodeType === 1 && /^(INPUT|TEXTAREA)$/.test(t.tagName)) return; e.preventDefault(); }); });
+    function ok(n) { try { while (n && n.nodeType !== 1) n = n.parentNode; return !!(n && n.closest && n.closest(".kz-copyok")); } catch (e) { return false; } }
+    ["copy", "cut", "paste", "contextmenu", "dragstart", "selectstart"].forEach(function (ev) { doc.addEventListener(ev, function (e) {
+      var t = e.target;
+      if (ev === "selectstart" && t && t.nodeType === 1 && /^(INPUT|TEXTAREA)$/.test(t.tagName)) return;
+      if (ev === "cut" || ev === "paste") { e.preventDefault(); return; }
+      if (ok(t)) return;
+      if (ev === "copy") { try { var sel = doc.getSelection(); if (sel && sel.rangeCount && ok(sel.anchorNode) && ok(sel.focusNode)) return; } catch (x) {} }
+      e.preventDefault(); }); });
     doc.addEventListener("keydown", function (e) {
       var k = (e.key || "").toLowerCase();
+      if ((e.ctrlKey || e.metaKey) && ["c", "a"].indexOf(k) >= 0) { try { var sel = doc.getSelection(), n = sel && sel.anchorNode; if (k === "c" && n && ok(n)) return; if (k === "a" && doc.activeElement && ok(doc.activeElement)) return; } catch (x) {} }
       if ((e.ctrlKey || e.metaKey) && ["c", "x", "a", "u", "s", "p", "v"].indexOf(k) >= 0) e.preventDefault();
       if (e.key === "PrintScreen") e.preventDefault();
     });
     if (doc.body) doc.body.classList.add("nocopy");
-    try { var st = doc.createElement("style"); st.textContent = ".nocopy,.nocopy *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.nocopy input,.nocopy textarea{-webkit-user-select:text;user-select:text}@media print{body{display:none}}"; doc.head.appendChild(st); } catch (x) {}
+    try { var st = doc.createElement("style"); st.textContent = ".nocopy,.nocopy *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.nocopy input,.nocopy textarea,.nocopy .kz-copyok,.nocopy .kz-copyok *{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}@media print{body{display:none}}"; doc.head.appendChild(st); } catch (x) {}
   };
   KZ.blockCopy = function () { KZ.blockCopyIn(document); };
   // A confirmation box: returns a promise that resolves true (yes) or false (no).
