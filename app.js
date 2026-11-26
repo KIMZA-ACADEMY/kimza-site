@@ -429,7 +429,8 @@
     var LINK = { teacher_msgs: "messages.html", fr_req: "friends.html", fr_msgs: "friends.html", student_msgs: "admin.html#messages", name_req: "account.html", new_students: "admin.html#students" };
     var bell = document.getElementById("bellBtn");
     function bellState() { if (!bell) return; if (!("Notification" in window) || Notification.permission === "granted" || Notification.permission === "denied") bell.hidden = true; else bell.hidden = false; }
-    if (bell) bell.addEventListener("click", async function () { try { await Notification.requestPermission(); } catch (e) {} bellState(); if (Notification.permission === "granted") KZ.toast("تم تفعيل الإشعارات. ستصلك تنبيهات عندما يكون التطبيق مفتوحاً."); });
+    if (bell) bell.addEventListener("click", async function () { try { await Notification.requestPermission(); } catch (e) {} bellState(); if (Notification.permission === "granted") { var ok = await KZ.pushSubscribe(); KZ.toast(ok ? "تم تفعيل الإشعارات 🔔 ستصلك حتى والتطبيق مغلق." : "تم تفعيل الإشعارات (تعمل والتطبيق مفتوح)."); } });
+    if ("Notification" in window && Notification.permission === "granted") KZ.pushSubscribe();
     bellState();
     function badge(href, n) {
       var l = document.querySelector('#appHeader a[href="' + href + '"]'); if (!l) return;
@@ -457,6 +458,22 @@
     }
     setTimeout(poll, 1500); setInterval(poll, 40000);
     document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") poll(); });
+  };
+  // Web Push: register this device so the server can notify even when the app is closed
+  function b64(u) { var p = "=".repeat((4 - u.length % 4) % 4), s = (u + p).replace(/-/g, "+").replace(/_/g, "/"), r = atob(s), o = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) o[i] = r.charCodeAt(i); return o; }
+  KZ.pushSubscribe = async function () {
+    try {
+      var key = window.KIMZA_SUPABASE && window.KIMZA_SUPABASE.vapidPublic;
+      if (!key || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window) || Notification.permission !== "granted") return false;
+      var reg = await navigator.serviceWorker.ready;
+      var sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(key) });
+      var j = sub.toJSON(), mark = "kz-push-" + (KZ.user ? KZ.user.id : "");
+      if (localStorage.getItem(mark) === j.endpoint) return true;
+      var r = await sb.rpc("save_push_sub", { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth });
+      if (!r.error) { try { localStorage.setItem(mark, j.endpoint); } catch (e) {} return true; }
+    } catch (e) {}
+    return false;
   };
   KZ.track = function () {
     if (KZ._tracking) return; KZ._tracking = true;
