@@ -365,3 +365,9 @@ html[data-motion="off"] *{animation:none!important;transition:none!important}
 .pdot{width:14px;height:14px;border-radius:50%;flex:none;display:inline-block}
 .spark{display:flex;gap:4px;align-items:flex-end;height:60px}.spark i{flex:1;background:var(--gold);border-radius:3px 3px 0 0;min-width:6px}
 .pbar{display:grid;grid-template-columns:130px 1fr 70px;gap:8px;align-items:center;margin:4px 0;font-size:.9rem}.pbar div{background:var(--line);border-radius:6px;height:10px;overflow:hidden}.pbar div i{display:block;height:100%;background:var(--navy);border-radius:6px}.pbar em{font-style:normal;color:var(--muted);font-size:.8rem}
+
+/* director signature above the line */
+.cert2 .c-sig.has-sign{position:relative}
+.cert2 .c-signimg{position:absolute;left:50%;bottom:100%;width:250px;height:auto;margin:0 0 -18px -125px;pointer-events:none;animation:kzsign 1.6s cubic-bezier(.4,0,.2,1) .9s both}
+@keyframes kzsign{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@media print,(prefers-reduced-motion:reduce){.cert2 .c-signimg{animation:none}}

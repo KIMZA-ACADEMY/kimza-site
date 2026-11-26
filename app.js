@@ -308,7 +308,7 @@
       '<div class="c-name' + (ar ? " ar" : "") + (long ? " long" : "") + '" dir="auto">' + nm + '</div><div class="c-line"></div>' +
       '<p class="c-body">' + esc(body) + ".</p>" +
       '<div class="c-meta">' + (c.level ? '<span class="c-level">' + esc(c.level) + " · " + esc(LV[c.level] || "") + "</span>" : "") + (c.hours ? '<span class="c-hours">' + esc(String(c.hours)) + " STUDY HOURS</span>" : "") + "</div>" +
-      '<div class="c-foot"><div class="c-sig"><b>' + esc(dt) + '</b>Date of issue</div>' + emblem + '<div class="c-sig"><b>Academy Director</b>KIMZA Academy</div></div></div>' +
+      '<div class="c-foot"><div class="c-sig"><b>' + esc(dt) + '</b>Date of issue</div>' + emblem + '<div class="c-sig has-sign"><img class="c-signimg" src="signature.svg" alt="Signature of the Academy Director"><b>Academy Director</b>KIMZA Academy</div></div></div>' +
       (c.status && c.status !== "valid" ? '<div class="c-rev"><b>REVOKED</b></div>' : "") +
       "</div></div></div>";
   };
