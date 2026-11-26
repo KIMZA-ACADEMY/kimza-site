@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwubr8b">
-<link rel="stylesheet" href="app.css?v=mwwubr8b">
+<link rel="stylesheet" href="site.css?v=mwwux2vn">
+<link rel="stylesheet" href="app.css?v=mwwux2vn">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwubr8b"></script>
-<script src="portal-i18n.js?v=mwwubr8b"></script>
-<script src="i18n.js?v=mwwubr8b"></script>
+<script src="app.js?v=mwwux2vn"></script>
+<script src="portal-i18n.js?v=mwwux2vn"></script>
+<script src="i18n.js?v=mwwux2vn"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -33,7 +33,7 @@
   KZ.shell("admin");
   var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
   var LEVELS = ["A1", "A2", "B1", "B2", "C1"];
-  var TABS = [["students", "الطلاب"], ["lessons", "الدروس"], ["tests", "الاختبارات"], ["results", "النتائج"], ["attendance", "الحضور"], ["payments", "المدفوعات"], ["applications", "الطلبات"], ["speaking", "المحادثة"], ["certs", "الشهادات"], ["news", "الإعلانات"], ["follow", "متابعة الطلاب"], ["fluency", "الطلاقة والجهد"], ["groups", "مجموعات الطلاب"], ["themes", "الألوان والثيمات"], ["lsearch", "بحث الدروس"], ["designer", "تصميم الموقع"], ["texts", "النصوص"], ["courses", "الدورات والإعلانات"], ["features", "الميزات"], ["settings", "المستويات"]];
+  var TABS = [["students", "الطلاب"], ["lessons", "الدروس"], ["tests", "الاختبارات"], ["results", "النتائج"], ["attendance", "الحضور"], ["payments", "المدفوعات"], ["applications", "الطلبات"], ["speaking", "المحادثة"], ["certs", "الشهادات"], ["news", "الإعلانات"], ["follow", "متابعة الطلاب"], ["fluency", "الطلاقة والجهد"], ["groups", "مجموعات الطلاب"], ["ideas", "اقتراحات وتصويتات"], ["themes", "الألوان والثيمات"], ["lsearch", "بحث الدروس"], ["designer", "تصميم الموقع"], ["texts", "النصوص"], ["courses", "الدورات والإعلانات"], ["features", "الميزات"], ["settings", "المستويات"]];
   var KIND = { weekly: "أسبوعي", monthly: "شهري", final: "نهاية المستوى" };
   var ST = { active: "نشط", paused: "متوقف مؤقتاً", graduated: "خريج", stopped: "موقوف", pending: "بانتظار القبول" };
   var AT = { present: "حاضر", absent: "غائب", late: "متأخر", excused: "بعذر" };
@@ -1180,6 +1180,36 @@
       if (s !== "all" && !v) { KZ.toast("لا توجد مجموعات بعد.", true); return; }
       var r = await sb.from("theme_rules").upsert({ scope: s, scope_value: v, theme_id: Number($("trT").value) }, { onConflict: "scope,scope_value" });
       KZ.toast(r.error ? "تعذر التطبيق." : "تم التطبيق. سيراه الطلاب عند دخولهم.", !!r.error); if (!r.error) { KZ.loadTheme(); VIEWS.themes(); } });
+  };
+
+  // ---- student ideas / competitions / votes: the teacher approves; approved ones show to every student as a notice
+  VIEWS.ideas = async function () {
+    var nm = await nameMap();
+    var rows = (await sb.from("proposals").select("*").order("created_at", { ascending: false }).limit(200)).data || [];
+    var KIND = { idea: "💡 فكرة", competition: "🏆 مسابقة", vote: "🗳️ تصويت" }, ST = { pending: "بانتظار موافقتك", approved: "معتمد (يراه الطلاب)", rejected: "مرفوض", closed: "مغلق" };
+    var counts = {};
+    for (var i = 0; i < rows.length; i++) if (rows[i].kind === "vote" && rows[i].status !== "pending") counts[rows[i].id] = (await sb.rpc("proposal_counts", { p_id: rows[i].id })).data || [];
+    var h = '<h2>اقتراحات الطلاب والتصويتات</h2><p class="muted">يقترح الطلاب أفكاراً ومسابقات وتصويتات من صفحتهم الرئيسية. ما توافق عليه يظهر لجميع الطلاب كإعلان عند دخولهم، ويصوّتون عليه إن كان تصويتاً. يمكنك أيضاً إنشاء واحد بنفسك.</p>' +
+      '<form class="tile form" id="pNew"><div class="grid2"><div><label for="pKind">النوع</label><select id="pKind"><option value="vote">🗳️ تصويت</option><option value="idea">💡 فكرة / إعلان</option><option value="competition">🏆 مسابقة</option></select></div><div><label for="pTitle">العنوان</label><input id="pTitle" maxlength="120" required></div></div><label for="pBody">التفاصيل (اختياري)</label><textarea id="pBody" rows="2" maxlength="1000"></textarea><label for="pOpts">خيارات التصويت (كل خيار في سطر، للتصويت فقط)</label><textarea id="pOpts" rows="3"></textarea><button class="btn btn-primary" type="submit">نشر للطلاب الآن</button></form>';
+    if (!rows.length) h += '<p class="muted" style="margin-top:14px">لا توجد اقتراحات بعد.</p>';
+    rows.forEach(function (p) {
+      var c = counts[p.id] || [], tot = c.reduce(function (a, x) { return a + Number(x.n); }, 0);
+      h += '<div class="tile" style="margin-top:12px' + (p.status === "pending" ? ";border:2px solid var(--gold)" : "") + '"><div class="row" style="border:0;padding:0"><div><strong>' + (KIND[p.kind] || "") + " " + esc(p.title) + '</strong> <span class="badge">' + (ST[p.status] || p.status) + '</span><div class="muted">' + esc(nm.map[p.user_id] ? nm.map[p.user_id].full_name : "المعلم") + "</div></div><div class=\"btns\">" +
+        (p.status === "pending" ? '<button class="btn btn-primary sm" data-pset="approved" data-id="' + p.id + '" type="button">✅ موافقة ونشر</button> <button class="btn danger sm" data-pset="rejected" data-id="' + p.id + '" type="button">رفض</button>' : "") +
+        (p.status === "approved" ? '<button class="btn btn-ghost sm" data-pset="closed" data-id="' + p.id + '" type="button">إغلاق</button>' : "") +
+        ' <button class="btn btn-ghost sm" data-pdel="' + p.id + '" type="button">حذف</button></div></div>' + (p.body ? "<p>" + esc(p.body) + "</p>" : "") +
+        (p.options && p.options.length ? "<ul style=\"margin:6px 0\">" + p.options.map(function (o, i) { var k = c.filter(function (x) { return x.choice === i; })[0]; var n = k ? Number(k.n) : 0; return "<li>" + esc(o) + ' — <b>' + n + "</b>" + (tot ? " (" + Math.round(n * 100 / tot) + "%)" : "") + "</li>"; }).join("") + "</ul>" : "") + "</div>";
+    });
+    view.innerHTML = h;
+    $("pNew").addEventListener("submit", async function (e) {
+      e.preventDefault(); var k = $("pKind").value, o = $("pOpts").value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean);
+      if (k === "vote" && o.length < 2) { KZ.toast("اكتب خيارين على الأقل للتصويت.", true); return; }
+      var r = await sb.from("proposals").insert({ user_id: KZ.user.id, kind: k, title: $("pTitle").value.trim(), body: $("pBody").value.trim() || null, options: k === "vote" ? o : [], status: "approved" });
+      KZ.toast(r.error ? "تعذر النشر." : "نُشر للطلاب.", !!r.error); VIEWS.ideas(); });
+    view.querySelectorAll("[data-pset]").forEach(function (b) { b.addEventListener("click", async function () {
+      var r = await sb.from("proposals").update({ status: b.getAttribute("data-pset") }).eq("id", b.getAttribute("data-id")); KZ.toast(r.error ? "تعذر التنفيذ." : "تم.", !!r.error); VIEWS.ideas(); }); });
+    view.querySelectorAll("[data-pdel]").forEach(function (b) { b.addEventListener("click", async function () {
+      if (!confirm("حذف هذا الاقتراح نهائياً مع أصواته؟")) return; await sb.from("proposals").delete().eq("id", b.getAttribute("data-pdel")); VIEWS.ideas(); }); });
   };
 
   go((location.hash || "#students").slice(1));

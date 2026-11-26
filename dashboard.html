@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwuhe3x">
-<link rel="stylesheet" href="app.css?v=mwwuhe3x">
+<link rel="stylesheet" href="site.css?v=mwwux2vn">
+<link rel="stylesheet" href="app.css?v=mwwux2vn">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwuhe3x"></script>
-<script src="portal-i18n.js?v=mwwuhe3x"></script>
+<script src="app.js?v=mwwux2vn"></script>
+<script src="portal-i18n.js?v=mwwux2vn"></script>
 
 <script>
 (async function () {
@@ -111,6 +111,23 @@
     BADGES.map(function (b) { var on = b[2] >= b[3]; return '<div class="bdg' + (on ? " on" : "") + '" title="' + esc(b[1]) + '"><span class="e">' + b[0] + "</span><b>" + esc(b[1]) + "</b><small>" + (on ? "مكتمل ✓" : Math.min(b[2], b[3]) + " / " + b[3]) + "</small></div>"; }).join("") + "</div></div>";
   var doneToday = chLog[today] != null;
   html += '<div class="tile chall" style="margin-bottom:22px"><div class="row" style="border:0;padding:0"><div><h2 style="margin:0 0 4px">🎯 تحدّي اليوم</h2><p class="muted" style="margin:0">٥ أسئلة سريعة من كلماتك. ' + (doneToday ? "أنجزت تحدّي اليوم بنتيجة " + chLog[today] + "/5 ✅ — يمكنك الإعادة للتدريب." : "اجمع نقاطاً وأكمل سلسلة أيامك!") + '</p></div><button class="btn btn-primary" id="chBtn" type="button">' + (doneToday ? "🔁 أعد التحدي" : "ابدأ التحدي") + "</button></div></div>";
+  // ---------- student ideas / votes (teacher-approved) ----------
+  var props = [], myVotes = {}, pcounts = {};
+  try {
+    props = (await sb.from("proposals").select("id,kind,title,body,options,status,user_id").in("status", ["approved", "pending"]).order("created_at", { ascending: false }).limit(12)).data || [];
+    ((await sb.from("proposal_votes").select("proposal_id,choice")).data || []).forEach(function (v) { myVotes[v.proposal_id] = v.choice; });
+    for (var pi = 0; pi < props.length; pi++) if (props[pi].kind === "vote" && props[pi].status === "approved" && myVotes[props[pi].id] != null) pcounts[props[pi].id] = (await sb.rpc("proposal_counts", { p_id: props[pi].id })).data || [];
+  } catch (e) {}
+  var PK = { idea: "💡", competition: "🏆", vote: "🗳️" }, shown = props.filter(function (p) { return p.status === "approved" || p.user_id === KZ.user.id; });
+  html += '<div class="tile" style="margin-bottom:22px"><div class="row" style="border:0;padding:0 0 8px"><h2 style="margin:0">💬 اقتراحات وتصويتات الأكاديمية</h2><button class="btn btn-ghost sm" id="pSug" type="button">+ اقترح فكرة</button></div>' +
+    (shown.length ? shown.map(function (p) {
+      var c = pcounts[p.id] || [], tot = c.reduce(function (x, y) { return x + Number(y.n); }, 0), mine = myVotes[p.id];
+      return '<div class="row" style="display:block"><strong>' + PK[p.kind] + " " + esc(p.title) + "</strong>" + (p.status === "pending" ? ' <span class="badge">بانتظار موافقة المعلم</span>' : "") + (p.body ? '<p class="muted" style="margin:4px 0">' + esc(p.body) + "</p>" : "") +
+        (p.kind === "vote" && p.status === "approved" ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">' + (p.options || []).map(function (o, i) {
+          var k = c.filter(function (x) { return x.choice === i; })[0], n = k ? Number(k.n) : 0;
+          return '<button class="btn ' + (mine === i ? "btn-primary" : "btn-ghost") + ' sm" data-pv="' + p.id + ":" + i + '" type="button">' + esc(o) + (mine != null ? " · " + n + (tot ? " (" + Math.round(n * 100 / tot) + "%)" : "") : "") + "</button>"; }).join("") + "</div>" : "") + "</div>";
+    }).join("") : '<p class="muted" style="margin:0">لا توجد اقتراحات الآن. شاركنا فكرتك: مسابقة، نشاط، أو تصويت.</p>') + "</div>";
+
 
 
   if (prof.must_change_password) {
@@ -203,6 +220,33 @@
     var bnow = BADGES.map(function (b, i) { return b[2] >= b[3] ? i : -1; }).filter(function (i) { return i >= 0; });
     if (bseen) { var fresh = bnow.filter(function (i) { return bseen.indexOf(i) < 0; }); if (fresh.length) { KZ.confetti(); KZ.toast("🏅 إنجاز جديد: " + BADGES[fresh[0]][1]); } }
     localStorage.setItem(bk, JSON.stringify(bnow));
+  } catch (e) {}
+  document.querySelectorAll("[data-pv]").forEach(function (b) { b.addEventListener("click", async function () {
+    var pr = b.getAttribute("data-pv").split(":"), r = await sb.rpc("vote_proposal", { p_id: Number(pr[0]), p_choice: Number(pr[1]) });
+    if (r.error) { KZ.toast("تعذر التصويت.", true); return; } KZ.toast("تم تسجيل صوتك ✅"); location.reload(); }); });
+  var pSugEl = document.getElementById("pSug");
+  if (pSugEl) pSugEl.addEventListener("click", function () {
+    var ov = document.createElement("div"); ov.className = "look-ov";
+    ov.innerHTML = '<form class="look-box form"><h2 style="margin-top:0">💡 اقترح شيئاً للأكاديمية</h2><label for="sgK">النوع</label><select id="sgK"><option value="idea">💡 فكرة</option><option value="competition">🏆 مسابقة</option><option value="vote">🗳️ تصويت</option></select><label for="sgT">العنوان</label><input id="sgT" maxlength="120" required><label for="sgB">التفاصيل</label><textarea id="sgB" rows="3" maxlength="1000"></textarea><div id="sgOW" hidden><label for="sgO">خيارات التصويت (كل خيار في سطر)</label><textarea id="sgO" rows="3"></textarea></div><p class="muted">يصل اقتراحك إلى المعلم أولاً، وإذا وافق عليه سيظهر لجميع الطلاب.</p><div style="display:flex;gap:8px"><button class="btn btn-primary" type="submit">إرسال</button><button class="btn btn-ghost" type="button" id="sgX">إلغاء</button></div></form>';
+    document.body.appendChild(ov);
+    var kk = ov.querySelector("#sgK"); kk.addEventListener("change", function () { ov.querySelector("#sgOW").hidden = kk.value !== "vote"; });
+    ov.querySelector("#sgX").onclick = function () { ov.remove(); };
+    ov.querySelector("form").addEventListener("submit", async function (e) {
+      e.preventDefault(); var o = ov.querySelector("#sgO").value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean);
+      if (kk.value === "vote" && o.length < 2) { KZ.toast("اكتب خيارين على الأقل.", true); return; }
+      var r = await sb.from("proposals").insert({ user_id: KZ.user.id, kind: kk.value, title: ov.querySelector("#sgT").value.trim(), body: ov.querySelector("#sgB").value.trim() || null, options: kk.value === "vote" ? o : [] });
+      if (r.error) { KZ.toast("تعذر الإرسال.", true); return; } KZ.toast("وصل اقتراحك للمعلم 🌟"); ov.remove(); location.reload(); });
+  });
+  // approved items show once as a notice when the student enters the app
+  try {
+    var seenK = "kz-props-" + KZ.user.id, seenP = JSON.parse(localStorage.getItem(seenK) || "[]");
+    var fresh2 = props.filter(function (p) { return p.status === "approved" && seenP.indexOf(p.id) < 0 && !(p.kind === "vote" && myVotes[p.id] != null); });
+    if (fresh2.length) {
+      var p0 = fresh2[0], nb = document.createElement("div"); nb.className = "look-ov";
+      nb.innerHTML = '<div class="look-box" style="text-align:center"><div style="font-size:2.4rem">' + PK[p0.kind] + '</div><h2>' + esc(p0.title) + "</h2>" + (p0.body ? "<p>" + esc(p0.body) + "</p>" : "") + '<button class="btn btn-primary" id="nbX" type="button">' + (p0.kind === "vote" ? "صوّت الآن" : "حسناً") + "</button></div>";
+      document.body.appendChild(nb);
+      nb.querySelector("#nbX").onclick = function () { nb.remove(); seenP.push(p0.id); localStorage.setItem(seenK, JSON.stringify(seenP)); var t = document.querySelector("[data-pv]"); if (t) t.scrollIntoView({ behavior: "smooth", block: "center" }); };
+    }
   } catch (e) {}
   var chBtnEl = document.getElementById("chBtn");
   if (chBtnEl) chBtnEl.addEventListener("click", async function () {
