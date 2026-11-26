@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>الامتحانات · KIMZA Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
+<script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
+<link rel="stylesheet" href="site.css?v=mwxcwykg">
+<link rel="stylesheet" href="app.css?v=mwxcwykg">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B1F44">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<script>if("serviceWorker"in navigator&&location.protocol!=="file:")addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})</script>
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="supabase-lib.js"></script>
+<script src="config.js"></script>
+<script src="app.js?v=mwxcwykg"></script>
+<script src="portal-i18n.js?v=mwxcwykg"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("student");
+  if (!prof) return;
+  KZ.shell("exams");
+  var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app"), uid = KZ.user.id;
+  var KN = { writing: "✍️ كتابة", speaking: "🎤 محادثة" };
+  var timer = null, rec = null, chunks = [], blob = null;
+  function words(t) { return (String(t || "").trim().match(/[\p{L}\p{N}'’-]+/gu) || []).length; }
+  function mmss(s) { s = Math.max(0, Math.floor(s)); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
+
+  async function list() {
+    clearInterval(timer);
+    var exams = (await sb.from("skill_exams").select("*").order("created_at", { ascending: false }).limit(40)).data || [];
+    var atts = {}; ((await sb.from("skill_exam_attempts").select("*").eq("user_id", uid)).data || []).forEach(function (a) { atts[a.exam_id] = a; });
+    var h = '<h1>امتحانات الكتابة والمحادثة</h1><p class="muted">يفتح المعلم الامتحان في وقت يختاره، ومدته محددة. بمجرد أن تبدأ يعمل العدّاد ولا يتوقف. اعمل بنفسك دون مساعدة خارجية.</p>';
+    var open = exams.filter(function (e) { return e.status === "open" && !(atts[e.id] && atts[e.id].submitted_at); });
+    var past = exams.filter(function (e) { return atts[e.id] && atts[e.id].submitted_at; });
+    h += '<h2>🟢 مفتوح الآن</h2>' + (open.length ? open.map(function (e) {
+      var a = atts[e.id];
+      return '<div class="tile" style="margin-top:10px"><div class="row" style="border:0;padding:0"><div><span class="badge gold">' + KN[e.kind] + '</span> <strong style="font-size:1.1rem">' + esc(e.title) + '</strong><div class="muted">المدة ' + e.minutes + " دقيقة" + (e.min_words ? " · الحد الأدنى " + e.min_words + " كلمة" : "") + '</div></div><button class="btn btn-primary" data-go="' + e.id + '" type="button">' + (a ? "تابع الامتحان" : "ابدأ الآن") + "</button></div></div>";
+    }).join("") : '<div class="tile"><p class="muted" style="margin:0">لا يوجد امتحان مفتوح الآن. ستصلك رسالة وتنبيه عندما يفتح المعلم امتحاناً.</p></div>');
+    if (past.length) h += '<h2 style="margin-top:22px">📋 امتحاناتي السابقة</h2>' + past.map(function (e) {
+      var a = atts[e.id]; return '<div class="tile" style="margin-top:10px"><div class="row" style="border:0;padding:0"><div><span class="badge">' + KN[e.kind] + "</span> <strong>" + esc(e.title) + '</strong></div>' + (a.graded_at ? '<span class="badge ok">الدرجة ' + (a.total != null ? a.total : "—") + "/20</span>" : '<span class="badge">بانتظار التصحيح</span>') + "</div>" +
+        (a.graded_at ? '<div class="pgrid4" style="margin-top:8px">' + ["المحتوى", "التنظيم", "اللغة", "الدقة"].map(function (n, i) { return '<div class="pstat"><b>' + (a.scores && a.scores[i] != null ? a.scores[i] : "—") + "/5</b><span>" + n + "</span></div>"; }).join("") + "</div>" + (a.feedback ? '<div class="infobox"><strong>تعليق المعلم:</strong><p style="margin:6px 0 0;white-space:pre-wrap">' + esc(a.feedback) + "</p></div>" : "") : "") + "</div>";
+    }).join("");
+    app.innerHTML = h;
+    app.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { run(Number(b.getAttribute("data-go"))); }); });
+  }
+
+  async function run(id) {
+    var e = (await sb.from("skill_exams").select("*").eq("id", id).maybeSingle()).data; if (!e) { list(); return; }
+    var okc = confirm("ستبدأ الآن امتحان «" + e.title + "» لمدة " + e.minutes + " دقيقة. يبدأ العدّاد فوراً ولا يمكن إيقافه. هل أنت جاهز؟");
+    if (!okc) return;
+    var st = await sb.rpc("start_skill_exam", { p_exam: id });
+    if (st.error) { KZ.toast("لا يمكن بدء هذا الامتحان الآن.", true); return; }
+    var info = st.data, offset = new Date(info.now).getTime() - Date.now(), endAt = new Date(info.started_at).getTime() + e.minutes * 60000;
+    if (info.submitted) { list(); return; }
+    var local = ""; try { local = localStorage.getItem("kz-ex-" + uid + "-" + id) || ""; } catch (x) {}
+    var text = info.body || local;
+    var isW = e.kind === "writing";
+    app.innerHTML = '<div class="tile" style="position:sticky;top:8px;z-index:5"><div class="row" style="border:0;padding:0"><strong>' + esc(e.title) + '</strong><span class="badge gold" id="exT" style="font-size:1.1rem">--:--</span></div></div>' +
+      '<div class="tile" style="margin-top:12px">' + (e.scene ? '<div style="font-size:2.2rem;text-align:center;padding:10px;background:var(--surface);border:1px dashed var(--line);border-radius:14px">' + esc(e.scene) + "</div>" : "") + '<p style="white-space:pre-wrap;font-size:1.05rem">' + esc(e.prompt) + "</p>" + (e.min_words ? '<p class="muted">الحد الأدنى: ' + e.min_words + " كلمة</p>" : "") + "</div>" +
+      (isW ? '<div class="tile form" style="margin-top:12px"><textarea id="exB" dir="ltr" rows="16" style="width:100%;text-align:left" placeholder="Write here…" spellcheck="false">' + esc(text) + '</textarea><div class="muted" id="exW"></div></div>' : '<div class="tile" style="margin-top:12px"><p>سجّل إجابتك صوتياً (تستطيع إعادة التسجيل قبل التسليم).</p><div class="btns"><button class="btn btn-ghost" id="exRec" type="button">🎙 ابدأ التسجيل</button><span class="muted" id="exRs"></span></div><audio id="exPl" controls hidden style="width:100%;margin-top:8px"></audio></div>') +
+      '<div class="btns" style="margin-top:12px"><button class="btn btn-primary" id="exSend" type="button">تسليم الامتحان</button></div><p class="muted">يُسلَّم الامتحان تلقائياً عند انتهاء الوقت. يُحفظ ما كتبته تلقائياً كل نصف دقيقة.</p>';
+    var ta = document.getElementById("exB"), wc = document.getElementById("exW"), done = false;
+    function upd() { if (ta && wc) { var n = words(ta.value); wc.textContent = n + " كلمة" + (e.min_words ? (n >= e.min_words ? " ✅" : " (المطلوب " + e.min_words + ")") : ""); try { localStorage.setItem("kz-ex-" + uid + "-" + id, ta.value); } catch (x) {} } }
+    if (ta) { ta.addEventListener("input", upd); upd(); }
+    // block paste in the exam textarea (own work only)
+    if (ta) ta.addEventListener("paste", function (ev) { ev.preventDefault(); KZ.toast("اللصق ممنوع في الامتحان.", true); });
+    if (!isW) {
+      var rb = document.getElementById("exRec"), pl = document.getElementById("exPl"), rs = document.getElementById("exRs");
+      rb.addEventListener("click", async function () {
+        if (rec && rec.state === "recording") { rec.stop(); return; }
+        try {
+          var s = await navigator.mediaDevices.getUserMedia({ audio: true }); chunks = []; blob = null;
+          rec = new MediaRecorder(s); rec.ondataavailable = function (ev) { if (ev.data.size) chunks.push(ev.data); };
+          rec.onstop = function () { s.getTracks().forEach(function (t) { t.stop(); }); blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" }); pl.src = URL.createObjectURL(blob); pl.hidden = false; rb.textContent = "🎙 أعد التسجيل"; rs.textContent = "جاهز للتسليم"; };
+          rec.start(); rb.textContent = "⏹ إيقاف"; rs.textContent = "جارٍ التسجيل…";
+        } catch (x) { KZ.toast("لم أستطع الوصول إلى الميكروفون.", true); }
+      });
+    }
+    async function submit(auto) {
+      if (done) return; done = true; clearInterval(timer);
+      var path = null;
+      if (!isW) {
+        if (rec && rec.state === "recording") { rec.stop(); await new Promise(function (r) { setTimeout(r, 600); }); }
+        if (blob) { path = uid + "/exam-" + id + "-" + Date.now() + ".webm"; var up = await sb.storage.from("task-audio").upload(path, blob, { contentType: blob.type }); if (up.error) { path = null; } }
+      }
+      var r = await sb.rpc("submit_skill_exam", { p_exam: id, p_body: ta ? ta.value : null, p_audio: path });
+      try { localStorage.removeItem("kz-ex-" + uid + "-" + id); } catch (x) {}
+      KZ.toast(r.error ? "تعذر التسليم. حاول مرة أخرى." : auto ? "انتهى الوقت وسُلّمت إجابتك." : "تم تسليم الامتحان ✅", !!r.error);
+      if (r.error) { done = false; return; }
+      list();
+    }
+    document.getElementById("exSend").addEventListener("click", function () { if (confirm("هل تريد تسليم الامتحان الآن؟")) submit(false); });
+    var tick = 0;
+    function loop() {
+      var left = (endAt - (Date.now() + offset)) / 1000;
+      document.getElementById("exT").textContent = mmss(left);
+      if (left < 120) document.getElementById("exT").style.background = "#c62828";
+      if (left <= 0) { submit(true); return; }
+      tick++; if (ta && tick % 30 === 0) { try { sb.rpc("save_skill_draft", { p_exam: id, p_body: ta.value }); } catch (x) {} }
+    }
+    loop(); timer = setInterval(loop, 1000);
+  }
+  await list();
+})();
+
+</script>
+</body>
+</html>

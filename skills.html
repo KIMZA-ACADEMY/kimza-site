@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>الكتابة والمحادثة · KIMZA Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
+<script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
+<link rel="stylesheet" href="site.css?v=mwxcwykg">
+<link rel="stylesheet" href="app.css?v=mwxcwykg">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B1F44">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<script>if("serviceWorker"in navigator&&location.protocol!=="file:")addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})</script>
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="supabase-lib.js"></script>
+<script src="config.js"></script>
+<script src="app.js?v=mwxcwykg"></script>
+<script src="portal-i18n.js?v=mwxcwykg"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("student");
+  if (!prof) return;
+  KZ.shell("skills");
+  var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app"), uid = KZ.user.id;
+  var CN = { writing: "✍️ دورة الكتابة", speaking: "🎤 دورة المحادثة" };
+  var LV = KZ.levelsOf(prof);
+  var courses = (await sb.rpc("my_skill_courses")).data || [];
+  var S = { course: sessionStorage.getItem("sk-c") || "", level: sessionStorage.getItem("sk-l") || "" };
+  if (courses.indexOf(S.course) < 0) S.course = courses[0] || "";
+  if (LV.indexOf(S.level) < 0) S.level = LV[0];
+  var rec = null, chunks = [];
+
+  function words(t) { return (String(t || "").trim().match(/[\p{L}\p{N}'’-]+/gu) || []).length; }
+  function speak(t) { try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(t); u.lang = "en-GB"; u.rate = 0.9; speechSynthesis.speak(u); } catch (e) {} }
+
+  async function home() {
+    if (!courses.length) { app.innerHTML = '<h1>الكتابة والمحادثة</h1><div class="tile"><p class="muted" style="margin:0">لم يفتح المعلم دورتي الكتابة والمحادثة لك بعد. عندما يفتحها ستجدها هنا، وسيصلك تنبيه.</p></div><p><a class="btn btn-ghost" href="exams.html">📝 الامتحانات المفتوحة</a></p>'; return; }
+    var lessons = (await sb.from("skill_lessons").select("id,course,level,week,title,title_en,goal").eq("course", S.course).eq("level", S.level).order("week")).data || [];
+    var subs = {}; ((await sb.from("skill_submissions").select("lesson_id,ex,graded_at").eq("user_id", uid)).data || []).forEach(function (s) { (subs[s.lesson_id] = subs[s.lesson_id] || []).push(s); });
+    var h = '<h1>' + CN[S.course] + '</h1><div class="agroups" role="tablist">' + courses.map(function (c) { return '<button type="button" data-c="' + c + '" aria-selected="' + (c === S.course) + '">' + CN[c] + "</button>"; }).join("") + '</div>';
+    if (LV.length > 1) h += '<div class="agroups">' + LV.map(function (l) { return '<button type="button" data-l="' + l + '" aria-selected="' + (l === S.level) + '">' + l + "</button>"; }).join("") + "</div>";
+    h += '<p class="muted">درس جديد كل أسبوع. اقرأ الشرح، تأمّل النموذج، ثم أنجز التمارين بنفسك دون مساعدة خارجية. يراجع المعلم إجاباتك ويعلّق عليها.</p><p><a class="btn btn-ghost sm" href="exams.html">📝 الامتحانات المفتوحة</a></p>';
+    if (!lessons.length) h += '<div class="tile"><p class="muted" style="margin:0">لم يفتح المعلم دروس هذا المستوى بعد.</p></div>';
+    h += '<div class="lgrid">' + lessons.map(function (l) {
+      var n = (subs[l.id] || []).length, g = (subs[l.id] || []).filter(function (x) { return x.graded_at; }).length;
+      return '<a class="lcard" href="#" data-open="' + esc(l.id) + '"><span class="lnum">' + l.week + '</span><span class="lbody"><strong>' + esc(l.title) + '</strong><span class="muted en">' + esc(l.title_en || "") + '</span><span class="lchips">' + (n ? '<span class="badge">أنجزتَ ' + n + " تمارين</span>" : '<span class="badge gold">جديد</span>') + (g ? ' <span class="badge ok">صُحّح ' + g + "</span>" : "") + '</span></span><span class="go" aria-hidden="true">‹</span></a>';
+    }).join("") + "</div>";
+    app.innerHTML = h;
+    app.querySelectorAll("[data-c]").forEach(function (b) { b.addEventListener("click", function () { S.course = b.getAttribute("data-c"); sessionStorage.setItem("sk-c", S.course); home(); }); });
+    app.querySelectorAll("[data-l]").forEach(function (b) { b.addEventListener("click", function () { S.level = b.getAttribute("data-l"); sessionStorage.setItem("sk-l", S.level); home(); }); });
+    app.querySelectorAll("[data-open]").forEach(function (b) { b.addEventListener("click", function (e) { e.preventDefault(); openLesson(b.getAttribute("data-open")); }); });
+  }
+
+  async function openLesson(id) {
+    var l = (await sb.from("skill_lessons").select("*").eq("id", id).maybeSingle()).data; if (!l) { home(); return; }
+    var mine = {}; ((await sb.from("skill_submissions").select("*").eq("user_id", uid).eq("lesson_id", id)).data || []).forEach(function (s) { mine[s.ex] = s; });
+    var b = l.body || {}, ex = b.ex || [];
+    var h = '<p><button class="btn btn-ghost sm" id="skBack" type="button">› رجوع</button></p><h1>' + esc(l.title) + ' <small class="muted en">' + esc(l.title_en || "") + '</small></h1>';
+    if (l.goal) h += '<div class="infobox"><strong>🎯 هدف الدرس:</strong> ' + esc(l.goal) + "</div>";
+    if (b.points && b.points.length) h += '<div class="tile"><h2 style="margin-top:0">📘 الشرح</h2>' + b.points.map(function (p) { return '<div class="row" style="display:block"><strong>' + esc(p[0]) + "</strong><div style=\"white-space:pre-wrap\">" + esc(p[1]) + "</div></div>"; }).join("") + "</div>";
+    if (b.model) h += '<div class="tile" style="margin-top:14px"><div class="row" style="border:0;padding:0"><h2 style="margin:0">🔎 نموذج</h2><button class="btn btn-ghost sm" id="skListen" type="button">🔊 استمع</button></div><p dir="ltr" style="white-space:pre-wrap;margin:10px 0 0;font-size:1.05rem;text-align:left">' + esc(b.model) + "</p></div>";
+    h += '<h2 style="margin-top:22px">✏️ التمارين</h2>';
+    ex.forEach(function (x, i) {
+      var s = mine[i], k = x.k, done = !!s, graded = s && s.graded_at;
+      h += '<div class="tile" style="margin-top:12px" data-ex="' + i + '"><div class="row" style="border:0;padding:0"><strong>تمرين ' + (i + 1) + "</strong>" + (graded ? '<span class="badge ok">صُحّح' + (s.score != null ? " · " + s.score + "/10" : "") + "</span>" : done ? '<span class="badge">سُلّم</span>' : "") + "</div>";
+      if (k === "write") h += '<p>' + esc(x.p) + '</p>' + (x.min ? '<p class="muted">الحد الأدنى: ' + x.min + " كلمة</p>" : "");
+      if (k === "translate") h += '<p class="muted">ترجم إلى الإنجليزية:</p><p style="font-size:1.1rem"><strong>' + esc(x.ar) + "</strong></p>";
+      if (k === "describe") h += '<div style="font-size:2.2rem;line-height:1.3;text-align:center;padding:10px;background:var(--surface);border:1px dashed var(--line);border-radius:14px" aria-hidden="true">' + esc(x.scene) + '</div><p>' + esc(x.p) + "</p>" + (x.min ? '<p class="muted">الحد الأدنى: ' + x.min + " كلمة</p>" : "");
+      if (k === "fix") h += '<p class="muted">في الجملة خطأ. اكتبها صحيحة:</p><p dir="ltr" style="text-align:left;font-size:1.1rem"><strong>' + esc(x.bad) + "</strong></p>";
+      if (k === "speak") h += '<p>' + esc(x.p) + '</p>' + (x.hint ? '<p class="muted">' + esc(x.hint) + "</p>" : "");
+      if (k === "shadow") h += '<p class="muted">استمع ثم كرّر الجملة بنفس الإيقاع (Shadowing) وسجّل صوتك:</p><p dir="ltr" style="text-align:left;font-size:1.15rem"><strong>' + esc(x.text) + '</strong> <button class="btn btn-ghost sm" data-say="' + esc(x.text) + '" type="button">🔊</button></p>';
+      var voice = (k === "speak" || k === "shadow");
+      if (voice) {
+        h += '<div class="btns"><button class="btn btn-ghost" data-rec type="button">🎙 ابدأ التسجيل</button><span class="muted" data-rs>' + (s && s.audio_path ? "يوجد تسجيل سابق" : "") + '</span></div><audio data-pl controls hidden style="width:100%;margin-top:8px"></audio>' + (x.model ? '<p class="muted">فكرة إجابة: ' + esc(x.model) + "</p>" : "");
+      } else {
+        h += '<textarea dir="ltr" rows="' + (k === "write" || k === "describe" ? 7 : 2) + '" style="width:100%;text-align:left" data-body ' + (graded ? "disabled" : "") + ">" + esc(s ? s.body || "" : "") + "</textarea>" + (k === "write" || k === "describe" ? '<div class="muted" data-wc></div>' : "");
+      }
+      if (!graded) h += '<div class="btns" style="margin-top:8px"><button class="btn btn-primary" data-send type="button">' + (done ? "تحديث الإجابة" : "تسليم") + "</button></div>";
+      var reveal = (k === "translate" || k === "fix") && done ? '<div class="infobox" style="margin-top:10px"><strong>الإجابة النموذجية:</strong> <span dir="ltr">' + esc(x.model || x.good || "") + "</span></div>" : "";
+      h += '<div data-rv>' + reveal + "</div>";
+      if (graded && s.feedback) h += '<div class="infobox" style="margin-top:10px"><strong>تعليق المعلم:</strong><p style="margin:6px 0 0;white-space:pre-wrap">' + esc(s.feedback) + "</p></div>";
+      h += "</div>";
+    });
+    if (!ex.length) h += '<p class="muted">لا تمارين في هذا الدرس.</p>';
+    app.innerHTML = h;
+    document.getElementById("skBack").addEventListener("click", home);
+    var ls = document.getElementById("skListen"); if (ls) ls.addEventListener("click", function () { speak(b.model); });
+    app.querySelectorAll("[data-say]").forEach(function (q) { q.addEventListener("click", function () { speak(q.getAttribute("data-say")); }); });
+    app.querySelectorAll("[data-ex]").forEach(function (box) {
+      var i = Number(box.getAttribute("data-ex")), x = ex[i], k = x.k, ta = box.querySelector("[data-body]"), wc = box.querySelector("[data-wc]");
+      var blob = null;
+      if (ta && wc) { var upd = function () { var n = words(ta.value); wc.textContent = n + " كلمة" + (x.min ? (n >= x.min ? " ✅" : " (المطلوب " + x.min + ")") : ""); }; ta.addEventListener("input", upd); upd(); }
+      var rb = box.querySelector("[data-rec]"), pl = box.querySelector("[data-pl]"), rs = box.querySelector("[data-rs]");
+      if (rb) rb.addEventListener("click", async function () {
+        if (rec && rec.state === "recording") { rec.stop(); return; }
+        try {
+          var st = await navigator.mediaDevices.getUserMedia({ audio: true }); chunks = []; blob = null;
+          rec = new MediaRecorder(st); rec.ondataavailable = function (e) { if (e.data.size) chunks.push(e.data); };
+          rec.onstop = function () { st.getTracks().forEach(function (t) { t.stop(); }); blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" }); pl.src = URL.createObjectURL(blob); pl.hidden = false; rb.textContent = "🎙 أعد التسجيل"; rs.textContent = "جاهز للتسليم"; };
+          rec.start(); rb.textContent = "⏹ إيقاف"; rs.textContent = "جارٍ التسجيل…";
+        } catch (e) { KZ.toast("لم أستطع الوصول إلى الميكروفون. اسمح به من المتصفح.", true); }
+      });
+      var sendBtn = box.querySelector("[data-send]");
+      if (sendBtn) sendBtn.addEventListener("click", async function () {
+        sendBtn.disabled = true;
+        var row = { user_id: uid, lesson_id: id, ex: i, kind: k, body: ta ? ta.value.trim() : null };
+        if (ta && !row.body) { KZ.toast("اكتب إجابتك أولاً.", true); sendBtn.disabled = false; return; }
+        if (!ta) {
+          if (blob) { var path = uid + "/skill-" + id + "-" + i + "-" + Date.now() + ".webm"; var up = await sb.storage.from("task-audio").upload(path, blob, { contentType: blob.type }); if (up.error) { KZ.toast("تعذر رفع التسجيل.", true); sendBtn.disabled = false; return; } row.audio_path = path; }
+          else if (!(mine[i] && mine[i].audio_path)) { KZ.toast("سجّل صوتك أولاً.", true); sendBtn.disabled = false; return; }
+        }
+        var r = await sb.from("skill_submissions").upsert(row, { onConflict: "user_id,lesson_id,ex" });
+        sendBtn.disabled = false;
+        if (r.error) { KZ.toast(/already graded/.test(r.error.message) ? "صُحّح هذا التمرين ولا يمكن تعديله." : "تعذر الحفظ.", true); return; }
+        KZ.toast("تم التسليم ✅"); openLesson(id);
+      });
+    });
+  }
+  await home();
+})();
+
+</script>
+</body>
+</html>

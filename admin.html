@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxbwf29">
-<link rel="stylesheet" href="app.css?v=mwxbwf29">
+<link rel="stylesheet" href="site.css?v=mwxcwykg">
+<link rel="stylesheet" href="app.css?v=mwxcwykg">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxbwf29"></script>
-<script src="portal-i18n.js?v=mwxbwf29"></script>
-<script src="i18n.js?v=mwxbwf29"></script>
+<script src="app.js?v=mwxcwykg"></script>
+<script src="portal-i18n.js?v=mwxcwykg"></script>
+<script src="i18n.js?v=mwxcwykg"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -72,7 +72,7 @@
   // ----- shell: 6 groups, each with its own tabs -----
   var GROUPS = [
     ["👥", "الطلاب", ["perf", "students", "applications", "groups", "attendance", "follow"]],
-    ["📚", "الدروس والاختبارات", ["lessons", "tests", "results", "lsearch", "examprep"]],
+    ["📚", "الدروس والاختبارات", ["lessons", "tests", "results", "lsearch", "skillcourse", "skillexams", "skillgrade", "examprep"]],
     ["💬", "التواصل والمهام", ["messages", "news", "tasks", "speaking", "ideas", "fluency", "friends"]],
     ["🎓", "الشهادات والمدفوعات", ["certs", "payments"]],
     ["🎨", "الموقع والتصميم", ["designer", "texts", "courses", "themes", "features"]],
@@ -80,6 +80,7 @@
   ];
   var TNAME = {}; TABS.forEach(function (t) { TNAME[t[0]] = t[1]; });
   if (!TNAME.examprep) TNAME.examprep = "IELTS / TOEFL";
+  TNAME.skillcourse = "✍️🎤 دورتا الكتابة والمحادثة"; TNAME.skillexams = "امتحانات المهارات"; TNAME.skillgrade = "تصحيح التمارين";
   if (!TNAME.perf) TNAME.perf = "📈 أداء الطلاب";
   if (!TNAME.friends) TNAME.friends = "الأصدقاء";
   function groupOf(name) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i][2].indexOf(name) >= 0) return i; return 0; }
@@ -1401,6 +1402,117 @@
         $("exTxS").addEventListener("click", async function () { var r = await sb.from("exam_weeks").update({ content: $("exTx").value, updated_at: new Date().toISOString() }).eq("id", cur.id); KZ.toast(r.error ? "تعذر الحفظ." : "تم حفظ النص.", !!r.error); VIEWS.examprep(); });
       });
     }
+  };
+
+  // ---------- Writing / Speaking courses: control ----------
+  VIEWS.skillcourse = async function () {
+    var nm = await nameMap();
+    var CN = { writing: "✍️ دورة الكتابة", speaking: "🎤 دورة المحادثة" };
+    var feats = {}; ((await sb.from("site_features").select("key,enabled").in("key", ["skill_writing", "skill_speaking"])).data || []).forEach(function (f) { feats[f.key] = f.enabled; });
+    var grants = (await sb.from("skill_access_grants").select("*")).data || [];
+    var groups = (await sb.from("student_groups").select("id,name").order("name")).data || [];
+    var S = view._sk || { course: "writing", level: "A1" }; view._sk = S;
+    var lessons = (await sb.from("skill_lessons").select("id,course,level,week,title,title_en,goal,is_open,body").eq("course", S.course).eq("level", S.level).order("week")).data || [];
+    var cnt = {}; (await sb.from("skill_lessons").select("course,level,is_open")).data.forEach(function (l) { var k = l.course + l.level; cnt[k] = cnt[k] || [0, 0]; cnt[k][1]++; if (l.is_open) cnt[k][0]++; });
+    var gr = grants.filter(function (g) { return g.course === S.course; });
+    var h = '<h2>دورتا الكتابة والمحادثة</h2><p class="muted">دورتان منفصلتان (A1 إلى C1، 8 أسابيع لكل مستوى). أنت تقرّر: من يدخل الدورة، وأي أسبوع يُفتح. لا يرى الطالب إلا الدروس المفتوحة لمستواه.</p>' +
+      '<div class="agroups">' + ["writing", "speaking"].map(function (c) { return '<button type="button" data-sc="' + c + '" aria-selected="' + (c === S.course) + '">' + CN[c] + "</button>"; }).join("") + '</div>' +
+      '<div class="tile"><div class="row" style="border:0;padding:0"><div><strong>' + CN[S.course] + '</strong><div class="muted">' + (feats["skill_" + S.course] ? "🟢 مفتوحة لكل الطلاب (حسب مستواهم والدروس المفتوحة)" : "🔒 مغلقة. يدخلها فقط الطلاب الذين تضيفهم بالأسفل") + '</div></div><button class="btn ' + (feats["skill_" + S.course] ? "btn-ghost" : "btn-primary") + '" id="skAll" type="button">' + (feats["skill_" + S.course] ? "إغلاق للجميع" : "فتح لكل الطلاب") + "</button></div>" +
+      '<h4 style="margin:14px 0 6px">طلاب لهم صلاحية خاصة (' + gr.length + ')</h4><div>' + (gr.length ? gr.map(function (g) { return '<span class="vt-chip" style="background:var(--navy)">' + esc(nm.map[g.user_id] ? nm.map[g.user_id].full_name : "طالب") + ' <button type="button" data-skdel="' + g.user_id + '" style="background:rgba(0,0,0,.25);color:#fff;border:0;border-radius:50%;width:18px;height:18px;cursor:pointer">×</button></span> '; }).join("") : '<span class="muted">لا أحد</span>') + "</div>" +
+      '<div class="grid2" style="margin-top:10px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))"><div><label>إضافة طالب</label><select id="skSt"><option value="">— اختر —</option>' + nm.list.filter(function (p) { return !gr.some(function (g) { return g.user_id === p.id; }); }).map(function (p) { return '<option value="' + p.id + '">' + esc(p.full_name) + " (" + esc(p.level) + ")</option>"; }).join("") + '</select></div><div><label>أو مجموعة كاملة</label><select id="skGr"><option value="">— اختر —</option>' + groups.map(function (g) { return '<option value="' + g.id + '">' + esc(g.name) + "</option>"; }).join("") + '</select></div></div><div class="btns" style="margin-top:8px"><button class="btn btn-ghost" id="skAdd" type="button">إضافة</button></div></div>' +
+      '<div class="agroups" style="margin-top:16px">' + ["A1", "A2", "B1", "B2", "C1"].map(function (l) { var c = cnt[S.course + l] || [0, 0]; return '<button type="button" data-sl="' + l + '" aria-selected="' + (l === S.level) + '">' + l + " <small>(" + c[0] + "/" + c[1] + ")</small></button>"; }).join("") + "</div>" +
+      '<div class="btns" style="margin:8px 0"><button class="btn btn-primary sm" id="skOpenAll" type="button">فتح كل أسابيع ' + S.level + '</button><button class="btn btn-ghost sm" id="skCloseAll" type="button">إغلاق الكل</button></div>';
+    h += lessons.length ? lessons.map(function (l) {
+      var b = l.body || {};
+      return '<div class="tile" style="margin-top:8px"><div class="row" style="border:0;padding:0"><div><span class="badge">أسبوع ' + l.week + "</span> <strong>" + esc(l.title) + '</strong> <span class="muted en">' + esc(l.title_en || "") + '</span></div><button class="btn ' + (l.is_open ? "btn-primary" : "btn-ghost") + ' sm" data-sktg="' + esc(l.id) + "|" + (l.is_open ? 0 : 1) + '" type="button">' + (l.is_open ? "🟢 مفتوح · أغلق" : "🔒 مغلق · افتح") + '</button></div><details style="margin-top:6px"><summary class="muted">معاينة المحتوى (' + ((b.ex || []).length) + ' تمارين)</summary><p><strong>الهدف:</strong> ' + esc(l.goal || "") + "</p>" + ((b.points || []).map(function (p) { return "<p><strong>" + esc(p[0]) + ":</strong> " + esc(p[1]) + "</p>"; }).join("")) + (b.model ? '<pre dir="ltr" style="white-space:pre-wrap;text-align:left">' + esc(b.model) + "</pre>" : "") + ((b.ex || []).map(function (x, i) { return "<p><strong>" + (i + 1) + ". [" + x.k + "]</strong> " + esc(x.p || x.ar || x.bad || x.text || "") + "</p>"; }).join("")) + "</details></div>";
+    }).join("") : '<p class="muted">لا دروس بعد لهذا المستوى (تُستورد من الملفات).</p>';
+    view.innerHTML = h;
+    view.querySelectorAll("[data-sc]").forEach(function (b) { b.addEventListener("click", function () { S.course = b.getAttribute("data-sc"); VIEWS.skillcourse(); }); });
+    view.querySelectorAll("[data-sl]").forEach(function (b) { b.addEventListener("click", function () { S.level = b.getAttribute("data-sl"); VIEWS.skillcourse(); }); });
+    $("skAll").addEventListener("click", async function () { var k = "skill_" + S.course, r = await sb.from("site_features").update({ enabled: !feats[k] }).eq("key", k); KZ.toast(r.error ? "تعذر الحفظ." : "تم.", !!r.error); VIEWS.skillcourse(); });
+    $("skAdd").addEventListener("click", async function () {
+      var st = $("skSt").value, g = $("skGr").value, rows = [];
+      if (st) rows.push({ user_id: st, course: S.course });
+      if (g) { var ms = (await sb.from("group_members").select("user_id").eq("group_id", g)).data || []; ms.forEach(function (m) { rows.push({ user_id: m.user_id, course: S.course }); }); }
+      if (!rows.length) { KZ.toast("اختر طالباً أو مجموعة.", true); return; }
+      var r = await sb.from("skill_access_grants").upsert(rows, { onConflict: "user_id,course" }); KZ.toast(r.error ? "تعذر الحفظ." : "أُضيف " + rows.length + " طالب.", !!r.error); VIEWS.skillcourse();
+    });
+    view.querySelectorAll("[data-skdel]").forEach(function (b) { b.addEventListener("click", async function () { await sb.from("skill_access_grants").delete().eq("user_id", b.getAttribute("data-skdel")).eq("course", S.course); VIEWS.skillcourse(); }); });
+    view.querySelectorAll("[data-sktg]").forEach(function (b) { b.addEventListener("click", async function () { var p = b.getAttribute("data-sktg").split("|"); await sb.from("skill_lessons").update({ is_open: p[1] === "1" }).eq("id", p[0]); VIEWS.skillcourse(); }); });
+    $("skOpenAll").addEventListener("click", async function () { await sb.from("skill_lessons").update({ is_open: true }).eq("course", S.course).eq("level", S.level); VIEWS.skillcourse(); });
+    $("skCloseAll").addEventListener("click", async function () { await sb.from("skill_lessons").update({ is_open: false }).eq("course", S.course).eq("level", S.level); VIEWS.skillcourse(); });
+  };
+
+  // ---------- timed skill exams ----------
+  VIEWS.skillexams = async function () {
+    var nm = await nameMap();
+    var groups = (await sb.from("student_groups").select("id,name").order("name")).data || [];
+    var F = view._skx || { kind: "", level: "", st: "" }; view._skx = F;
+    var q = sb.from("skill_exams").select("*").order("status").order("level").order("id");
+    var exams = (await q).data || [];
+    var atts = (await sb.from("skill_exam_attempts").select("*").order("started_at", { ascending: false })).data || [];
+    var ST = { draft: "مسودة (غير ظاهرة)", open: "🟢 مفتوح الآن", closed: "مغلق" };
+    var shown = exams.filter(function (e) { return (!F.kind || e.kind === F.kind) && (!F.level || e.level === F.level) && (!F.st || e.status === F.st); });
+    var opts = function (arr, val, all) { return '<option value="">' + all + "</option>" + arr.map(function (a) { return '<option value="' + a[0] + '"' + (val === a[0] ? " selected" : "") + ">" + a[1] + "</option>"; }).join(""); };
+    var h = '<h2>امتحانات الكتابة والمحادثة</h2><p class="muted">بنك امتحانات جاهز (مسودات). اختر امتحاناً واضغط «افتح الآن»: يظهر للطلاب فوراً ويصلهم تنبيه، وتبدأ مدته من لحظة دخول كل طالب. أغلقه متى شئت. يمكنك تعديل النص والمدة أو إنشاء امتحان جديد.</p>' +
+      '<div class="tile form"><div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))"><div><label>النوع</label><select id="fxK">' + opts([["writing", "كتابة"], ["speaking", "محادثة"]], F.kind, "الكل") + '</select></div><div><label>المستوى</label><select id="fxL">' + opts(["A1", "A2", "B1", "B2", "C1"].map(function (x) { return [x, x]; }), F.level, "الكل") + '</select></div><div><label>الحالة</label><select id="fxS">' + opts([["draft", "مسودة"], ["open", "مفتوح"], ["closed", "مغلق"]], F.st, "الكل") + '</select></div></div></div>' +
+      '<details class="tile" style="margin-top:12px"><summary><strong>➕ إنشاء امتحان جديد</strong></summary><form class="form" id="fxNew"><div class="grid2"><div><label>النوع</label><select id="nK"><option value="writing">كتابة</option><option value="speaking">محادثة</option></select></div><div><label>المستوى (أو الكل)</label><select id="nL"><option value="">كل المستويات</option>' + ["A1", "A2", "B1", "B2", "C1"].map(function (l) { return "<option>" + l + "</option>"; }).join("") + '</select></div></div><label>العنوان</label><input id="nT" required><label>نص السؤال</label><textarea id="nP" rows="4" required></textarea><label>مشهد/صورة (إيموجي اختياري)</label><input id="nSc"><div class="grid2"><div><label>المدة (دقيقة)</label><input id="nM" type="number" min="5" max="120" value="25"></div><div><label>أقل عدد كلمات</label><input id="nW" type="number" min="0" value="0"></div></div><label>مجموعة (اختياري)</label><select id="nG"><option value="">الكل</option>' + groups.map(function (g) { return '<option value="' + g.id + '">' + esc(g.name) + "</option>"; }).join("") + '</select><button class="btn btn-primary" type="submit">حفظ كمسودة</button></form></details>';
+    h += shown.length ? shown.map(function (e) {
+      var as = atts.filter(function (a) { return a.exam_id === e.id; });
+      return '<div class="tile" style="margin-top:10px"><div class="row" style="border:0;padding:0"><div><span class="badge gold">' + (e.kind === "writing" ? "✍️ كتابة" : "🎤 محادثة") + "</span> <span class=\"badge\">" + (e.level || "الكل") + "</span> <strong>" + esc(e.title) + '</strong><div class="muted">' + ST[e.status] + " · " + e.minutes + " دقيقة" + (as.length ? " · " + as.length + " مشاركة" : "") + '</div></div><div class="btns">' +
+        (e.status !== "open" ? '<button class="btn btn-primary sm" data-fxo="' + e.id + '" type="button">▶ افتح الآن</button>' : '<button class="btn btn-ghost sm" data-fxc="' + e.id + '" type="button">⏹ أغلق</button>') + '<button class="btn btn-ghost sm" data-fxd="' + e.id + '" type="button">🗑</button></div></div>' +
+        '<details style="margin-top:6px"><summary class="muted">النص والتعديل' + (as.length ? " والمشاركات" : "") + '</summary><div class="form"><label>العنوان</label><input data-ft="' + e.id + '" value="' + esc(e.title) + '"><label>السؤال</label><textarea rows="4" data-fp="' + e.id + '">' + esc(e.prompt) + '</textarea><div class="grid2"><div><label>المدة (دقيقة)</label><input type="number" data-fm="' + e.id + '" value="' + e.minutes + '"></div><div><label>أقل كلمات</label><input type="number" data-fw="' + e.id + '" value="' + e.min_words + '"></div></div><button class="btn btn-ghost sm" data-fsv="' + e.id + '" type="button">حفظ التعديل</button></div>' +
+        as.map(function (a) {
+          var n = nm.map[a.user_id] ? nm.map[a.user_id].full_name : "طالب", sc = a.scores || [];
+          return '<div class="row" style="display:block;border-top:1px solid var(--line);margin-top:10px;padding-top:10px"><strong>' + esc(n) + '</strong> <span class="muted">' + (a.submitted_at ? "سلّم" + (a.late ? " (متأخر ⚠️)" : "") : "لم يسلّم بعد") + "</span>" + (a.graded_at ? ' <span class="badge ok">' + a.total + "/20</span>" : "") +
+            (a.body ? '<pre dir="ltr" style="white-space:pre-wrap;text-align:left;background:var(--surface);padding:8px;border-radius:8px">' + esc(a.body) + "</pre>" : "") + (a.audio_path ? '<div><button class="btn btn-ghost sm" data-fxau="' + esc(a.audio_path) + '" type="button">▶ استمع</button><audio hidden controls style="width:100%"></audio></div>' : "") +
+            '<div class="grid2" style="grid-template-columns:repeat(4,1fr);margin-top:6px">' + ["المحتوى", "التنظيم", "اللغة", "الدقة"].map(function (c, i) { return '<div><label>' + c + " /5</label><input type=\"number\" min=\"0\" max=\"5\" step=\"0.5\" data-fg=\"" + a.id + "|" + i + "\" value=\"" + (sc[i] != null ? sc[i] : "") + '"></div>'; }).join("") + '</div><label>تعليقك</label><textarea rows="2" data-ffb="' + a.id + '">' + esc(a.feedback || "") + '</textarea><button class="btn btn-primary sm" data-fgs="' + a.id + '" type="button">حفظ التصحيح</button></div>';
+        }).join("") + "</details></div>";
+    }).join("") : '<p class="muted" style="margin-top:12px">لا امتحانات بهذه المواصفات.</p>';
+    view.innerHTML = h;
+    ["fxK", "fxL", "fxS"].forEach(function (id) { $(id).addEventListener("change", function () { F.kind = $("fxK").value; F.level = $("fxL").value; F.st = $("fxS").value; VIEWS.skillexams(); }); });
+    $("fxNew").addEventListener("submit", async function (ev) {
+      ev.preventDefault();
+      var r = await sb.from("skill_exams").insert({ kind: $("nK").value, level: $("nL").value || null, title: $("nT").value.trim(), prompt: $("nP").value.trim(), scene: $("nSc").value.trim() || null, minutes: Number($("nM").value) || 25, min_words: Number($("nW").value) || 0, group_id: $("nG").value ? Number($("nG").value) : null });
+      KZ.toast(r.error ? "تعذر الحفظ." : "حُفظ كمسودة.", !!r.error); VIEWS.skillexams();
+    });
+    view.querySelectorAll("[data-fxo]").forEach(function (b) { b.addEventListener("click", async function () { if (!confirm("فتح هذا الامتحان للطلاب الآن؟ سيصلهم تنبيه.")) return; var r = await sb.from("skill_exams").update({ status: "open" }).eq("id", b.getAttribute("data-fxo")); KZ.toast(r.error ? "تعذر الفتح." : "فُتح الامتحان للطلاب ✅", !!r.error); VIEWS.skillexams(); }); });
+    view.querySelectorAll("[data-fxc]").forEach(function (b) { b.addEventListener("click", async function () { await sb.from("skill_exams").update({ status: "closed" }).eq("id", b.getAttribute("data-fxc")); VIEWS.skillexams(); }); });
+    view.querySelectorAll("[data-fxd]").forEach(function (b) { b.addEventListener("click", async function () { if (!confirm("حذف الامتحان وكل مشاركاته؟")) return; await sb.from("skill_exams").delete().eq("id", b.getAttribute("data-fxd")); VIEWS.skillexams(); }); });
+    view.querySelectorAll("[data-fsv]").forEach(function (b) { b.addEventListener("click", async function () { var id = b.getAttribute("data-fsv"), g = function (p) { return view.querySelector("[" + p + "=\"" + id + "\"]").value; }; var r = await sb.from("skill_exams").update({ title: g("data-ft"), prompt: g("data-fp"), minutes: Number(g("data-fm")) || 25, min_words: Number(g("data-fw")) || 0 }).eq("id", id); KZ.toast(r.error ? "تعذر الحفظ." : "تم.", !!r.error); }); });
+    view.querySelectorAll("[data-fxau]").forEach(function (b) { b.addEventListener("click", async function () { var r = await sb.storage.from("task-audio").createSignedUrl(b.getAttribute("data-fxau"), 600); if (r.error) { KZ.toast("تعذر فتح التسجيل.", true); return; } var a = b.parentNode.querySelector("audio"); a.src = r.data.signedUrl; a.hidden = false; a.play(); }); });
+    view.querySelectorAll("[data-fgs]").forEach(function (b) { b.addEventListener("click", async function () {
+      var id = b.getAttribute("data-fgs"), sc = [0, 1, 2, 3].map(function (i) { var v = view.querySelector("[data-fg=\"" + id + "|" + i + "\"]").value; return v === "" ? null : Number(v); });
+      var tot = sc.reduce(function (s, x) { return s + (x || 0); }, 0);
+      var r = await sb.from("skill_exam_attempts").update({ scores: sc, total: tot, feedback: view.querySelector("[data-ffb=\"" + id + "\"]").value.trim() || null, graded_at: new Date().toISOString() }).eq("id", id);
+      KZ.toast(r.error ? "تعذر الحفظ." : "تم حفظ التصحيح (" + tot + "/20).", !!r.error); }); });
+  };
+
+  // ---------- grading of course exercises ----------
+  VIEWS.skillgrade = async function () {
+    var nm = await nameMap();
+    var showAll = view._sg || false;
+    var q = sb.from("skill_submissions").select("*").order("created_at", { ascending: false }).limit(120);
+    if (!showAll) q = q.is("graded_at", null);
+    var subs = (await q).data || [];
+    var ids = Array.from(new Set(subs.map(function (s) { return s.lesson_id; })));
+    var ls = {}; if (ids.length) ((await sb.from("skill_lessons").select("id,title,course,level,body").in("id", ids)).data || []).forEach(function (l) { ls[l.id] = l; });
+    var h = '<h2>تصحيح تمارين الدورتين</h2><p class="muted">كل ما سلّمه الطلاب من تمارين الكتابة والمحادثة. صحّح بدرجة من 10 وتعليق قصير.</p><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="sgAll"' + (showAll ? " checked" : "") + '> أظهر المصحَّحة أيضاً</label>';
+    h += subs.length ? subs.map(function (s) {
+      var l = ls[s.lesson_id] || {}, x = ((l.body || {}).ex || [])[s.ex] || {};
+      return '<div class="tile" style="margin-top:10px"><div class="row" style="border:0;padding:0"><div><strong>' + esc(nm.map[s.user_id] ? nm.map[s.user_id].full_name : "طالب") + '</strong> <span class="badge">' + esc(l.level || "") + " · " + (l.course === "writing" ? "كتابة" : "محادثة") + '</span><div class="muted">' + esc(l.title || s.lesson_id) + " — تمرين " + (s.ex + 1) + " (" + esc(s.kind) + ")</div></div>" + (s.graded_at ? '<span class="badge ok">' + (s.score != null ? s.score + "/10" : "صُحّح") + "</span>" : "") + "</div>" +
+        '<p class="muted" style="margin:6px 0">' + esc(x.p || x.ar || x.bad || x.text || "") + "</p>" +
+        (s.body ? '<pre dir="ltr" style="white-space:pre-wrap;text-align:left;background:var(--surface);padding:8px;border-radius:8px">' + esc(s.body) + "</pre>" : "") + (x.model || x.good ? '<div class="muted" dir="ltr" style="text-align:left">Model: ' + esc(x.model || x.good) + "</div>" : "") +
+        (s.audio_path ? '<div><button class="btn btn-ghost sm" data-sgau="' + esc(s.audio_path) + '" type="button">▶ استمع</button><audio hidden controls style="width:100%"></audio></div>' : "") +
+        '<div class="grid2" style="margin-top:6px;grid-template-columns:100px 1fr"><div><label>الدرجة /10</label><input type="number" min="0" max="10" step="0.5" data-sgs="' + s.id + '" value="' + (s.score == null ? "" : s.score) + '"></div><div><label>تعليقك</label><input data-sgf="' + s.id + '" value="' + esc(s.feedback || "") + '"></div></div><button class="btn btn-primary sm" data-sgsv="' + s.id + '" type="button">حفظ</button></div>';
+    }).join("") : '<p class="muted" style="margin-top:12px">لا تمارين بانتظار التصحيح 🎉</p>';
+    view.innerHTML = h;
+    $("sgAll").addEventListener("change", function () { view._sg = this.checked; VIEWS.skillgrade(); });
+    view.querySelectorAll("[data-sgau]").forEach(function (b) { b.addEventListener("click", async function () { var r = await sb.storage.from("task-audio").createSignedUrl(b.getAttribute("data-sgau"), 600); if (r.error) { KZ.toast("تعذر فتح التسجيل.", true); return; } var a = b.parentNode.querySelector("audio"); a.src = r.data.signedUrl; a.hidden = false; a.play(); }); });
+    view.querySelectorAll("[data-sgsv]").forEach(function (b) { b.addEventListener("click", async function () {
+      var id = b.getAttribute("data-sgsv"), sc = view.querySelector("[data-sgs=\"" + id + "\"]").value, fb = view.querySelector("[data-sgf=\"" + id + "\"]").value.trim();
+      var r = await sb.from("skill_submissions").update({ score: sc === "" ? null : Number(sc), feedback: fb || null, graded_at: new Date().toISOString() }).eq("id", id);
+      KZ.toast(r.error ? "تعذر الحفظ." : "تم الحفظ ✅", !!r.error); VIEWS.skillgrade(); }); });
   };
 
   go((location.hash || "#students").slice(1));
