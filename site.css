@@ -416,3 +416,12 @@ html{scrollbar-color:#B8963A transparent;scrollbar-width:thin}
 .cert-mini .cm-emb{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:16px;color:#0B1F44;background:linear-gradient(135deg,#F9E7A8,#C8A24A);box-shadow:0 0 0 3px #0B1F44,0 0 0 4.5px #C8A24A}
 @keyframes cmSpin{to{transform:rotate(360deg)}}@keyframes cmBar{from{transform:scaleX(0);transform-origin:left}to{transform:scaleX(1);transform-origin:left}}
 @media (prefers-reduced-motion:reduce){.cert-mini *{animation:none!important}}
+
+/* ===== video blocks ===== */
+.blk-video{width:100%;border-radius:calc(var(--blk-r,14px) - 4px);overflow:hidden;background:#000}
+.blk-video video{display:block;width:100%;height:auto;max-height:640px;object-fit:contain;margin:0 auto}
+.blk-video.yt{aspect-ratio:16/9}.blk-video.yt.vert{aspect-ratio:9/16;max-width:380px;margin:0 auto}
+.blk-video iframe{display:block;width:100%;height:100%;border:0}
+.blk-pos-side .blk-video{flex:0 0 48%;max-width:48%}
+.blk-image .blk-video{border-radius:0}
+@media (max-width:700px){.blk-pos-side .blk-video{flex-basis:auto;max-width:100%}}

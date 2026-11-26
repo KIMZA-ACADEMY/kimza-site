@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxn9iug">
-<link rel="stylesheet" href="app.css?v=mwxn9iug">
+<link rel="stylesheet" href="site.css?v=mwxz6wdz">
+<link rel="stylesheet" href="app.css?v=mwxz6wdz">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,9 +24,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxn9iug"></script>
-<script src="portal-i18n.js?v=mwxn9iug"></script>
-<script src="i18n.js?v=mwxn9iug"></script>
+<script src="app.js?v=mwxz6wdz"></script>
+<script src="portal-i18n.js?v=mwxz6wdz"></script>
+<script src="i18n.js?v=mwxz6wdz"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -793,6 +793,7 @@
     f += '<div><label>العنوان</label><input name="title" value="' + esc(b.title || "") + '"></div>';
     f += '<div><label>النص</label><textarea name="body" rows="3">' + esc(b.body || "") + "</textarea></div>";
     f += '<div><label>الصورة</label><input type="hidden" name="image_url" value="' + esc(b.image_url || "") + '"><div class="btns"><label class="btn btn-ghost sm" style="cursor:pointer">رفع صورة<input type="file" accept="image/*" data-bi="' + b.id + '" style="display:none"></label><button type="button" class="btn btn-ghost sm" data-bx="' + b.id + '">إزالة الصورة</button></div><div class="muted" data-bp="' + b.id + '">' + (b.image_url ? '<img src="' + esc(b.image_url) + '" alt="" style="max-width:220px;max-height:140px;border-radius:10px;margin-top:8px">' : "لا توجد صورة") + "</div></div>";
+    f += '<div><label>🎬 فيديو بدل الصورة (اختياري)</label><input name="video_url" dir="ltr" value="' + esc(st.video || "") + '" placeholder="رابط يوتيوب أو رابط ملف MP4"><div class="btns" style="margin-top:6px"><label class="btn btn-ghost sm" style="cursor:pointer">رفع فيديو MP4 (حتى 50 ميغا)<input type="file" accept="video/mp4,video/webm" data-bv="' + b.id + '" style="display:none"></label><button type="button" class="btn btn-ghost sm" data-bvx="' + b.id + '">إزالة الفيديو</button></div><div class="muted" style="font-size:.85rem">إن وُجد فيديو فسيظهر مكان الصورة. يوتيوب: الصق الرابط. ملف: ارفعه ثم اضغط «حفظ».</div></div>';
     f += '<div><label>زر الإجراء يوجّه إلى</label>' + sel("cta_type", [["none", "بدون زر"]].concat(CTA), b.cta_type || "none") + "</div>";
     f += '<div><label>نص الزر</label><input name="cta_label" value="' + esc(b.cta_label || "") + '"></div><div><label>الرابط أو رقم واتساب</label><input name="cta_url" dir="ltr" value="' + esc(b.cta_url || "") + '"></div>';
     f += "<h4>الشكل</h4>";
@@ -863,10 +864,22 @@
         form.elements.image_url.value = url; view.querySelector('[data-bp="' + id + '"]').innerHTML = '<img src="' + url + '" alt="" style="max-width:220px;max-height:140px;border-radius:10px;margin-top:8px">';
         KZ.toast("تم رفع الصورة. اضغط «حفظ» لتثبيتها.");
       } catch (e) { KZ.toast("تعذر رفع الصورة: " + e.message, true); } }); });
+    view.querySelectorAll("[data-bv]").forEach(function (inp) { inp.addEventListener("change", async function () {
+      var f = inp.files[0]; if (!f) return; var id = inp.getAttribute("data-bv"), form = view.querySelector('[data-bf="' + id + '"]');
+      if (f.size > 50 * 1024 * 1024) { KZ.toast("الفيديو أكبر من 50 ميغا. ضغطه أو ارفعه على يوتيوب والصق الرابط.", true); return; }
+      KZ.toast("جارٍ رفع الفيديو... قد يستغرق دقيقة");
+      try {
+        var name = "v" + id + "-" + Date.now().toString(36) + (/webm$/i.test(f.name) ? ".webm" : ".mp4");
+        var up = await sb.storage.from("site-images").upload(name, f, { contentType: f.type || "video/mp4", upsert: true });
+        if (up.error) throw new Error(up.error.message);
+        form.elements.video_url.value = window.KIMZA_SUPABASE.url + "/storage/v1/object/public/site-images/" + name;
+        KZ.toast("تم رفع الفيديو. اضغط «حفظ» لتثبيته.");
+      } catch (e) { KZ.toast("تعذر رفع الفيديو: " + e.message, true); } }); });
+    view.querySelectorAll("[data-bvx]").forEach(function (b) { b.addEventListener("click", function () { view.querySelector('[data-bf="' + b.getAttribute("data-bvx") + '"]').elements.video_url.value = ""; KZ.toast("أُزيل الفيديو. اضغط «حفظ»."); }); });
     view.querySelectorAll("[data-bx]").forEach(function (b) { b.addEventListener("click", function () { var id = b.getAttribute("data-bx"); view.querySelector('[data-bf="' + id + '"]').elements.image_url.value = ""; view.querySelector('[data-bp="' + id + '"]').textContent = "لا توجد صورة"; }); });
     view.querySelectorAll("[data-bf]").forEach(function (f) { f.addEventListener("submit", async function (e) {
       e.preventDefault(); var el = f.elements, id = Number(f.getAttribute("data-bf"));
-      var style = { bg: el.bg.value, bgc: el.bgc.value, align: el.align.value, imgPos: el.imgPos.value, size: el.size.value, radius: el.radius.value, width: el.width.value, badge: el.badge.value.trim() };
+      var style = { bg: el.bg.value, bgc: el.bgc.value, align: el.align.value, imgPos: el.imgPos.value, size: el.size.value, radius: el.radius.value, width: el.width.value, badge: el.badge.value.trim(), video: el.video_url.value.trim() };
       var r2 = await sb.from("site_blocks").update({ title: el.title.value.trim() || null, body: el.body.value.trim() || null, image_url: el.image_url.value || null, cta_type: el.cta_type.value, cta_label: el.cta_label.value.trim() || null, cta_url: el.cta_url.value.trim() || null, style: style }).eq("id", id);
       KZ.toast(r2.error ? "تعذر الحفظ." : "تم الحفظ.", !!r2.error); if (!r2.error) VIEWS.designer(); }); });
   };

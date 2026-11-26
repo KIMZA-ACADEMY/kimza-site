@@ -129,9 +129,17 @@
       if (t === "whatsapp") return "https://wa.me/" + u.replace(/\D/g, "");
       return u || null;
     }
+    function videoHtml(u) {
+      u = String(u || "").trim(); if (!/^https:\/\//.test(u)) return "";
+      var m = /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/.exec(u);
+      if (m) return '<div class="blk-video yt' + (/shorts\//.test(u) ? " vert" : "") + '"><iframe src="https://www.youtube-nocookie.com/embed/' + m[1] + '?rel=0" title="video" loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>';
+      if (/\.(mp4|webm|mov)(\?|#|$)/i.test(u)) return '<div class="blk-video"><video controls playsinline preload="metadata" src="' + esc(u) + '"></video></div>';
+      return "";
+    }
     function renderBlock(b) {
       var st = b.style || {}, bg = st.bg === "custom" ? (st.bgc || "#0B1F44") : (PRESET[st.bg] || PRESET.navy);
-      var dark = isDark(bg), rad = st.radius == null ? "14" : st.radius, size = st.size || "m", pos = b.image_url ? (st.imgPos || "side") : "none";
+      var dark = isDark(bg), rad = st.radius == null ? "14" : st.radius, size = st.size || "m", pos = (b.image_url || st.video) ? (st.imgPos || "side") : "none";
+      var vh = videoHtml(st.video); if (vh && pos !== "side") pos = "top";
       var href = ctaHref(b), lab = b.cta_label || "المزيد";
       var ext = href && /^https?:/.test(href) ? ' target="_blank" rel="noopener"' : "";
       var btn = href ? '<a class="btn btn-primary" href="' + esc(href) + '"' + ext + ">" + esc(lab) + "</a>" : "";
@@ -139,7 +147,7 @@
       el.className = "blk blk-" + b.kind + " blk-" + size + (st.width === "narrow" ? " blk-narrow" : "") + (dark ? " blk-dark" : " blk-light") + " blk-pos-" + pos + (st.align === "center" ? " blk-center" : "");
       el.style.setProperty("--blk-bg", bg); el.style.setProperty("--blk-r", rad + "px");
       if (pos === "bg") el.style.backgroundImage = "linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.45)),url('" + b.image_url.replace(/'/g, "%27") + "')";
-      var img = (b.image_url && pos !== "bg" && pos !== "none") ? '<img class="blk-img" src="' + esc(b.image_url) + '" alt="" loading="lazy">' : "";
+      var img = vh || ((b.image_url && pos !== "bg" && pos !== "none") ? '<img class="blk-img" src="' + esc(b.image_url) + '" alt="" loading="lazy">' : "");
       var txt = "";
       if (b.kind === "image") txt = b.title ? '<p class="blk-cap">' + esc(b.title) + "</p>" : "";
       else txt = (st.badge ? '<span class="adbadge">' + esc(st.badge) + "</span>" : "") + (b.title ? "<h2>" + esc(b.title) + "</h2>" : "") + (b.body ? "<p>" + esc(b.body).replace(/\n/g, "<br>") + "</p>" : "") + btn;
