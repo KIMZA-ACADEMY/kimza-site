@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxdopwh">
-<link rel="stylesheet" href="app.css?v=mwxdopwh">
+<link rel="stylesheet" href="site.css?v=mwxdur32">
+<link rel="stylesheet" href="app.css?v=mwxdur32">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxdopwh"></script>
-<script src="portal-i18n.js?v=mwxdopwh"></script>
-<script src="i18n.js?v=mwxdopwh"></script>
+<script src="app.js?v=mwxdur32"></script>
+<script src="portal-i18n.js?v=mwxdur32"></script>
+<script src="i18n.js?v=mwxdur32"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -73,14 +73,14 @@
   var GROUPS = [
     ["👥", "الطلاب", ["perf", "students", "applications", "groups", "attendance", "follow"]],
     ["📚", "الدروس والاختبارات", ["lessons", "tests", "results", "lsearch", "skillcourse", "skillexams", "skillgrade", "examprep"]],
-    ["💬", "التواصل والمهام", ["messages", "news", "tasks", "speaking", "ideas", "fluency", "friends"]],
+    ["💬", "التواصل والمهام", ["dtasks", "messages", "news", "tasks", "speaking", "ideas", "fluency", "friends"]],
     ["🎓", "الشهادات والمدفوعات", ["certs", "payments"]],
     ["🎨", "الموقع والتصميم", ["designer", "texts", "courses", "themes", "features"]],
     ["⚙️", "الإعدادات", ["settings"]]
   ];
   var TNAME = {}; TABS.forEach(function (t) { TNAME[t[0]] = t[1]; });
   if (!TNAME.examprep) TNAME.examprep = "IELTS / TOEFL";
-  TNAME.skillcourse = "✍️🎤 دورتا الكتابة والمحادثة"; TNAME.skillexams = "امتحانات المهارات"; TNAME.skillgrade = "تصحيح التمارين";
+  TNAME.dtasks = "✅ مهام الطلاب اليومية"; TNAME.skillcourse = "✍️🎤 دورتا الكتابة والمحادثة"; TNAME.skillexams = "امتحانات المهارات"; TNAME.skillgrade = "تصحيح التمارين";
   if (!TNAME.perf) TNAME.perf = "📈 أداء الطلاب";
   if (!TNAME.friends) TNAME.friends = "الأصدقاء";
   function groupOf(name) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i][2].indexOf(name) >= 0) return i; return 0; }
@@ -1513,6 +1513,66 @@
       var id = b.getAttribute("data-sgsv"), sc = view.querySelector("[data-sgs=\"" + id + "\"]").value, fb = view.querySelector("[data-sgf=\"" + id + "\"]").value.trim();
       var r = await sb.from("skill_submissions").update({ score: sc === "" ? null : Number(sc), feedback: fb || null, graded_at: new Date().toISOString() }).eq("id", id);
       KZ.toast(r.error ? "تعذر الحفظ." : "تم الحفظ ✅", !!r.error); VIEWS.skillgrade(); }); });
+  };
+
+  // ---------- teacher-managed student tasks ("مهامك اليوم") ----------
+  VIEWS.dtasks = async function () {
+    var nm = await nameMap();
+    var groups = (await sb.from("student_groups").select("id,name").order("name")).data || [];
+    var exams = (await sb.from("skill_exams").select("id,title,kind,level,status,minutes").order("level").order("id")).data || [];
+    var F = view._dt || { who: "" }; view._dt = F;
+    var tq = sb.from("dtasks").select("*").order("created_at", { ascending: false }).limit(300);
+    if (F.who) tq = tq.eq("user_id", F.who);
+    var tasks = (await tq).data || [];
+    var done = (await sb.from("dtask_done").select("task_id,user_id")).data || [];
+    var dc = {}; done.forEach(function (d) { dc[d.task_id] = (dc[d.task_id] || 0) + 1; });
+    function aud(t) { if (t.user_id) return "👤 " + esc(nm.map[t.user_id] ? nm.map[t.user_id].full_name : "طالب"); var p = []; if (t.level) p.push("المستوى " + t.level); if (t.group_id) { var g = groups.filter(function (x) { return x.id === t.group_id; })[0]; p.push("مجموعة " + (g ? g.name : "")); } return "👥 " + (p.length ? esc(p.join(" · ")) : "كل الطلاب"); }
+    var stOpts = nm.list.map(function (p) { return '<option value="' + p.id + '">' + esc(p.full_name) + " (" + esc(p.level) + ")</option>"; }).join("");
+    var h = '<h2>مهام الطلاب اليومية</h2><p class="muted">تظهر في «مهامك اليوم» عند الطالب. تضيف وتعدّل وتحذف، وتخصّص مهمة لطالب بعينه، وتعيّن له امتحاناً محدداً يظهر في لوحته دون أن يُفتح لغيره. يصله تنبيه عند الإضافة.</p>' +
+      '<div class="tile form"><h3 style="margin:0 0 8px">➕ مهمة جديدة</h3><form id="dtNew"><label for="dtT">العنوان</label><input id="dtT" required maxlength="200"><label for="dtD">التفاصيل (اختياري)</label><textarea id="dtD" rows="2"></textarea>' +
+      '<div class="grid2"><div><label for="dtK">النوع</label><select id="dtK"><option value="custom">مهمة عادية</option><option value="skill_exam">امتحان (كتابة/محادثة)</option></select></div><div id="dtExW" hidden><label for="dtEx">الامتحان</label><select id="dtEx"><option value="">— اختر —</option>' + exams.map(function (e) { return '<option value="' + e.id + '">' + (e.kind === "writing" ? "✍️" : "🎤") + " " + esc(e.title) + " (" + (e.level || "الكل") + ")</option>"; }).join("") + '</select></div><div id="dtLkW"><label for="dtLk">رابط (اختياري)</label><input id="dtLk" dir="ltr" placeholder="lesson.html?id=…  أو  https://…"></div></div>' +
+      '<div class="grid2"><div><label for="dtA">لمن؟</label><select id="dtA"><option value="all">كل الطلاب</option><option value="level">مستوى</option><option value="group">مجموعة</option><option value="users">طلاب محددون</option></select></div><div id="dtLvW" hidden><label for="dtLv">المستوى</label><select id="dtLv">' + ["A1", "A2", "B1", "B2", "C1"].map(function (l) { return "<option>" + l + "</option>"; }).join("") + '</select></div><div id="dtGrW" hidden><label for="dtGr">المجموعة</label><select id="dtGr">' + groups.map(function (g) { return '<option value="' + g.id + '">' + esc(g.name) + "</option>"; }).join("") + '</select></div><div id="dtUsW" hidden><label for="dtUs">الطلاب (اضغط Ctrl لاختيار أكثر من واحد)</label><select id="dtUs" multiple size="7">' + stOpts + '</select></div></div>' +
+      '<label for="dtDue">موعد التسليم (اختياري)</label><input id="dtDue" type="datetime-local"><div class="btns" style="margin-top:8px"><button class="btn btn-primary" type="submit">إضافة المهمة</button></div></form></div>' +
+      '<details class="tile" style="margin-top:12px"><summary><strong>📋 لصق من Excel</strong> (عدة طلاب دفعة واحدة)</summary><p class="muted">انسخ أعمدة من Excel والصقها هنا. كل سطر: <strong>رقم الطالب (أو اسم المستخدم أو اسمه) ← عنوان المهمة ← تفاصيل (اختياري)</strong>. الفاصل بين الأعمدة Tab (كما في Excel) أو فاصلة أو |.</p><textarea id="dtX" rows="6" dir="auto" placeholder="776258366&#9;اقرأ القصة 5 مرات&#9;الدرس 4&#10;784979244&#9;سلّم الواجب"></textarea><div class="btns" style="margin-top:8px"><button class="btn btn-primary" id="dtXs" type="button">إنشاء المهام</button></div><div id="dtXr" class="muted"></div></details>' +
+      '<h3 style="margin-top:18px">المهام الحالية</h3><div class="tile form"><label for="dtW">عرض مهام طالب محدد</label><select id="dtW"><option value="">الكل</option>' + stOpts.replace('value="' + F.who + '"', 'value="' + F.who + '" selected') + '</select></div>';
+    h += tasks.length ? tasks.map(function (t) {
+      var ex = t.exam_id ? exams.filter(function (e) { return e.id === t.exam_id; })[0] : null;
+      return '<div class="tile" style="margin-top:8px;' + (t.active ? "" : "opacity:.55") + '"><div class="row" style="border:0;padding:0"><div><strong>' + (t.kind === "skill_exam" ? "📝 " : "✅ ") + esc(t.title) + '</strong> <span class="badge">' + aud(t) + '</span>' + (ex ? ' <span class="badge gold">' + esc(ex.title) + "</span>" : "") + '<div class="muted">' + esc(t.details || "") + (t.due_at ? " · التسليم " + new Date(t.due_at).toLocaleString("ar", { dateStyle: "short", timeStyle: "short" }) : "") + " · أنجزها " + (dc[t.id] || 0) + '</div></div><div class="btns"><button class="btn btn-ghost sm" data-dted="' + t.id + '" type="button">تعديل</button><button class="btn btn-ghost sm" data-dtact="' + t.id + "|" + (t.active ? 0 : 1) + '" type="button">' + (t.active ? "إخفاء" : "تفعيل") + '</button><button class="btn btn-ghost sm" data-dtdel="' + t.id + '" type="button">🗑</button></div></div></div>';
+    }).join("") : '<p class="muted">لا مهام بعد.</p>';
+    view.innerHTML = h;
+    function sync() { var a = $("dtA").value, k = $("dtK").value; $("dtLvW").hidden = a !== "level"; $("dtGrW").hidden = a !== "group"; $("dtUsW").hidden = a !== "users"; $("dtExW").hidden = k !== "skill_exam"; $("dtLkW").hidden = k === "skill_exam"; }
+    $("dtA").addEventListener("change", sync); $("dtK").addEventListener("change", sync); sync();
+    $("dtW").addEventListener("change", function () { F.who = this.value; VIEWS.dtasks(); });
+    $("dtNew").addEventListener("submit", async function (ev) {
+      ev.preventDefault();
+      var a = $("dtA").value, k = $("dtK").value, base = { title: $("dtT").value.trim(), details: $("dtD").value.trim() || null, kind: k, due_at: $("dtDue").value ? new Date($("dtDue").value).toISOString() : null };
+      if (k === "skill_exam") { if (!$("dtEx").value) { KZ.toast("اختر الامتحان.", true); return; } base.exam_id = Number($("dtEx").value); } else base.link = $("dtLk").value.trim() || null;
+      var rows = [];
+      if (a === "users") { var sel = Array.from($("dtUs").selectedOptions).map(function (o) { return o.value; }); if (!sel.length) { KZ.toast("اختر طالباً على الأقل.", true); return; } rows = sel.map(function (u) { return Object.assign({ user_id: u }, base); }); }
+      else if (a === "level") rows = [Object.assign({ level: $("dtLv").value }, base)];
+      else if (a === "group") rows = [Object.assign({ group_id: Number($("dtGr").value) }, base)];
+      else rows = [base];
+      var r = await sb.from("dtasks").insert(rows); KZ.toast(r.error ? "تعذر الحفظ." : "أُضيفت المهمة (" + rows.length + ") وأُرسل التنبيه ✅", !!r.error); if (!r.error) VIEWS.dtasks();
+    });
+    $("dtXs").addEventListener("click", async function () {
+      var lines = $("dtX").value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean), rows = [], bad = [];
+      function norm(s) { return String(s || "").toLowerCase().replace(/[\s‏‎]/g, "").replace(/^\+?(967|225)/, ""); }
+      lines.forEach(function (ln) {
+        var c = ln.indexOf("\t") >= 0 ? ln.split("\t") : ln.indexOf("|") >= 0 ? ln.split("|") : ln.split(/[,،]/);
+        var who = norm(c[0]), p = nm.list.filter(function (x) { return norm(x.username) === who || norm(x.full_name) === who; })[0];
+        if (!p || !(c[1] || "").trim()) { bad.push(ln); return; }
+        rows.push({ user_id: p.id, title: c[1].trim(), details: (c.slice(2).join(" ").trim()) || null, kind: "custom" });
+      });
+      if (rows.length) { var r = await sb.from("dtasks").insert(rows); if (r.error) { $("dtXr").textContent = "تعذر الحفظ."; return; } }
+      $("dtXr").innerHTML = "✅ أُنشئت " + rows.length + " مهمة." + (bad.length ? ' <span style="color:#c62828">لم أجد الطالب أو العنوان في: ' + esc(bad.join(" ⏎ ")) + "</span>" : ""); if (rows.length) setTimeout(VIEWS.dtasks, 1500);
+    });
+    view.querySelectorAll("[data-dtdel]").forEach(function (b) { b.addEventListener("click", async function () { if (!confirm("حذف هذه المهمة؟")) return; await sb.from("dtasks").delete().eq("id", b.getAttribute("data-dtdel")); VIEWS.dtasks(); }); });
+    view.querySelectorAll("[data-dtact]").forEach(function (b) { b.addEventListener("click", async function () { var p = b.getAttribute("data-dtact").split("|"); await sb.from("dtasks").update({ active: p[1] === "1" }).eq("id", p[0]); VIEWS.dtasks(); }); });
+    view.querySelectorAll("[data-dted]").forEach(function (b) { b.addEventListener("click", async function () {
+      var t = tasks.filter(function (x) { return String(x.id) === b.getAttribute("data-dted"); })[0]; if (!t) return;
+      var nt = prompt("عنوان المهمة:", t.title); if (nt === null) return;
+      var nd = prompt("التفاصيل:", t.details || ""); if (nd === null) return;
+      var r = await sb.from("dtasks").update({ title: nt.trim() || t.title, details: nd.trim() || null }).eq("id", t.id); KZ.toast(r.error ? "تعذر الحفظ." : "تم التعديل.", !!r.error); VIEWS.dtasks(); }); });
   };
 
   go((location.hash || "#students").slice(1));

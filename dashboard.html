@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxdopwh">
-<link rel="stylesheet" href="app.css?v=mwxdopwh">
+<link rel="stylesheet" href="site.css?v=mwxdur32">
+<link rel="stylesheet" href="app.css?v=mwxdur32">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxdopwh"></script>
-<script src="portal-i18n.js?v=mwxdopwh"></script>
+<script src="app.js?v=mwxdur32"></script>
+<script src="portal-i18n.js?v=mwxdur32"></script>
 
 <script>
 (async function () {
@@ -168,6 +168,24 @@
     var repRow = '<div class="row"><div><strong>🔁 كرّر القصة وظلِّلها (الدرس ' + stL.num + ')</strong><div class="muted">استمع للقصة وكرّر الجمل معها بنفس السرعة والنبرة (Shadowing) · اليوم: ' + repToday + " / " + target + "</div></div>";
     if (repToday >= target) doneRows.push(repRow + '<span class="badge ok">تمّ ✅</span></div>'); else todo.push(repRow + '<a class="btn btn-primary sm" href="' + href + '">ابدأ</a></div>');
   }
+  // tasks made by the teacher (for everybody, a level, a group or this student)
+  try {
+    var dts = (await sb.from("dtasks").select("*").order("created_at", { ascending: false }).limit(40)).data || [];
+    var dtDone = {}; ((await sb.from("dtask_done").select("task_id").eq("user_id", KZ.user.id)).data || []).forEach(function (x) { dtDone[x.task_id] = 1; });
+    var dtAtt = {}; ((await sb.from("skill_exam_attempts").select("exam_id,submitted_at").eq("user_id", KZ.user.id)).data || []).forEach(function (a) { if (a.submitted_at) dtAtt[a.exam_id] = 1; });
+    var dtExams = {}; var exIds = dts.filter(function (t) { return t.exam_id; }).map(function (t) { return t.exam_id; });
+    if (exIds.length) ((await sb.from("skill_exams").select("id,title,minutes,status").in("id", exIds)).data || []).forEach(function (e) { dtExams[e.id] = e; });
+    dts.forEach(function (t) {
+      var isEx = t.kind === "skill_exam" && t.exam_id, ex = isEx ? dtExams[t.exam_id] : null;
+      var finished = isEx ? !!dtAtt[t.exam_id] : !!dtDone[t.id];
+      var late = t.due_at && new Date(t.due_at) < new Date() && !finished;
+      var sub = esc(t.details || "") + (isEx && ex ? (t.details ? " · " : "") + "المدة " + ex.minutes + " دقيقة" : "") + (t.due_at ? ' · <span' + (late ? ' style="color:#c62828"' : "") + ">آخر موعد " + new Date(t.due_at).toLocaleString("ar", { dateStyle: "short", timeStyle: "short" }) + "</span>" : "");
+      var head = '<div class="row"><div><strong>' + (isEx ? "📝 " : "📌 ") + esc(t.title) + '</strong><div class="muted">' + sub + "</div></div>";
+      if (finished) { doneRows.push(head + '<span class="badge ok">تمّ ✅</span></div>'); return; }
+      var act = isEx ? '<a class="btn btn-primary sm" href="exams.html">ابدأ الامتحان</a>' : (t.link ? '<a class="btn btn-primary sm" href="' + esc(t.link) + '"' + (/^https?:/.test(t.link) ? ' target="_blank" rel="noopener"' : "") + ">افتح</a> " : "") + '<button class="btn btn-ghost sm" data-dtdone="' + t.id + '" type="button">أنجزتُها ✔</button>';
+      todo.unshift(head + '<span style="display:flex;gap:6px;flex-wrap:wrap">' + act + "</span></div>");
+    });
+  } catch (e) {}
   if (KZ.on("todo")) html += '<h2 style="margin-top:22px">مهامك اليوم</h2><div class="tile">' + (todo.length ? todo.join("") : '<p class="muted">🎉 لا مهام متبقية اليوم. أحسنت!</p>') + (doneRows.length ? '<div style="opacity:.7">' + doneRows.join("") + "</div>" : "") + "</div>";
 
   // lessons (big tappable cards, only opened ones)
@@ -348,6 +366,7 @@
       host.insertAdjacentElement("afterend", box);
     } catch (e) {}
   })();
+  document.querySelectorAll("[data-dtdone]").forEach(function (b) { b.addEventListener("click", async function () { var r = await sb.from("dtask_done").insert({ task_id: Number(b.getAttribute("data-dtdone")), user_id: KZ.user.id }); KZ.toast(r.error ? "تعذر الحفظ." : "أحسنت! سُجّلت المهمة ✅", !!r.error); if (!r.error) location.reload(); }); });
 })();
 
 </script>
