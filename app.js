@@ -60,6 +60,7 @@
     } else if (role === "teacher" && prof.role !== "teacher") { location.replace("dashboard.html"); return null; }
     if (role === "student" && prof.role === "teacher") { location.replace("admin.html"); return null; }
     if (role === "student" && prof.role === "staff") { location.replace("admin.html"); return null; }
+    if (prof.role === "student" && prof.status === "stopped") { await sb.auth.signOut(); alert("تم إيقاف حسابك. تقدّمك محفوظ بالكامل، وسيعيد المعلم تفعيل حسابك متى أردتَ العودة. تواصل مع المعلم."); location.replace("login.html"); return null; }
     KZ.profile = prof; KZ.user = session.user;
     try { KZ.loadTheme(); } catch (e) {}
     KZ.features = {};

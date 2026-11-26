@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxk4kr8">
-<link rel="stylesheet" href="app.css?v=mwxk4kr8">
+<link rel="stylesheet" href="site.css?v=mwxm2x2t">
+<link rel="stylesheet" href="app.css?v=mwxm2x2t">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,9 +24,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxk4kr8"></script>
-<script src="portal-i18n.js?v=mwxk4kr8"></script>
-<script src="i18n.js?v=mwxk4kr8"></script>
+<script src="app.js?v=mwxm2x2t"></script>
+<script src="portal-i18n.js?v=mwxm2x2t"></script>
+<script src="i18n.js?v=mwxm2x2t"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -36,7 +36,7 @@
   var LEVELS = ["A1", "A2", "B1", "B2", "C1"];
   var TABS = [["students", "الطلاب"], ["lessons", "الدروس"], ["tests", "الاختبارات"], ["results", "النتائج"], ["attendance", "الحضور"], ["payments", "المدفوعات"], ["applications", "الطلبات"], ["speaking", "المحادثة"], ["certs", "الشهادات"], ["news", "الإعلانات"], ["follow", "متابعة الطلاب"], ["fluency", "الطلاقة والجهد"], ["groups", "مجموعات الطلاب"], ["ideas", "اقتراحات وتصويتات"], ["tasks", "مهام الطلاب"], ["messages", "الرسائل"], ["themes", "الألوان والثيمات"], ["lsearch", "بحث الدروس"], ["designer", "تصميم الموقع"], ["texts", "النصوص"], ["courses", "الدورات والإعلانات"], ["features", "الميزات"], ["settings", "المستويات"]];
   var KIND = { weekly: "أسبوعي", monthly: "شهري", final: "نهاية المستوى" };
-  var ST = { active: "نشط", paused: "متوقف مؤقتاً", graduated: "خريج", stopped: "موقوف", pending: "بانتظار القبول" };
+  var ST = { active: "نشط", paused: "متوقف مؤقتاً", graduated: "خريج", stopped: "مؤرشف (تقدّمه محفوظ)", pending: "بانتظار القبول" };
   var AT = { present: "حاضر", absent: "غائب", late: "متأخر", excused: "بعذر" };
   var pendingPrefill = null;
   // ----- assistant teachers (staff): which tabs they may open -----
@@ -198,7 +198,7 @@
         '<td><select data-lv="' + p.id + '">' + opts(LEVELS, p.level) + '</select></td>' +
         '<td><select data-st="' + p.id + '">' + opts(Object.keys(ST).map(function (k) { return [k, ST[k]]; }), p.status) + '</select></td>' +
         '<td class="en">' + ((p.completed_levels || []).join(" ") || "—") + '</td><td>' + (abs[p.id] || 0) + (abs[p.id] > 3 ? ' <span class="badge bad">!</span>' : "") + '</td>' +
-        '<td><button class="btn btn-ghost sm" data-ac="' + p.id + '" type="button">المستويات والدروس</button> <button class="btn btn-ghost sm" data-rs="' + p.id + '" type="button">كلمة مرور جديدة</button> <button class="btn danger sm" data-del="' + p.id + '" type="button">حذف</button></td></tr>';
+        '<td><button class="btn btn-ghost sm" data-ac="' + p.id + '" type="button">المستويات والدروس</button> <button class="btn btn-ghost sm" data-rs="' + p.id + '" type="button">كلمة مرور جديدة</button> ' + (p.status === "stopped" ? '<button class="btn ok sm" data-react="' + p.id + '" type="button">♻️ إعادة التفعيل</button> <button class="btn danger sm" data-del="' + p.id + '" type="button">🗑 حذف نهائي</button>' : '<button class="btn btn-ghost sm" data-arch="' + p.id + '" type="button" title="يوقف الحساب ويخفيه عن الطالب وتبقى كل بياناته وتقدمه محفوظة">📦 أرشفة (حفظ التقدم)</button>') + '</td></tr>';
     });
     h += "</tbody></table></div>";
     view.innerHTML = h;
@@ -259,10 +259,28 @@
     view.querySelectorAll("[data-rs]").forEach(function (b) { b.addEventListener("click", async function () {
       var id = b.getAttribute("data-rs"), pw = genPw(), p = nm.map[id];
       try { await fn({ action: "reset_password", user_id: id, password: pw }); showCreds([{ name: p.full_name, user: p.username, pw: pw }]); } catch (er) { KZ.toast("تعذر التغيير.", true); } }); });
+    view.querySelectorAll("[data-arch]").forEach(function (b) { b.addEventListener("click", async function () {
+      var id = b.getAttribute("data-arch"), p = nm.map[id];
+      if (!confirm("أرشفة حساب «" + p.full_name + "»؟\nيتوقف حسابه ولا يستطيع الدخول، لكن كل تقدّمه وكلماته وواجباته ونتائجه تبقى محفوظة. يمكنك إعادة تفعيله في أي وقت.")) return;
+      var r = await sb.from("profiles").update({ status: "stopped" }).eq("id", id); KZ.toast(r.error ? "تعذرت الأرشفة." : "أُرشف الحساب وتقدّمه محفوظ ✅", !!r.error); VIEWS.students(); }); });
+    view.querySelectorAll("[data-react]").forEach(function (b) { b.addEventListener("click", async function () {
+      var id = b.getAttribute("data-react"), r = await sb.from("profiles").update({ status: "active" }).eq("id", id); KZ.toast(r.error ? "تعذرت إعادة التفعيل." : "أُعيد تفعيل الحساب بكل تقدّمه ✅", !!r.error); VIEWS.students(); }); });
+    async function backupStudent(p) {
+      var T = [["card_progress", "user_id"], ["homework_submissions", "user_id"], ["test_attempts", "user_id"], ["attendance", "user_id"], ["story_reps", "user_id"], ["study_time", "user_id"], ["skill_submissions", "user_id"], ["task_submissions", "user_id"], ["student_prefs", "user_id"], ["lesson_grants", "user_id"], ["direct_messages", "student_id"], ["certificates", "user_id"]];
+      var out = { exported_at: new Date().toISOString(), profile: p, tables: {} };
+      for (var k = 0; k < T.length; k++) { try { var r = await sb.from(T[k][0]).select("*").eq(T[k][1], p.id).limit(20000); out.tables[T[k][0]] = r.data || []; } catch (e) { out.tables[T[k][0]] = []; } }
+      var blob = new Blob([JSON.stringify(out, null, 1)], { type: "application/json" }), url = URL.createObjectURL(blob), a2 = document.createElement("a");
+      a2.href = url; a2.download = "kimza-backup-" + String(p.username || p.id).replace(/[^\w.-]/g, "_") + "-" + new Date().toISOString().slice(0, 10) + ".json"; document.body.appendChild(a2); a2.click(); a2.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    }
     view.querySelectorAll("[data-del]").forEach(function (b) { b.addEventListener("click", async function () {
       var id = b.getAttribute("data-del"), p = nm.map[id];
-      if (!confirm("حذف حساب " + p.full_name + " نهائياً مع كل بياناته؟ لا يمكن التراجع.")) return;
-      try { await fn({ action: "delete", user_id: id }); KZ.toast("تم الحذف."); VIEWS.students(); } catch (er) { KZ.toast("تعذر الحذف.", true); } }); });
+      if (p.status !== "stopped") { KZ.toast("أرشِف الحساب أولاً، ثم احذفه نهائياً إن أردت.", true); return; }
+      if (!confirm("⚠️ حذف نهائي لحساب «" + p.full_name + "» مع كل تقدّمه وبياناته؟\nلا يمكن التراجع. سأنزّل لك أولاً نسخة احتياطية (ملف) بكل بياناته.")) return;
+      var t = prompt("للتأكيد اكتب اسم الطالب كاملاً بالضبط:\n" + p.full_name);
+      if (t === null) return;
+      if (t.trim() !== p.full_name.trim()) { KZ.toast("الاسم غير مطابق، لم يُحذف شيء.", true); return; }
+      try { await backupStudent(p); } catch (e) { if (!confirm("تعذر إنشاء النسخة الاحتياطية. هل تحذف رغم ذلك؟")) return; }
+      try { await fn({ action: "delete", user_id: id }); KZ.toast("حُذف الحساب نهائياً. النسخة الاحتياطية في ملف التنزيلات."); VIEWS.students(); } catch (er) { KZ.toast("تعذر الحذف.", true); } }); });
   };
 
   // ================= Lessons: open or lock every part of every lesson =================
