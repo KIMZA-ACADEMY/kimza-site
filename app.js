@@ -315,9 +315,42 @@
       inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); var f = Array.prototype.filter.call(sel.options, function (o) { return o.value !== ""; })[0]; if (f && !sel.multiple) { sel.value = f.value; sel.dispatchEvent(new Event("change", { bubbles: true })); } } });
     });
   };
+  // ----- teacher panel: a search box above every long list of rows/cards/table rows -----
+  KZ.enhanceLists = function (root) {
+    if (!(KZ.profile && (KZ.profile.role === "teacher" || KZ.profile.role === "staff"))) return;
+    var scope = root.querySelector ? root.querySelector("#view") : null; if (!scope || scope.querySelector("#stQ")) return;
+    var cands = [];
+    scope.querySelectorAll("*").forEach(function (el) {
+      if (el.dataset.kzl || el.tagName === "SELECT" || el.tagName === "NAV" || el.tagName === "THEAD" || el.closest("[data-kzl-skip]")) return;
+      var kids = Array.prototype.filter.call(el.children, function (c) { return c.nodeType === 1; });
+      if (kids.length < 8) return;
+      var sig = kids[0].tagName + "." + (kids[0].className || "").toString().split(" ")[0];
+      var same = kids.filter(function (c) { return c.tagName + "." + (c.className || "").toString().split(" ")[0] === sig; });
+      if (same.length < 8 || same.length < kids.length * 0.8) return;
+      var avg = same.reduce(function (s, c) { return s + (c.textContent || "").trim().length; }, 0) / same.length;
+      if (avg < 12) return;                                   // buttons / chips / tabs
+      if (same[0].tagName === "OPTION" || same[0].tagName === "LI" && el.closest(".agroups,.tabs")) return;
+      cands.push({ el: el, items: same });
+    });
+    cands.forEach(function (c) {
+      // skip containers nested in another candidate (keep the outermost)
+      if (cands.some(function (o) { return o.el !== c.el && o.el.contains(c.el); })) return;
+      if (c.el.dataset.kzl) return; c.el.dataset.kzl = "1";
+      var host = c.el.tagName === "TBODY" ? c.el.closest("table") : c.el;
+      var inp = document.createElement("input"); inp.type = "search"; inp.placeholder = "🔎 ابحث في هذه القائمة بالاسم أو أي كلمة…"; inp.setAttribute("aria-label", "بحث في القائمة");
+      inp.style.cssText = "display:block;width:100%;box-sizing:border-box;margin:6px 0 10px"; inp.dataset.kzl = "1";
+      host.parentNode.insertBefore(inp, host);
+      var cnt = document.createElement("div"); cnt.className = "muted"; cnt.style.cssText = "margin:-4px 0 8px;font-size:.85rem"; inp.after(cnt);
+      inp.addEventListener("input", function () {
+        var q = nrm(inp.value.trim()), words = q ? q.split(/\s+/) : [], shown = 0;
+        c.items.forEach(function (it) { var ok = !words.length || words.every(function (w) { return nrm(it.textContent).indexOf(w) >= 0; }); it.style.display = ok ? "" : "none"; if (ok) shown++; });
+        cnt.textContent = words.length ? shown + " من " + c.items.length : "";
+      });
+    });
+  };
   KZ.startSelectSearch = function () {
     if (KZ._selObs) return; KZ._selObs = true; var t = null;
-    function run() { try { KZ.enhanceSelects(document); } catch (e) {} }
+    function run() { try { KZ.enhanceSelects(document); } catch (e) {} try { KZ.enhanceLists(document); } catch (e) {} }
     new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 120); }).observe(document.body, { childList: true, subtree: true });
     run();
   };
