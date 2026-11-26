@@ -249,6 +249,36 @@
     b.textContent = "🧑‍🏫"; b.addEventListener("click", KZ.openBoard); document.body.appendChild(b);
     KZ.dragFab(b, "kz-fab-board", 8, function () { return Math.round(innerHeight * 0.42); });
   };
+  // ----- WhatsApp-style reply: swipe a message (either direction) or tap the arrow to reply to it -----
+  KZ.quote = function (m) {
+    if (!m) return "";
+    var t = String(m.body || "").replace(/\s+/g, " "); if (t.length > 90) t = t.slice(0, 90) + "…";
+    return '<div style="border-inline-start:4px solid #D4AF37;background:rgba(0,0,0,.06);border-radius:8px;padding:4px 8px;margin:4px 0;font-size:.85rem;opacity:.9">↩ ' + KZ.esc(t) + "</div>";
+  };
+  KZ.replyBtn = function (id) { return ' <button type="button" data-rpl="' + id + '" title="رد على هذه الرسالة" aria-label="رد" style="border:0;background:none;cursor:pointer;font-size:1rem;padding:0 4px;opacity:.7">↩</button>'; };
+  // box = the scroll container (stays in the page), input = the textarea, byId(id) -> message row
+  KZ.chatReply = function (box, input, byId) {
+    var st = { id: null }, bar = null;
+    function show(id) {
+      var m = byId(id); if (!m) return; st.id = id;
+      if (!bar) { bar = document.createElement("div"); bar.style.cssText = "display:flex;align-items:center;gap:8px;border-inline-start:4px solid #D4AF37;background:rgba(212,175,55,.14);border-radius:8px;padding:6px 10px;margin-bottom:6px;font-size:.9rem"; input.parentNode.insertBefore(bar, input.previousElementSibling && input.previousElementSibling.tagName === "LABEL" ? input.previousElementSibling : input); }
+      var t = String(m.body || "").replace(/\s+/g, " "); if (t.length > 80) t = t.slice(0, 80) + "…";
+      bar.innerHTML = '<span style="flex:1">↩ ردّاً على: ' + KZ.esc(t) + '</span><button type="button" style="border:0;background:none;cursor:pointer;font-size:1.1rem" aria-label="إلغاء الرد">✕</button>';
+      bar.querySelector("button").onclick = clear; bar.style.display = "flex"; input.focus();
+    }
+    function clear() { st.id = null; if (bar) bar.style.display = "none"; }
+    box.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-rpl]"); if (b) show(Number(b.getAttribute("data-rpl"))); });
+    var el = null, sx = 0, sy = 0, dx = 0, lock = false, active = false;
+    box.addEventListener("pointerdown", function (e) { el = e.target.closest && e.target.closest("[data-mid]"); if (!el || (e.target.closest && e.target.closest("button,a"))) { el = null; return; } sx = e.clientX; sy = e.clientY; dx = 0; lock = false; active = true; });
+    box.addEventListener("pointermove", function (e) {
+      if (!active || !el) return; var mx = e.clientX - sx, my = e.clientY - sy;
+      if (!lock) { if (Math.abs(my) > 12 && Math.abs(my) > Math.abs(mx)) { active = false; return; } if (Math.abs(mx) > 8) lock = true; else return; }
+      dx = Math.max(-90, Math.min(90, mx)); el.style.transition = "none"; el.style.transform = "translateX(" + dx + "px)";
+    });
+    function end() { if (!el) return; var id = Number(el.getAttribute("data-mid")), hit = Math.abs(dx) > 55; el.style.transition = "transform .18s"; el.style.transform = ""; el = null; active = false; if (hit) show(id); dx = 0; }
+    box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end); box.addEventListener("pointerleave", end);
+    return { get: function () { return st.id; }, clear: clear };
+  };
   // ----- notification centre: a draggable bell on every portal page (works without any device permission) -----
   KZ.mountBellButton = function () {
     if (document.getElementById("kzBell")) return;

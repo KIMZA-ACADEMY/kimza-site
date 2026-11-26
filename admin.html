@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxex4r0">
-<link rel="stylesheet" href="app.css?v=mwxex4r0">
+<link rel="stylesheet" href="site.css?v=mwxf1itj">
+<link rel="stylesheet" href="app.css?v=mwxf1itj">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,9 +24,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxex4r0"></script>
-<script src="portal-i18n.js?v=mwxex4r0"></script>
-<script src="i18n.js?v=mwxex4r0"></script>
+<script src="app.js?v=mwxf1itj"></script>
+<script src="portal-i18n.js?v=mwxf1itj"></script>
+<script src="i18n.js?v=mwxf1itj"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -1305,19 +1305,20 @@
     function thread() {
       var id = $("dmSt").value, box = $("dmThread"); view._dm = id;
       if (!id) { box.innerHTML = ""; return; }
-      var ms = (by[id] || []).slice().reverse();
-      box.innerHTML = '<div style="max-height:45vh;overflow:auto;display:flex;flex-direction:column;gap:8px;margin:12px 0">' + (ms.length ? ms.map(function (m) { return '<div style="align-self:' + (m.from_teacher ? "flex-end" : "flex-start") + ';max-width:85%;border:1px solid var(--line);border-radius:14px;padding:8px 12px;background:var(--surface)"><small class="muted">' + (m.from_teacher ? (m.kind === "notice" ? "أنت (منبثقة)" : "أنت") : "الطالب") + " · " + when(m.created_at) + ' <button type="button" class="btn btn-ghost sm" data-dmdel="' + m.id + '" title="حذف هذه الرسالة" style="padding:0 8px">🗑</button></small><div style="white-space:pre-wrap">' + esc(m.body) + '</div></div>'; }).join("") : '<p class="muted">لا رسائل بعد.</p>') + '</div>' +
+      var ms = (by[id] || []).slice().reverse(), MAPT = {}; ms.forEach(function (m) { MAPT[m.id] = m; });
+      box.innerHTML = '<div style="max-height:45vh;overflow:auto;display:flex;flex-direction:column;gap:8px;margin:12px 0">' + (ms.length ? ms.map(function (m) { return '<div data-mid="' + m.id + '" style="touch-action:pan-y;align-self:' + (m.from_teacher ? "flex-end" : "flex-start") + ';max-width:85%;border:1px solid var(--line);border-radius:14px;padding:8px 12px;background:var(--surface)"><small class="muted">' + (m.from_teacher ? (m.kind === "notice" ? "أنت (منبثقة)" : "أنت") : "الطالب") + " · " + when(m.created_at) + KZ.replyBtn(m.id) + ' <button type="button" class="btn btn-ghost sm" data-dmdel="' + m.id + '" title="حذف هذه الرسالة" style="padding:0 8px">🗑</button></small>' + KZ.quote(MAPT[m.reply_to]) + '<div style="white-space:pre-wrap">' + esc(m.body) + '</div></div>'; }).join("") : '<p class="muted">لا رسائل بعد.</p>') + '</div>' +
         '<label for="dmB">رسالتك</label><textarea id="dmB" rows="3" maxlength="1500"></textarea><label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="dmPop" checked> نافذة منبثقة تظهر له عند الدخول (من معلمك)</label><button class="btn btn-primary" id="dmSend" type="button">إرسال</button> ' + (ms.length ? '<button class="btn btn-ghost" id="dmClear" type="button" style="color:#c62828">🗑 حذف كل محادثة هذا الطالب</button>' : "");
       box.querySelectorAll("[data-dmdel]").forEach(function (b) { b.addEventListener("click", async function () {
         if (!confirm("حذف هذه الرسالة نهائياً من النظام؟ (تختفي عند الطالب أيضاً ولا يمكن استرجاعها)")) return;
         var r = await sb.from("direct_messages").delete().eq("id", b.getAttribute("data-dmdel")); KZ.toast(r.error ? "تعذر الحذف." : "حُذفت الرسالة.", !!r.error); VIEWS.messages(); }); });
+      var RPT = KZ.chatReply(box.firstElementChild, $("dmB"), function (i) { return MAPT[i]; });
       var dc = document.getElementById("dmClear");
       if (dc) dc.addEventListener("click", async function () {
         if (!confirm("حذف كل الرسائل بينك وبين هذا الطالب نهائياً؟ لا يمكن التراجع.")) return;
         var r = await sb.from("direct_messages").delete().eq("student_id", id); KZ.toast(r.error ? "تعذر الحذف." : "حُذفت المحادثة كلها.", !!r.error); VIEWS.messages(); });
       $("dmSend").addEventListener("click", async function () {
         var t = $("dmB").value.trim(); if (!t) return;
-        var r = await sb.from("direct_messages").insert({ student_id: id, from_teacher: true, kind: $("dmPop").checked ? "notice" : "chat", body: t });
+        var r = await sb.from("direct_messages").insert({ student_id: id, from_teacher: true, kind: $("dmPop").checked ? "notice" : "chat", body: t, reply_to: RPT.get() });
         KZ.toast(r.error ? "تعذر الإرسال." : "أُرسلت الرسالة.", !!r.error);
         if (!r.error) await sb.from("direct_messages").update({ read_at: new Date().toISOString() }).eq("student_id", id).eq("from_teacher", false).is("read_at", null);
         VIEWS.messages();
