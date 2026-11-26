@@ -371,7 +371,8 @@
     async function load() {
       var out = [], r = {};
       try { r = (await sb.rpc("my_notifications")).data || {}; } catch (e) {}
-      function add(n, icon, text, href) { n = Number(n) || 0; if (n > 0) out.push({ n: n, icon: icon, text: text + (n > 1 ? " (" + n + ")" : ""), href: href }); }
+      var dis = {}; try { dis = JSON.parse(localStorage.getItem("kz-bell-dis-" + uid) || "{}"); } catch (e) {}
+      function add(n, icon, text, href) { n = Number(n) || 0; if (isT) { var k = href; if (n <= (dis[k] || 0)) { if (n < (dis[k] || 0)) { dis[k] = n; } n = 0; } else n = n - (dis[k] || 0); } if (n > 0) out.push({ n: n, icon: icon, text: text + (n > 1 ? " (" + n + ")" : ""), href: href, key: href }); }
       if (isT) {
         add(r.student_msgs, "✉️", "رسائل جديدة من الطلاب", "admin.html#messages"); add(r.name_req, "✏️", "طلبات تغيير اسم", "account.html"); add(r.new_students, "🧑‍🎓", "طلاب جدد ينتظرون القبول", "admin.html#applications");
       } else {
@@ -389,6 +390,7 @@
           var pend = dt.filter(function (t) { return !dn[t.id]; }); if (pend.length) out.push({ n: pend.length, icon: "✅", text: "مهام جديدة لك" + (pend.length > 1 ? " (" + pend.length + ")" : ""), href: "dashboard.html" });
         } catch (e) {}
       }
+      if (isT) { try { localStorage.setItem("kz-bell-dis-" + uid, JSON.stringify(dis)); } catch (e) {} KZ._bellRaw = r; }
       items = out;
       var total = out.reduce(function (s, x) { return s + x.n; }, 0), nb = document.getElementById("kzBellN");
       if (nb) { nb.textContent = total > 99 ? "99+" : total; nb.style.display = total ? "block" : "none"; }
@@ -397,10 +399,14 @@
     function draw() {
       var canPush = "Notification" in window && Notification.permission === "default";
       panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>🔔 الإشعارات</strong><button type="button" data-x style="border:0;background:none;font-size:20px;cursor:pointer;color:inherit">✕</button></div>' +
-        (items.length ? items.map(function (x, i) { return '<a href="' + x.href + '" data-i="' + i + '" style="display:flex;gap:8px;align-items:center;padding:10px;border-radius:10px;background:rgba(212,175,55,.14);margin-bottom:6px;color:inherit;text-decoration:none"><span style="font-size:1.2rem">' + x.icon + '</span><span>' + KZ.esc(x.text) + "</span></a>"; }).join("") : '<p style="margin:8px 0;opacity:.75">لا توجد إشعارات جديدة 🎉</p>') +
+        (items.length ? items.map(function (x, i) { return '<div style="display:flex;gap:4px;align-items:center;margin-bottom:6px"><a href="' + x.href + '" data-i="' + i + '" style="flex:1;display:flex;gap:8px;align-items:center;padding:10px;border-radius:10px;background:rgba(212,175,55,.14);color:inherit;text-decoration:none"><span style="font-size:1.2rem">' + x.icon + '</span><span>' + KZ.esc(x.text) + "</span></a>" + (isT ? '<button type="button" data-d="' + i + '" title="إخفاء هذا الإشعار" aria-label="إخفاء هذا الإشعار" style="border:0;background:none;cursor:pointer;color:inherit;font-size:18px;padding:6px;opacity:.7">✕</button>' : "") + "</div>"; }).join("") : '<p style="margin:8px 0;opacity:.75">لا توجد إشعارات جديدة 🎉</p>') +
         (canPush ? '<button type="button" data-push style="margin-top:6px;width:100%;padding:9px;border-radius:10px;border:1px solid #D4AF37;background:none;color:inherit;cursor:pointer">تفعيل تنبيهات الجهاز أيضاً</button>' : "");
       panel.querySelector("[data-x]").onclick = function () { panel.remove(); panel = null; };
       panel.querySelectorAll("[data-i]").forEach(function (a) { a.addEventListener("click", function () { try { localStorage.setItem(seenKey, new Date().toISOString()); } catch (e) {} }); });
+      panel.querySelectorAll("[data-d]").forEach(function (d) { d.addEventListener("click", function () {
+        var it = items[Number(d.getAttribute("data-d"))], raw = Number((KZ._bellRaw || {})[({ "admin.html#messages": "student_msgs", "account.html": "name_req", "admin.html#applications": "new_students" })[it.key]]) || it.n;
+        try { var m = JSON.parse(localStorage.getItem("kz-bell-dis-" + uid) || "{}"); m[it.key] = raw; localStorage.setItem("kz-bell-dis-" + uid, JSON.stringify(m)); } catch (e) {}
+        load(); }); });
       var pb = panel.querySelector("[data-push]");
       if (pb) pb.onclick = async function () { try { await Notification.requestPermission(); } catch (e) {} if (Notification.permission === "granted") { var ok = await KZ.pushSubscribe(); KZ.toast(ok ? "تم تفعيل التنبيهات 🔔" : "تم التفعيل (تعمل والتطبيق مفتوح)."); } draw(); };
     }
