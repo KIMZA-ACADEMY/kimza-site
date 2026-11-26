@@ -83,11 +83,12 @@
       : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["tasks.html", "مهامي", "tasks"], ["messages.html", "رسائلي", "messages"], ["friends.html", "أصدقائي", "friends"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"], ["schedule.html", "مواعيد الحصص", "schedule"], ["account.html", "حسابي", "account"], ["community.html", "المجتمع", "community"]].filter(function (l) { return !FOFF[l[0]] || KZ.on(FOFF[l[0]]); });
     var h = '<div class="wrap"><a href="' + (isT ? "admin.html" : "dashboard.html") + '"><img src="kimza-logo-gold.png" alt="KIMZA Academy"></a>' +
       '<nav class="links" aria-label="Main">' + links.map(function (l) { return '<a href="' + l[0] + '"' + (l[2] === active ? ' aria-current="page"' : "") + ">" + l[1] + "</a>"; }).join("") +
-      '<button class="btn btn-ghost sm" id="lookBtn" type="button" title="مظهري" aria-label="مظهري" style="color:var(--cream)">🎨</button>' + '<span class="who">' + esc(prof ? prof.full_name : "") + '</span><button class="btn btn-ghost sm" id="logoutBtn" type="button" style="color:var(--cream)">خروج</button></nav></div>';
+      '<button class="btn btn-ghost sm" id="bellBtn" type="button" title="تفعيل الإشعارات" aria-label="تفعيل الإشعارات" style="color:var(--cream)" hidden>🔔</button>' + '<button class="btn btn-ghost sm" id="lookBtn" type="button" title="مظهري" aria-label="مظهري" style="color:var(--cream)">🎨</button>' + '<span class="who">' + esc(prof ? prof.full_name : "") + '</span><button class="btn btn-ghost sm" id="logoutBtn" type="button" style="color:var(--cream)">خروج</button></nav></div>';
     var el = document.getElementById("appHeader");
     if (el) el.innerHTML = h;
     try { KZ.mountBoardButton(); KZ.mountRecorderButton(); } catch (e) {}
     if (isT) { try { sb.from("name_requests").select("id", { count: "exact", head: true }).eq("status", "pending").then(function (r) { var n = r && r.count; var l = document.querySelector('#appHeader a[href="account.html"]'); if (n && l) l.insertAdjacentHTML("beforeend", ' <span style="background:#c62828;color:#fff;border-radius:20px;padding:0 8px;font-weight:800">' + n + "</span>"); }); } catch (e) {} }
+    try { KZ.notifyStart(); } catch (e) {}
     var lkb = document.getElementById("lookBtn"); if (lkb) lkb.addEventListener("click", function () { KZ.openLook(); });
     try { KZ.initReveal(); } catch (e) {}
     var lb = document.getElementById("logoutBtn");
@@ -414,12 +415,55 @@
   // Copy protection helper for exam pages
   // Copy protection for a document (the page itself or a lesson/homework iframe)
   // How long the student really uses the portal: a heartbeat every 30 s while the page is visible and he is active
+  KZ.pageKey = function () {
+    var f = (location.pathname.split("/").pop() || "index.html").replace(".html", "");
+    if (f === "lesson") { var m = /[?&]id=([^&]+)/.exec(location.search); if (m) return "lesson:" + decodeURIComponent(m[1]); }
+    return f;
+  };
+  KZ.logAct = function (kind, lesson, n) { try { if (KZ.profile && KZ.profile.role === "student") sb.rpc("log_activity", { p_kind: kind, p_lesson: lesson || "", p_n: n || 1 }); } catch (e) {} };
+  // Notifications: nav badges, page-title counter and (when allowed) system notifications. Polls every 40 s.
+  KZ.notifyStart = function () {
+    if (KZ._notif) return; KZ._notif = true;
+    var base = document.title.replace(/^(d+)s*/, "");
+    var LAB = { teacher_msgs: "رسالة جديدة من معلمك", fr_req: "طلب صداقة جديد", fr_msgs: "رسالة جديدة من صديق", student_msgs: "رسالة جديدة من طالب", name_req: "طلب تغيير اسم", new_students: "طالب جديد ينتظر القبول" };
+    var LINK = { teacher_msgs: "messages.html", fr_req: "friends.html", fr_msgs: "friends.html", student_msgs: "admin.html#messages", name_req: "account.html", new_students: "admin.html#students" };
+    var bell = document.getElementById("bellBtn");
+    function bellState() { if (!bell) return; if (!("Notification" in window) || Notification.permission === "granted" || Notification.permission === "denied") bell.hidden = true; else bell.hidden = false; }
+    if (bell) bell.addEventListener("click", async function () { try { await Notification.requestPermission(); } catch (e) {} bellState(); if (Notification.permission === "granted") KZ.toast("تم تفعيل الإشعارات. ستصلك تنبيهات عندما يكون التطبيق مفتوحاً."); });
+    bellState();
+    function badge(href, n) {
+      var l = document.querySelector('#appHeader a[href="' + href + '"]'); if (!l) return;
+      var b = l.querySelector(".nbadge"); if (b) b.remove();
+      if (n > 0) l.insertAdjacentHTML("beforeend", ' <span class="nbadge">' + n + "</span>");
+    }
+    async function poll() {
+      if (document.visibilityState !== "visible") return;
+      var r; try { r = (await sb.rpc("my_notifications")).data || {}; } catch (e) { return; }
+      var total = 0; Object.keys(r).forEach(function (k) { total += Number(r[k]) || 0; });
+      document.title = (total ? "(" + total + ") " : "") + base;
+      badge("messages.html", Number(r.teacher_msgs) || 0);
+      badge("friends.html", (Number(r.fr_req) || 0) + (Number(r.fr_msgs) || 0));
+      badge("admin.html", (Number(r.student_msgs) || 0) + (Number(r.new_students) || 0));
+      badge("account.html", Number(r.name_req) || 0);
+      var key = "kz-notif-" + (KZ.user ? KZ.user.id : ""), old = {}; try { old = JSON.parse(localStorage.getItem(key) || "{}"); } catch (e) {}
+      Object.keys(r).forEach(function (k) {
+        var n = Number(r[k]) || 0, o = Number(old[k]) || 0;
+        if (n > o) {
+          KZ.toast("🔔 " + LAB[k] + (n > 1 ? " (" + n + ")" : ""));
+          if ("Notification" in window && Notification.permission === "granted") { try { var nt = new Notification("KIMZA Academy", { body: LAB[k], icon: "icon-192.png", tag: "kz-" + k }); nt.onclick = function () { window.focus(); location.href = LINK[k]; }; } catch (e) {} }
+        }
+      });
+      try { localStorage.setItem(key, JSON.stringify(r)); } catch (e) {}
+    }
+    setTimeout(poll, 1500); setInterval(poll, 40000);
+    document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") poll(); });
+  };
   KZ.track = function () {
     if (KZ._tracking) return; KZ._tracking = true;
     var lastAct = Date.now();
     ["mousemove", "keydown", "touchstart", "scroll", "click"].forEach(function (ev) { window.addEventListener(ev, function () { lastAct = Date.now(); }, { passive: true }); });
     setInterval(function () {
-      if (document.visibilityState === "visible" && Date.now() - lastAct < 120000) { try { sb.rpc("track_time", { p_seconds: 30 }); } catch (e) {} }
+      if (document.visibilityState === "visible" && Date.now() - lastAct < 120000) { try { sb.rpc("track_time", { p_seconds: 30 }); sb.rpc("track_page", { p_page: KZ.pageKey(), p_seconds: 30 }); } catch (e) {} }
     }, 30000);
   };
   // Any picture (jpg, png, webp, gif, heic on Safari) is resized and saved as a light JPEG, so uploads do not fail on size or type

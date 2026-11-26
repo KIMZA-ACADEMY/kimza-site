@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxai2yn">
-<link rel="stylesheet" href="app.css?v=mwxai2yn">
+<link rel="stylesheet" href="site.css?v=mwxbwf29">
+<link rel="stylesheet" href="app.css?v=mwxbwf29">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxai2yn"></script>
-<script src="portal-i18n.js?v=mwxai2yn"></script>
-<script src="i18n.js?v=mwxai2yn"></script>
+<script src="app.js?v=mwxbwf29"></script>
+<script src="portal-i18n.js?v=mwxbwf29"></script>
+<script src="i18n.js?v=mwxbwf29"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -71,7 +71,7 @@
 
   // ----- shell: 6 groups, each with its own tabs -----
   var GROUPS = [
-    ["👥", "الطلاب", ["students", "applications", "groups", "attendance", "follow"]],
+    ["👥", "الطلاب", ["perf", "students", "applications", "groups", "attendance", "follow"]],
     ["📚", "الدروس والاختبارات", ["lessons", "tests", "results", "lsearch", "examprep"]],
     ["💬", "التواصل والمهام", ["messages", "news", "tasks", "speaking", "ideas", "fluency", "friends"]],
     ["🎓", "الشهادات والمدفوعات", ["certs", "payments"]],
@@ -80,6 +80,7 @@
   ];
   var TNAME = {}; TABS.forEach(function (t) { TNAME[t[0]] = t[1]; });
   if (!TNAME.examprep) TNAME.examprep = "IELTS / TOEFL";
+  if (!TNAME.perf) TNAME.perf = "📈 أداء الطلاب";
   if (!TNAME.friends) TNAME.friends = "الأصدقاء";
   function groupOf(name) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i][2].indexOf(name) >= 0) return i; return 0; }
   app.innerHTML = '<h1>لوحة المعلم</h1><div class="agroups" id="agroups" role="tablist">' +
@@ -1302,21 +1303,77 @@
 
   VIEWS.friends = async function () {
     var nm = await nameMap();
-    var fs_ = (await sb.from("friendships").select("*").order("created_at", { ascending: false }).limit(300)).data || [];
-    var msgs = (await sb.from("friend_messages").select("*").order("created_at", { ascending: false }).limit(500)).data || [];
+    var fs_ = (await sb.from("friendships").select("*").order("created_at", { ascending: false }).limit(400)).data || [];
     var pr = {}; ((await sb.from("student_prefs").select("user_id,nickname,emoji")).data || []).forEach(function (p) { pr[p.user_id] = p; });
-    function who(id) { var p = pr[id] || {}, n = nm.map[id]; return (p.emoji || "🙂") + " " + esc(p.nickname || "—") + ' <span class="muted">(' + esc(n ? n.full_name : "طالب") + ")</span>"; }
-    var ST = { pending: "بانتظار", accepted: "أصدقاء", rejected: "مرفوض", blocked: "محظور" };
-    var h = '<h2>الأصدقاء ومحادثاتهم</h2><p class="muted">للمراقبة والسلامة فقط. الطلاب يعلمون أن المعلم قد يراجع المحادثات. يمكنك حذف رسالة أو إنهاء صداقة.</p>';
+    function who(id) { var p = pr[id] || {}, n = nm.map[id]; return (p.emoji || "🙂") + " " + esc(p.nickname || "بلا اسم مستعار") + ' <span class="muted">(' + esc(n ? n.full_name : "طالب") + ")</span>"; }
+    var ST = { pending: "بانتظار الرد", accepted: "أصدقاء", rejected: "مرفوض", blocked: "محظور" };
+    var h = '<h2>الأصدقاء (قائمة فقط)</h2><div class="infobox">🔒 محادثات الأصدقاء <strong>خاصة تماماً</strong>: النظام لا يسمح لك بقراءتها. ترى هنا فقط من أضاف من، بالاسم الحقيقي والاسم المستعار. للأمان: يمنع النظام تلقائياً أرقام الهواتف والروابط، ويمكنك كتم طالب أو حظره من «المجتمع».</div>';
     if (!fs_.length) h += '<p class="muted">لا صداقات بعد.</p>';
-    fs_.forEach(function (f) {
-      var ms = msgs.filter(function (m) { return m.friendship_id === f.id; }).slice(0, 12).reverse();
-      h += '<div class="tile" style="margin-top:12px"><div class="row" style="border:0;padding:0"><div>' + who(f.requester) + " ⇄ " + who(f.addressee) + ' <span class="badge">' + (ST[f.status] || f.status) + '</span></div><button class="btn btn-ghost sm" data-fsdel="' + f.id + '" type="button">إنهاء الصداقة</button></div>' +
-        (ms.length ? '<div style="margin-top:8px;display:grid;gap:4px">' + ms.map(function (m) { return "<div><small class=\"muted\">" + (pr[m.sender] ? esc(pr[m.sender].nickname || "") : "") + ":</small> " + esc(m.body) + ' <button class="btn btn-ghost sm" data-fmdel="' + m.id + '" type="button">حذف</button></div>'; }).join("") + "</div>" : "") + "</div>";
-    });
+    h += fs_.map(function (f) { return '<div class="row"><div>' + who(f.requester) + " ⇄ " + who(f.addressee) + ' <span class="badge">' + (ST[f.status] || f.status) + '</span></div><button class="btn btn-ghost sm" data-fsdel="' + f.id + '" type="button">إنهاء الصداقة</button></div>'; }).join("");
     view.innerHTML = h;
-    view.querySelectorAll("[data-fsdel]").forEach(function (b) { b.addEventListener("click", async function () { if (!confirm("إنهاء هذه الصداقة وحذف محادثتها؟")) return; await sb.from("friendships").delete().eq("id", b.getAttribute("data-fsdel")); VIEWS.friends(); }); });
-    view.querySelectorAll("[data-fmdel]").forEach(function (b) { b.addEventListener("click", async function () { await sb.from("friend_messages").delete().eq("id", b.getAttribute("data-fmdel")); VIEWS.friends(); }); });
+    view.querySelectorAll("[data-fsdel]").forEach(function (b) { b.addEventListener("click", async function () { if (!confirm("إنهاء هذه الصداقة؟ (تُحذف محادثتهما أيضاً)")) return; await sb.from("friendships").delete().eq("id", b.getAttribute("data-fsdel")); VIEWS.friends(); }); });
+  };
+
+  // ---------- student performance dashboard ----------
+  VIEWS.perf = async function () {
+    var S = view._perf || { days: 14, level: "", sort: "low", mins: 20, story: 1, cards: 10 };
+    view._perf = S;
+    var rows = (await sb.rpc("student_perf", { p_days: S.days })).data || [];
+    function hm(sec) { sec = Math.round(sec || 0); var h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60); return h ? h + "س " + m + "د" : m + " د"; }
+    function pct(a, b) { return b ? Math.max(0, Math.min(100, Math.round(a / b * 100))) : 0; }
+    function trend(cur, prev) { if (!prev && !cur) return '<span class="muted">—</span>'; if (!prev) return '<span style="color:#2F9E5B">▲ جديد</span>'; var d = Math.round((cur - prev) / prev * 100); return d >= 0 ? '<span style="color:#2F9E5B">▲ ' + d + "%</span>" : '<span style="color:#c62828">▼ ' + Math.abs(d) + "%</span>"; }
+    function ring(p, label, sub, color) { var r = 30, c = 2 * Math.PI * r; return '<div class="pring"><svg viewBox="0 0 76 76" width="76" height="76" role="img" aria-label="' + esc(label) + " " + p + '%"><circle cx="38" cy="38" r="' + r + '" fill="none" stroke="var(--line)" stroke-width="7"/><circle cx="38" cy="38" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="7" stroke-linecap="round" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + (c * (1 - p / 100)).toFixed(1) + '" transform="rotate(-90 38 38)"/><text x="38" y="43" text-anchor="middle" font-size="15" font-weight="800" fill="currentColor">' + p + '%</text></svg><b>' + esc(label) + '</b><small class="muted">' + esc(sub) + "</small></div>"; }
+    var PL = { dashboard: "الرئيسية", review: "مراجعة البطاقات", flashcards: "البطاقات", community: "المجتمع", tasks: "مهامي", messages: "الرسائل", friends: "الأصدقاء", test: "الاختبارات", schedule: "مواعيد الحصص", speaking: "المحادثة", attendance: "الحضور", certificates: "الشهادات", account: "حسابي", reset: "كلمة المرور" };
+    function pname(k) { return k.indexOf("lesson:") === 0 ? "درس " + k.slice(7) : PL[k] || k; }
+    var list = rows.filter(function (r) { return !S.level || r.level === S.level; }).map(function (r) {
+      var tgtSec = S.mins * 60 * S.days, tgtStory = S.story * S.days, tgtCards = S.cards * S.days;
+      r.p_time = pct(r.study, tgtSec); r.p_story = pct(r.story, tgtStory); r.p_cards = pct(r.card_reviews, tgtCards); r.p_hw = pct(r.hw_done, Math.max(r.hw_available, 1));
+      r.score = Math.round((r.p_time + r.p_story + r.p_cards + r.p_hw) / 4);
+      var last = r.last_seen ? Math.floor((Date.now() - new Date(r.last_seen)) / 864e5) : 999; r.idle = last;
+      r.state = r.study < 60 || last > 6 ? "red" : (last > 3 || r.score < 35) ? "amber" : "green";
+      return r;
+    });
+    list.sort(function (x, y) { return S.sort === "low" ? x.score - y.score : S.sort === "high" ? y.score - x.score : String(x.name).localeCompare(String(y.name), "ar"); });
+    var tot = list.reduce(function (o, r) { o.study += r.study; o.story += r.story; o.cards += r.card_reviews; o.sound += r.sound; return o; }, { study: 0, story: 0, cards: 0, sound: 0 });
+    var gc = list.filter(function (r) { return r.state === "green"; }).length, ac = list.filter(function (r) { return r.state === "amber"; }).length, rc = list.filter(function (r) { return r.state === "red"; }).length;
+    var h = '<h2>أداء الطلاب</h2><p class="muted">كل دائرة = نسبة تحقيق الطالب للهدف خلال الفترة. الأهداف قابلة للتعديل. اضغط على بطاقة طالب لرؤية التفاصيل. (تسجيل وقت الصفحات ونقرات الأصوات والمراجعة يبدأ من تاريخ هذا التحديث.)</p>' +
+      '<div class="tile form"><div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))"><div><label>الفترة</label><select id="pfD"><option value="7"' + (S.days === 7 ? " selected" : "") + '>آخر 7 أيام</option><option value="14"' + (S.days === 14 ? " selected" : "") + '>آخر 14 يوماً</option><option value="30"' + (S.days === 30 ? " selected" : "") + '>آخر 30 يوماً</option></select></div>' +
+      '<div><label>المستوى</label><select id="pfL"><option value="">الكل</option>' + ["A1", "A2", "B1", "B2", "C1"].map(function (l) { return '<option value="' + l + '"' + (S.level === l ? " selected" : "") + ">" + l + "</option>"; }).join("") + '</select></div>' +
+      '<div><label>الترتيب</label><select id="pfS"><option value="low"' + (S.sort === "low" ? " selected" : "") + '>الأضعف أولاً</option><option value="high"' + (S.sort === "high" ? " selected" : "") + '>الأقوى أولاً</option><option value="name"' + (S.sort === "name" ? " selected" : "") + '>بالاسم</option></select></div>' +
+      '<div><label>هدف الدقائق يومياً</label><input id="pfM" type="number" min="5" max="180" value="' + S.mins + '"></div><div><label>هدف تكرار القصة يومياً</label><input id="pfT" type="number" min="1" max="20" value="' + S.story + '"></div><div><label>هدف مراجعة البطاقات يومياً</label><input id="pfC" type="number" min="1" max="100" value="' + S.cards + '"></div></div></div>' +
+      '<div class="pgrid4"><div class="tile pstat"><b>' + list.length + '</b><span>طالب</span></div><div class="tile pstat"><b>' + hm(tot.study) + '</b><span>إجمالي وقت الدراسة</span></div><div class="tile pstat"><b>' + tot.story + '</b><span>تكرارات القصة</span></div><div class="tile pstat"><b>' + tot.cards + '</b><span>بطاقات روجعت</span></div>' +
+      '<div class="tile pstat"><b style="color:#2F9E5B">' + gc + '</b><span>🟢 نشطون</span></div><div class="tile pstat"><b style="color:#d98a00">' + ac + '</b><span>🟡 يحتاجون تشجيعاً</span></div><div class="tile pstat"><b style="color:#c62828">' + rc + '</b><span>🔴 خاملون</span></div></div>';
+    h += '<div class="pcards">' + list.map(function (r) {
+      var dot = r.state === "green" ? "#2F9E5B" : r.state === "amber" ? "#d98a00" : "#c62828";
+      return '<button class="tile pcard" data-pid="' + r.id + '" type="button"><div class="row" style="border:0;padding:0"><div style="text-align:start"><strong>' + esc(r.name) + '</strong>' + (r.nick ? ' <span class="muted">«' + esc(r.nick) + '»</span>' : "") + '<div class="muted">' + esc(r.level) + (r.last_seen ? " · آخر دخول قبل " + (r.idle === 0 ? "اليوم" : r.idle + " يوم") : " · لم يدخل بعد") + '</div></div><span class="pdot" style="background:' + dot + '" title="' + r.score + '%"></span></div><div class="prings">' +
+        ring(r.p_time, "الوقت", hm(r.study), "var(--gold)") + ring(r.p_story, "القصة", r.story + " مرة", "#3B7DD8") + ring(r.p_cards, "الكلمات", r.card_reviews + " بطاقة", "#8e44ad") + ring(r.p_hw, "الواجب", r.hw_done + "/" + r.hw_available, "#2F9E5B") + "</div></button>";
+    }).join("") + "</div>";
+    h += '<div id="pDetail"></div>';
+    view.innerHTML = h;
+    function reread() { S.days = Number($("pfD").value); S.level = $("pfL").value; S.sort = $("pfS").value; S.mins = Number($("pfM").value) || 20; S.story = Number($("pfT").value) || 1; S.cards = Number($("pfC").value) || 10; VIEWS.perf(); }
+    ["pfD", "pfL", "pfS", "pfM", "pfT", "pfC"].forEach(function (id) { $(id).addEventListener("change", reread); });
+    view.querySelectorAll("[data-pid]").forEach(function (b) { b.addEventListener("click", function () {
+      var r = list.filter(function (x) { return x.id === b.getAttribute("data-pid"); })[0]; if (!r) return;
+      var daily = r.daily || [], mx = Math.max.apply(null, daily.concat([1]));
+      var pages = Object.keys(r.pages || {}).map(function (k) { return [k, r.pages[k]]; }).sort(function (x, y) { return y[1] - x[1]; }).slice(0, 8), pm = pages.length ? pages[0][1] : 1;
+      var good = [], bad = [];
+      if (r.study_prev && r.study > r.study_prev) good.push("زاد وقته على التطبيق"); else if (r.study_prev && r.study < r.study_prev) bad.push("قلّ وقته على التطبيق");
+      if (r.story > r.story_prev) good.push("يكرر القصة أكثر من الفترة السابقة"); else if (r.story_prev && r.story < r.story_prev) bad.push("قلّ تكراره للقصة");
+      if (r.card_reviews > r.card_reviews_prev) good.push("يراجع البطاقات أكثر"); else if (r.card_reviews_prev && r.card_reviews < r.card_reviews_prev) bad.push("قلّت مراجعته للبطاقات");
+      if (r.sound > r.sound_prev) good.push("يكرر الأصوات أكثر (تحسّن في النطق والاستماع)"); else if (r.sound_prev && r.sound < r.sound_prev) bad.push("قلّ تكراره للأصوات");
+      if (r.hw_score != null && r.hw_score >= 80) good.push("نتائج الواجب الأولى ممتازة (" + r.hw_score + "%)"); else if (r.hw_score != null && r.hw_score < 60) bad.push("نتائج الواجب الأولى منخفضة (" + r.hw_score + "%)");
+      if (r.hw_available && r.hw_done < r.hw_available) bad.push("لم يسلّم " + (r.hw_available - r.hw_done) + " من الواجبات المفتوحة");
+      if (r.active_days < Math.ceil(S.days / 3)) bad.push("دخل " + r.active_days + " أيام فقط من " + S.days);
+      if (!good.length) good.push("لا مؤشر تحسّن واضح بعد."); if (!bad.length) bad.push("لا نقاط ضعف ظاهرة.");
+      $("pDetail").innerHTML = '<div class="tile" style="margin-top:16px"><div class="row" style="border:0;padding:0"><h3 style="margin:0">' + esc(r.name) + (r.nick ? " «" + esc(r.nick) + "»" : "") + ' — ' + esc(r.level) + '</h3><span class="badge gold">النتيجة العامة ' + r.score + '%</span></div>' +
+        '<div class="pgrid4" style="margin-top:12px"><div class="pstat"><b>' + hm(r.study) + '</b><span>وقت التطبيق ' + trend(r.study, r.study_prev) + '</span></div><div class="pstat"><b>' + r.active_days + "/" + S.days + '</b><span>أيام النشاط</span></div><div class="pstat"><b>' + r.story + '</b><span>تكرار القصة ' + trend(r.story, r.story_prev) + '</span></div><div class="pstat"><b>' + r.sound + '</b><span>نقرات تكرار الصوت ' + trend(r.sound, r.sound_prev) + '</span></div>' +
+        '<div class="pstat"><b>' + r.card_reviews + '</b><span>بطاقات روجعت ' + trend(r.card_reviews, r.card_reviews_prev) + '</span></div><div class="pstat"><b>' + r.cards_learned + "/" + r.cards_seen + '</b><span>كلمات محفوظة / مرئية</span></div><div class="pstat"><b>' + (r.hw_secs ? hm(r.hw_secs) : "—") + '</b><span>متوسط وقت حل الواجب</span></div><div class="pstat"><b>' + r.hw_attempts + '</b><span>محاولات الواجب (فتح ' + r.hw_opens + ')</span></div></div>' +
+        '<h4>وقت الدراسة آخر 14 يوماً</h4><div class="spark">' + daily.map(function (v) { return '<i title="' + hm(v) + '" style="height:' + Math.max(3, Math.round(v / mx * 56)) + 'px"></i>'; }).join("") + '</div>' +
+        '<h4>أين يقضي وقته (الصفحات)</h4>' + (pages.length ? pages.map(function (p) { return '<div class="pbar"><span>' + esc(pname(p[0])) + '</span><div><i style="width:' + Math.round(p[1] / pm * 100) + '%"></i></div><em>' + hm(p[1]) + "</em></div>"; }).join("") : '<p class="muted">لا بيانات صفحات بعد (يبدأ التسجيل من الآن).</p>') +
+        '<div class="grid2" style="margin-top:12px"><div class="infobox"><strong>📈 يتحسّن في</strong><ul>' + good.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + '</ul></div><div class="warnbox"><strong>⚠️ يحتاج انتباهاً في</strong><ul>' + bad.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + '</ul></div></div><p><button class="btn btn-ghost sm" data-pmsg="' + r.id + '" type="button">✉️ أرسل له رسالة تشجيع</button></p></div>';
+      $("pDetail").scrollIntoView({ behavior: "smooth", block: "start" });
+      var mb = view.querySelector("[data-pmsg]"); if (mb) mb.addEventListener("click", function () { view._dm = r.id; go("messages"); });
+    }); });
   };
 
   // ---------- IELTS / TOEFL course review (teacher only until published) ----------

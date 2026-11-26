@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>مواعيد الحصص · KIMZA Academy</title>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwozp5x">
-<link rel="stylesheet" href="app.css?v=mwwozp5x">
+<link rel="stylesheet" href="site.css?v=mwxbwf29">
+<link rel="stylesheet" href="app.css?v=mwxbwf29">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwozp5x"></script>
-<script src="portal-i18n.js?v=mwwozp5x"></script>
+<script src="app.js?v=mwxbwf29"></script>
+<script src="portal-i18n.js?v=mwxbwf29"></script>
 
 <script>
 (async function () {
@@ -252,8 +252,8 @@
     // who voted what
     h += '<div class="tile" style="margin-top:14px"><h2 style="margin-top:0">من اختار ماذا (أسماء)</h2>' + (state.slots.length ? state.slots.map(function (s) {
       var vs = (state.votes || []).filter(function (v) { return v.slot_id === s.id; }); if (!vs.length) return "";
-      return "<p><strong>" + esc(slotLabel(s)) + " (" + vs.length + "):</strong> " + vs.map(function (v) { return '<span class="vt-chip" style="background:' + COL[v.level] + '">' + esc(state.names[v.user_id] || "؟") + "</span>"; }).join(" ") + "</p>";
-    }).join("") : "") + "</div>";
+      return "<p><strong>" + esc(slotLabel(s)) + " (" + vs.length + "):</strong> " + vs.map(function (v) { return '<span class="vt-chip" style="background:' + COL[v.level] + '">' + esc(state.names[v.user_id] || "؟") + ' <button type="button" data-dv="' + s.id + "|" + v.user_id + '" title="حذف هذا الصوت" aria-label="حذف صوت ' + esc(state.names[v.user_id] || "") + '" style="background:rgba(0,0,0,.25);color:#fff;border:0;border-radius:50%;width:18px;height:18px;line-height:16px;cursor:pointer;margin-inline-start:4px">×</button></span>'; }).join(" ") + "</p>";
+    }).join("") : "") + (function () { var ids = Array.from(new Set((state.votes || []).map(function (v) { return v.user_id; }))); return ids.length ? '<p style="margin-top:10px"><label>حذف كل أصوات طالب: <select id="dvAll"><option value="">— اختر —</option>' + ids.map(function (i) { return '<option value="' + i + '">' + esc(state.names[i] || "؟") + "</option>"; }).join("") + '</select></label> <button class="btn btn-ghost sm" id="dvAllBtn" type="button">حذف</button></p><p class="muted" style="margin:0">اضغط × بجانب اسم الطالب لحذف صوته في ذلك الموعد فقط. يستطيع الطالب التصويت من جديد بعد الحذف.</p>' : ""; })() + "</div>";
     app.innerHTML = h; bindT();
   }
 
@@ -267,6 +267,14 @@
       sessionStorage.setItem("vtPoll", r.data.id); await loadPolls(); await loadPoll(); teacherView();
     });
     var p = state.poll; if (!p) return;
+    document.querySelectorAll("[data-dv]").forEach(function (b) { b.addEventListener("click", async function () {
+      var pr = b.getAttribute("data-dv").split("|"); if (!confirm("حذف هذا الصوت؟")) return;
+      var r = await sb.rpc("teacher_delete_votes", { p_poll: p.id, p_user: pr[1], p_slot: Number(pr[0]) });
+      if (r.error) { alert("تعذر الحذف: " + r.error.message); return; } await loadPoll(); teacherView(); }); });
+    $("dvAllBtn") && $("dvAllBtn").addEventListener("click", async function () {
+      var u = $("dvAll").value; if (!u || !confirm("حذف كل أصوات هذا الطالب في هذا الاستفتاء؟")) return;
+      var r = await sb.rpc("teacher_delete_votes", { p_poll: p.id, p_user: u, p_slot: null });
+      if (r.error) { alert("تعذر الحذف: " + r.error.message); return; } await loadPoll(); teacherView(); });
     $("tSave").addEventListener("click", async function () {
       var c = $("tClose").value ? new Date($("tClose").value).toISOString() : null;
       var r = await sb.from("vote_polls").update({ title: $("tTitle").value.trim(), note: $("tNote").value.trim() || null, picks: Number($("tPicks").value), closes_at: c }).eq("id", p.id);

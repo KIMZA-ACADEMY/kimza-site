@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxai2yn">
-<link rel="stylesheet" href="app.css?v=mwxai2yn">
+<link rel="stylesheet" href="site.css?v=mwxbwf29">
+<link rel="stylesheet" href="app.css?v=mwxbwf29">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxai2yn"></script>
-<script src="portal-i18n.js?v=mwxai2yn"></script>
+<script src="app.js?v=mwxbwf29"></script>
+<script src="portal-i18n.js?v=mwxbwf29"></script>
 
 <script>
 (async function () {
@@ -41,27 +41,36 @@
     clearInterval(timer); cur = null;
     var me = (await sb.from("student_prefs").select("nickname,emoji").eq("user_id", uid).maybeSingle()).data;
     var list = await overview();
+    var cls = (await sb.rpc("classmates")).data || [], com = (await sb.rpc("community_people")).data || [];
     var incoming = list.filter(function (f) { return f.status === "pending" && !f.mine; });
     var sent = list.filter(function (f) { return f.status === "pending" && f.mine; });
     var friends = list.filter(function (f) { return f.status === "accepted"; });
-    var h = '<h1>أصدقائي</h1><p class="muted">أضف زملاءك كأصدقاء ثم تحدثوا معاً. تظهر لكل واحد منكم شخصيته (الاسم المستعار) فقط، ولا يرى أحد رقمك أو اسمك الحقيقي. ممنوع كتابة أرقام الهواتف أو الروابط. المعلم قد يراجع المحادثات للحفاظ على سلامة الجميع.</p>';
+    var h = '<h1>أصدقائي</h1><p class="muted">أضف زملاءك كأصدقاء ثم تحدثوا معاً. تظهر لكل واحد منكم شخصيته (الاسم المستعار) فقط، ولا يرى أحد رقمك أو اسمك الحقيقي. ممنوع كتابة أرقام الهواتف أو الروابط. محادثاتكم خاصة تماماً: لا يقرؤها المعلم ولا أي طالب آخر.</p>';
     if (!me || !me.nickname) h += '<div class="warnbox">اختر اسماً مستعاراً أولاً من صفحة «المجتمع» ثم «شخصيتي»، حتى تستطيع إضافة الأصدقاء.</div>';
     h += '<div class="tile form"><h2 style="margin:0 0 8px">➕ إضافة صديق</h2><label for="fnN">الاسم المستعار لصديقك (اكتبه كما هو)</label><input id="fnN" maxlength="20"><div class="btns" style="margin-top:8px"><button class="btn btn-primary" id="fnS" type="button">بحث</button></div><div id="fnR" style="margin-top:10px"></div></div>';
     if (incoming.length) h += '<div class="tile" style="margin-top:14px"><h2 style="margin:0 0 8px">🔔 طلبات صداقة جديدة</h2>' + incoming.map(function (f) { return '<div class="row">' + av(f) + ' <strong>' + esc(f.nickname || "طالب") + '</strong><span style="margin-inline-start:auto;display:flex;gap:6px"><button class="btn btn-primary sm" data-ok="' + f.id + '" type="button">قبول</button><button class="btn btn-ghost sm" data-no="' + f.id + '" type="button">رفض</button></span></div>'; }).join("") + "</div>";
     if (sent.length) h += '<div class="tile" style="margin-top:14px"><h2 style="margin:0 0 8px">⏳ طلبات أرسلتها</h2>' + sent.map(function (f) { return '<div class="row">' + av(f) + " " + esc(f.nickname || "طالب") + ' <span class="badge" style="margin-inline-start:auto">بانتظار الرد</span></div>'; }).join("") + "</div>";
     h += '<div class="tile" style="margin-top:14px"><h2 style="margin:0 0 8px">👫 أصدقائي (' + friends.length + ')</h2>' + (friends.length ? friends.map(function (f) { return '<div class="row" style="cursor:pointer" data-chat="' + f.id + '">' + av(f) + ' <strong>' + esc(f.nickname || "طالب") + "</strong>" + (Number(f.unread) ? ' <span class="badge gold">' + f.unread + " جديدة</span>" : "") + '<span class="muted" style="margin-inline-start:auto">محادثة ‹</span></div>'; }).join("") : '<p class="muted" style="margin:0">لا أصدقاء بعد. ابحث عن زميلك بالاسم المستعار.</p>') + "</div>";
+    function person(p) {
+      var st = p.fstatus, btn = !p.nickname ? '<span class="muted" style="margin-inline-start:auto">لم يختر اسماً مستعاراً بعد</span>' : st === "accepted" ? '<span class="badge ok" style="margin-inline-start:auto">صديق</span>' : st === "pending" ? '<span class="badge" style="margin-inline-start:auto">' + (p.mine ? "بانتظار الرد" : "أرسل لك طلباً") + "</span>" : st === "rejected" ? "" : '<button class="btn btn-primary sm" data-add="' + p.user_id + '" type="button" style="margin-inline-start:auto">➕ إضافة</button>';
+      return '<div class="row">' + av(p) + " <strong>" + esc(p.nickname || "طالب") + "</strong>" + (p.group_name ? ' <span class="muted">· ' + esc(p.group_name) + "</span>" : "") + btn + "</div>";
+    }
+    if (cls.length) h += '<div class="tile" style="margin-top:14px"><h2 style="margin:0 0 8px">🏫 زملاء صفّي</h2>' + cls.map(person).join("") + "</div>";
+    if (com.length) h += '<div class="tile" style="margin-top:14px"><h2 style="margin:0 0 8px">🌐 من المجتمع</h2><p class="muted" style="margin:0 0 6px">طلاب كتبوا مؤخراً في غرف المجتمع.</p>' + com.map(person).join("") + "</div>";
     app.innerHTML = h;
+    app.querySelectorAll("[data-add]").forEach(function (b) { b.addEventListener("click", async function () {
+      var x = (await sb.rpc("send_friend_request", { p_target: b.getAttribute("data-add") })).data;
+      KZ.toast(x === "sent" ? "أُرسل طلب الصداقة." : x === "nickname" ? "اختر اسماً مستعاراً أولاً من «المجتمع» ثم «شخصيتي»." : "تعذر الإرسال.", x !== "sent"); if (x === "sent") main(); }); });
     document.getElementById("fnS").addEventListener("click", async function () {
       var n = document.getElementById("fnN").value.trim(), box = document.getElementById("fnR"); if (n.length < 2) return;
       var r = (await sb.rpc("find_student", { p_nick: n })).data || [];
       if (!r.length) { box.innerHTML = '<p class="muted">لم أجد طالباً بهذا الاسم المستعار. تأكد من كتابته كما هو.</p>'; return; }
-      var s = r[0];
-      box.innerHTML = '<div class="row">' + av(s) + " <strong>" + esc(s.nickname) + '</strong><button class="btn btn-primary sm" id="fnAdd" type="button" style="margin-inline-start:auto">إرسال طلب صداقة</button></div>';
-      document.getElementById("fnAdd").addEventListener("click", async function () {
-        var x = (await sb.rpc("send_friend_request", { p_target: s.id })).data;
+      box.innerHTML = r.map(function (s) { return '<div class="row">' + av(s) + " <strong>" + esc(s.nickname) + '</strong><button class="btn btn-primary sm" data-fa="' + s.id + '" type="button" style="margin-inline-start:auto">إرسال طلب صداقة</button></div>'; }).join("");
+      box.querySelectorAll("[data-fa]").forEach(function (fb) { fb.addEventListener("click", async function () {
+        var x = (await sb.rpc("send_friend_request", { p_target: fb.getAttribute("data-fa") })).data;
         var M = { sent: "أُرسل طلب الصداقة.", pending: "الطلب موجود بالفعل.", accepted: "أنتما صديقان بالفعل.", rejected: "لا يمكن إرسال الطلب.", nickname: "اختر اسماً مستعاراً أولاً.", limit: "وصلت للحد اليومي للطلبات." };
         KZ.toast(M[x] || "تعذر الإرسال.", x !== "sent"); if (x === "sent") main();
-      });
+      }); });
     });
     app.querySelectorAll("[data-ok]").forEach(function (b) { b.addEventListener("click", async function () { await sb.rpc("respond_friend", { p_id: Number(b.getAttribute("data-ok")), p_ok: true }); KZ.toast("أصبحتما صديقين 🎉"); main(); }); });
     app.querySelectorAll("[data-no]").forEach(function (b) { b.addEventListener("click", async function () { await sb.rpc("respond_friend", { p_id: Number(b.getAttribute("data-no")), p_ok: false }); main(); }); });
@@ -78,7 +87,7 @@
   }
   async function openChat(id, f) {
     cur = f;
-    app.innerHTML = '<p><button class="btn btn-ghost sm" id="fcBack" type="button">› رجوع</button></p><h1 style="display:flex;gap:10px;align-items:center">' + av(f) + " " + esc(f.nickname || "صديق") + '</h1><div class="tile"><div id="fcBox" style="max-height:55vh;min-height:120px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:4px"></div><div class="form" style="margin-top:12px"><textarea id="fcT" rows="2" maxlength="800" placeholder="اكتب رسالتك…"></textarea><div class="btns" style="margin-top:8px"><button class="btn btn-primary" id="fcS" type="button">إرسال</button></div><p class="muted" style="margin:6px 0 0">لا أرقام هواتف ولا روابط. كن لطيفاً ومحترماً.</p></div></div>';
+    app.innerHTML = '<p><button class="btn btn-ghost sm" id="fcBack" type="button">› رجوع</button></p><h1 style="display:flex;gap:10px;align-items:center">' + av(f) + " " + esc(f.nickname || "صديق") + '</h1><div class="tile"><div id="fcBox" style="max-height:55vh;min-height:120px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:4px"></div><div class="form" style="margin-top:12px"><textarea id="fcT" rows="2" maxlength="800" placeholder="اكتب رسالتك…"></textarea><div class="btns" style="margin-top:8px"><button class="btn btn-primary" id="fcS" type="button">إرسال</button></div><p class="muted" style="margin:6px 0 0">محادثتك خاصة. لا أرقام هواتف ولا روابط. كن لطيفاً ومحترماً.</p></div></div>';
     document.getElementById("fcBack").addEventListener("click", main);
     await paint(f);
     document.getElementById("fcS").addEventListener("click", async function (ev) {
