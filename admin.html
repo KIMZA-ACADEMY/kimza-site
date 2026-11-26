@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxe0g5o">
-<link rel="stylesheet" href="app.css?v=mwxe0g5o">
+<link rel="stylesheet" href="site.css?v=mwxe9tas">
+<link rel="stylesheet" href="app.css?v=mwxe9tas">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,9 +24,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxe0g5o"></script>
-<script src="portal-i18n.js?v=mwxe0g5o"></script>
-<script src="i18n.js?v=mwxe0g5o"></script>
+<script src="app.js?v=mwxe9tas"></script>
+<script src="portal-i18n.js?v=mwxe9tas"></script>
+<script src="i18n.js?v=mwxe9tas"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -666,6 +666,20 @@
       }).join('') + '</div>';
     }
     view.innerHTML = '<p class="muted">شغّل أو أوقف أي جزء من الموقع. الإيقاف يخفي الميزة ويعرض للزائر أنها متوقفة مؤقتاً، ويمكنك إعادتها في أي وقت. (هذه المفاتيح تتحكم في الواجهة، وفتح الدروس والاختبارات يبقى من تبويب الدروس والاختبارات.)</p>' + group('public', 'الموقع العام') + group('student', 'منصة الطلاب');
+    // ---- per-student overrides: hide/show any student panel for one student only ----
+    var stf = fs_.filter(function (f) { return f.area === 'student'; });
+    var nmo = await nameMap();
+    view.insertAdjacentHTML('beforeend', '<h2 style="margin-top:22px">🎛️ تخصيص اللوحات لطالب معيّن</h2><div class="tile form"><p class="muted">اختر طالباً ثم حدّد لكل لوحة: «حسب الإعداد العام» أو «إخفاء عنه» أو «إظهار له» (حتى لو كانت مطفأة للجميع).</p><label for="foSel">الطالب</label><select id="foSel"><option value="">— اختر —</option>' + nmo.list.map(function (p) { return '<option value="' + p.id + '">' + esc(p.full_name) + ' (' + esc(p.level) + ')</option>'; }).join('') + '</select><div id="foBox"></div></div>');
+    $('foSel').addEventListener('change', async function () {
+      var uid = this.value, box = $('foBox'); if (!uid) { box.innerHTML = ''; return; }
+      var cur = {}; ((await sb.from('feature_overrides').select('key,enabled').eq('user_id', uid)).data || []).forEach(function (o) { cur[o.key] = o.enabled; });
+      box.innerHTML = stf.map(function (f) { var v = cur[f.key] === undefined ? '' : cur[f.key] ? '1' : '0'; return '<div class="row"><div><strong>' + esc(f.label) + '</strong>' + (f.enabled ? '' : ' <span class="badge bad">مطفأة للجميع</span>') + '</div><select data-fo="' + f.key + '"><option value=""' + (v === '' ? ' selected' : '') + '>حسب الإعداد العام</option><option value="0"' + (v === '0' ? ' selected' : '') + '>🚫 إخفاء عنه</option><option value="1"' + (v === '1' ? ' selected' : '') + '>✅ إظهار له</option></select></div>'; }).join('');
+      box.querySelectorAll('[data-fo]').forEach(function (sel) { sel.addEventListener('change', async function () {
+        var k = sel.getAttribute('data-fo'), r;
+        if (sel.value === '') r = await sb.from('feature_overrides').delete().eq('user_id', uid).eq('key', k);
+        else r = await sb.from('feature_overrides').upsert({ user_id: uid, key: k, enabled: sel.value === '1' });
+        KZ.toast(r.error ? 'تعذر الحفظ.' : 'تم الحفظ لهذا الطالب.', !!r.error); }); });
+    });
     view.querySelectorAll('[data-ft]').forEach(function (b) { b.addEventListener('click', async function () {
       var on = b.getAttribute('data-on') === '1';
       if (on && b.getAttribute('data-ft') === 'portal' && !confirm('إيقاف هذه الميزة يغلق المنصة على كل الطلاب. هل أنت متأكد؟')) return;

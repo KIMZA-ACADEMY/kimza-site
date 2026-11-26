@@ -58,10 +58,11 @@
     try {
       var fr = await sb.from("site_features").select("key,enabled");
       (fr.data || []).forEach(function (f) { KZ.features[f.key] = f.enabled; });
+      if (prof.role === "student") { var fo = await sb.from("feature_overrides").select("key,enabled").eq("user_id", session.user.id); (fo.data || []).forEach(function (f) { KZ.features[f.key] = f.enabled; }); }
     } catch (e) {}
     if (prof.role === "student") {
       var page = (location.pathname.split("/").pop() || "").replace(".html", "");
-      var PAGE_FEATURE = { review: "review", flashcards: "flashcards", attendance: "attendance", speaking: "speaking", certificates: "certificates", lesson: "lessons", test: "tests", friends: "friends" };
+      var PAGE_FEATURE = { review: "review", flashcards: "flashcards", attendance: "attendance", speaking: "speaking", certificates: "certificates", lesson: "lessons", test: "tests", friends: "friends", tasks: "p_tasks", messages: "p_messages", skills: "p_skills", exams: "p_exams", schedule: "p_schedule", account: "p_account", community: "p_community" };
       var key = !KZ.on("portal") ? "portal" : PAGE_FEATURE[page];
       if (key && !KZ.on(key)) {
         shell("");
@@ -77,7 +78,7 @@
   function shell(active) {
     var prof = KZ.profile;
     var isT = prof && prof.role === "teacher";
-    var FOFF = { "review.html": "review", "flashcards.html": "flashcards", "attendance.html": "attendance", "speaking.html": "speaking", "certificates.html": "certificates" };
+    var FOFF = { "review.html": "review", "flashcards.html": "flashcards", "attendance.html": "attendance", "speaking.html": "speaking", "certificates.html": "certificates", "tasks.html": "p_tasks", "messages.html": "p_messages", "skills.html": "p_skills", "exams.html": "p_exams", "friends.html": "friends", "schedule.html": "p_schedule", "account.html": "p_account", "community.html": "p_community" };
     var links = isT
       ? [["admin.html", "لوحة المعلم", "admin"], ["schedule.html", "مواعيد الحصص", "schedule"], ["account.html", "طلبات الأسماء", "account"], ["community.html", "المجتمع", "community"]]
       : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["tasks.html", "مهامي", "tasks"], ["messages.html", "رسائلي", "messages"], ["skills.html", "الكتابة والمحادثة", "skills"], ["exams.html", "الامتحانات", "exams"], ["friends.html", "أصدقائي", "friends"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"], ["schedule.html", "مواعيد الحصص", "schedule"], ["account.html", "حسابي", "account"], ["community.html", "المجتمع", "community"]].filter(function (l) { return !FOFF[l[0]] || KZ.on(FOFF[l[0]]); });

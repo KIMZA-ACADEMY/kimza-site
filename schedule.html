@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxe0g5o">
-<link rel="stylesheet" href="app.css?v=mwxe0g5o">
+<link rel="stylesheet" href="site.css?v=mwxe9tas">
+<link rel="stylesheet" href="app.css?v=mwxe9tas">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,8 +24,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxe0g5o"></script>
-<script src="portal-i18n.js?v=mwxe0g5o"></script>
+<script src="app.js?v=mwxe9tas"></script>
+<script src="portal-i18n.js?v=mwxe9tas"></script>
 
 <script>
 (async function () {
@@ -132,7 +132,7 @@
 
   // ---------- student board ----------
   function studentView() {
-    var p = state.poll, wasOpen = isOpen(p), open = wasOpen && !state.blocked, picks = p.picks;
+    var p = state.poll, wasOpen = isOpen(p), open = wasOpen && !state.blocked, picks = p.picks, mx = p.picks + (p.extra_picks || 0);
     var h = '<div class="row" style="border:0;padding:0"><h1 style="margin:0">' + esc(p.title) + "</h1>" +
       '<span class="vt-badge" style="background:' + (COL[MY] || "#555") + '">' + (MY ? "أنت في " + esc(TEAM[MY] || "") + " (" + esc(MY) + ")" : "") + "</span></div>";
     if (MYL.length > 1) h += '<div class="tile" style="margin:10px 0"><strong>أنت تمثّل أكثر من مستوى. صوّت لكل مستوى على حدة:</strong><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' + MYL.map(function (lv) { var done = (state.myVotes || []).some(function (v) { return v.level === lv; }); return '<button type="button" class="btn ' + (lv === MY ? 'btn-primary' : 'btn-ghost') + ' sm" data-lvsw="' + lv + '" style="border-color:' + COL[lv] + '">' + lv + ' ' + esc(TEAM[lv].replace('الفريق ', '')) + (done ? ' ✅' : '') + '</button>'; }).join('') + '</div></div>';
@@ -146,7 +146,7 @@
     } else if (p.status === "closed") h += '<div class="tile" style="margin:14px 0">أُغلق التصويت. سيعلن المعلم مواعيد كل مستوى قريباً.</div>';
     if (state.blocked && wasOpen) h += '<div class="warnbox" style="margin:14px 0">🚫 تصويتك متوقف حالياً من المعلم. تواصل معه إن كان لديك استفسار. سيُفتح لك التصويت عندما يرفع المعلم الإيقاف.</div>';
     h += '<div class="vt-legend">' + LEVELS.map(function (lv) { return '<span class="vt-chip' + (lv === MY ? " me" : "") + '" style="background:' + COL[lv] + '">' + lv + " " + esc(TEAM[lv].replace("الفريق ", "")) + "</span>"; }).join("") + "</div>";
-    if (open) h += '<div class="tile" style="margin-bottom:14px"><strong>اختر ' + picks + " من المواعيد المناسبة لك.</strong> اخترت الآن: <span id=\"vtCnt\">" + state.sel.length + "</span> من " + picks +
+    if (open) h += '<div class="tile" style="margin-bottom:14px"><strong>اختر ' + (mx > picks ? "من " + picks + " إلى " + mx : picks) + " من المواعيد المناسبة لك" + (mx > picks ? " (الأولى إجبارية، والإضافية اختيارية)" : "") + ".</strong> اخترت الآن: <span id=\"vtCnt\">" + state.sel.length + "</span> من " + mx +
       ' <button class="btn btn-primary" id="vtSave" type="button" style="margin-inline-start:10px">' + (state.mine.length ? "حفظ تعديل اختياري" : "حفظ اختياري") + '</button> <span id="vtMsg" class="muted"></span></div>';
     var by = slotsByDay();
     h += '<div class="vt-days">';
@@ -168,14 +168,14 @@
     app.querySelectorAll("[data-s]").forEach(function (b) {
       b.addEventListener("click", function () {
         var id = Number(b.getAttribute("data-s")), i = state.sel.indexOf(id);
-        if (i >= 0) state.sel.splice(i, 1); else if (state.sel.length < picks) state.sel.push(id); else { state.sel.shift(); state.sel.push(id); }
+        if (i >= 0) state.sel.splice(i, 1); else if (state.sel.length < mx) state.sel.push(id); else { state.sel.shift(); state.sel.push(id); }
         studentView();
       });
     });
     var sv = document.getElementById("vtSave");
     if (sv) sv.addEventListener("click", async function () {
       var m = document.getElementById("vtMsg");
-      if (state.sel.length !== picks) { m.textContent = "يجب اختيار " + picks + " مواعيد بالضبط."; m.style.color = "#c62828"; return; }
+      if (state.sel.length < picks || state.sel.length > mx) { m.textContent = mx > picks ? "اختر من " + picks + " إلى " + mx + " مواعيد." : "يجب اختيار " + picks + " مواعيد بالضبط."; m.style.color = "#c62828"; return; }
       sv.disabled = true; m.textContent = "جارٍ الحفظ...";
       var r = await sb.rpc("cast_votes", { p_poll: p.id, p_slots: state.sel, p_level: MY });
       if (r.error) { m.textContent = /closed/.test(r.error.message) ? "أُغلق التصويت." : "تعذر الحفظ: " + r.error.message; m.style.color = "#c62828"; sv.disabled = false; return; }
@@ -211,7 +211,7 @@
     h += '<div class="tile" style="margin-top:14px"><h2 style="margin-top:0">إعدادات الاستفتاء</h2><div class="form">' +
       '<div><label for="tTitle">العنوان</label><input id="tTitle" value="' + esc(p.title) + '"></div>' +
       '<div><label for="tNote">ملاحظة للطلاب (اختياري)</label><textarea id="tNote" rows="2">' + esc(p.note || "") + "</textarea></div>" +
-      '<div class="row" style="border:0;padding:0;justify-content:flex-start;gap:18px"><div><label for="tPicks">عدد المواعيد المطلوب من كل طالب</label><select id="tPicks">' + [1, 2, 3, 4].map(function (n) { return '<option' + (n === p.picks ? " selected" : "") + ">" + n + "</option>"; }).join("") + '</select></div>' +
+      '<div class="row" style="border:0;padding:0;justify-content:flex-start;gap:18px"><div><label for="tPicks">عدد الأصوات الإجبارية (على الأقل)</label><select id="tPicks">' + [1, 2, 3, 4].map(function (n) { return '<option' + (n === p.picks ? " selected" : "") + ">" + n + "</option>"; }).join("") + '</select></div><div><label for="tExtra">أصوات اختيارية إضافية (يستطيع الطالب تركها)</label><select id="tExtra">' + [0, 1, 2, 3, 4].map(function (n) { return '<option' + (n === (p.extra_picks || 0) ? " selected" : "") + ">" + n + "</option>"; }).join("") + '</select></div>' +
       '<div><label for="tClose">آخر موعد للتصويت</label><input id="tClose" type="datetime-local" value="' + dt + '"></div></div>' +
       '<div class="btns"><button class="btn btn-primary" id="tSave" type="button">حفظ الإعدادات</button>' +
       (p.status !== "open" ? '<button class="btn btn-primary" id="tOpen" type="button" style="background:#2e7d32">▶ فتح التصويت للطلاب</button>' : '<button class="btn btn-ghost" id="tClosePoll" type="button">⏹ إغلاق التصويت</button>') +
@@ -278,12 +278,12 @@
       if (r.error) { alert("تعذر الحذف: " + r.error.message); return; } await loadPoll(); teacherView(); });
     $("tSave").addEventListener("click", async function () {
       var c = $("tClose").value ? new Date($("tClose").value).toISOString() : null;
-      var r = await sb.from("vote_polls").update({ title: $("tTitle").value.trim(), note: $("tNote").value.trim() || null, picks: Number($("tPicks").value), closes_at: c }).eq("id", p.id);
+      var r = await sb.from("vote_polls").update({ title: $("tTitle").value.trim(), note: $("tNote").value.trim() || null, picks: Number($("tPicks").value), extra_picks: Number($("tExtra").value), closes_at: c }).eq("id", p.id);
       $("tMsg").textContent = r.error ? r.error.message : "✅ تم الحفظ"; if (!r.error) { await loadPolls(); }
     });
     $("tOpen") && $("tOpen").addEventListener("click", async function () {
       if (!state.slots.length) { $("tMsg").textContent = "أضف مواعيد أولاً."; return; }
-      var ok = await KZ.confirmBox("فتح التصويت؟", "سيظهر الاستفتاء لكل الطلاب، وكل طالب يختار " + p.picks + " مواعيد.", "نعم، افتح", "إلغاء"); if (!ok) return;
+      var ok = await KZ.confirmBox("فتح التصويت؟", "سيظهر الاستفتاء لكل الطلاب، وكل طالب يختار " + p.picks + (p.extra_picks ? " إلى " + (p.picks + p.extra_picks) : "") + " مواعيد.", "نعم، افتح", "إلغاء"); if (!ok) return;
       await sb.from("vote_polls").update({ status: "open" }).eq("id", p.id); await loadPolls(); await loadPoll(); teacherView();
     });
     $("tClosePoll") && $("tClosePoll").addEventListener("click", async function () {

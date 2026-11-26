@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxe0g5o">
-<link rel="stylesheet" href="app.css?v=mwxe0g5o">
+<link rel="stylesheet" href="site.css?v=mwxe9tas">
+<link rel="stylesheet" href="app.css?v=mwxe9tas">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,8 +24,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxe0g5o"></script>
-<script src="portal-i18n.js?v=mwxe0g5o"></script>
+<script src="app.js?v=mwxe9tas"></script>
+<script src="portal-i18n.js?v=mwxe9tas"></script>
 
 <script>
 (async function () {
@@ -108,10 +108,10 @@
     ["🎯", "أول تحدٍّ يومي", chDays, 1], ["🏅", "7 تحديات", chDays, 7], ["✅", "أنهيت اختباراً", testsDone, 1]
   ];
   var got = BADGES.filter(function (b) { return b[2] >= b[3]; }).length;
-  html += '<div class="tile" style="margin-bottom:22px"><div class="row" style="border:0;padding:0 0 10px"><h2 style="margin:0">🏅 إنجازاتي</h2><span class="badge gold">' + got + " / " + BADGES.length + '</span></div><div class="bdg-grid">' +
+  if (KZ.on("w_achievements")) html += '<div class="tile" style="margin-bottom:22px"><div class="row" style="border:0;padding:0 0 10px"><h2 style="margin:0">🏅 إنجازاتي</h2><span class="badge gold">' + got + " / " + BADGES.length + '</span></div><div class="bdg-grid">' +
     BADGES.map(function (b) { var on = b[2] >= b[3]; return '<div class="bdg' + (on ? " on" : "") + '" title="' + esc(b[1]) + '"><span class="e">' + b[0] + "</span><b>" + esc(b[1]) + "</b><small>" + (on ? "مكتمل ✓" : Math.min(b[2], b[3]) + " / " + b[3]) + "</small></div>"; }).join("") + "</div></div>";
   var doneToday = chLog[today] != null;
-  html += '<div class="tile chall" style="margin-bottom:22px"><div class="row" style="border:0;padding:0"><div><h2 style="margin:0 0 4px">🎯 تحدّي اليوم</h2><p class="muted" style="margin:0">٥ أسئلة سريعة من كلماتك. ' + (doneToday ? "أنجزت تحدّي اليوم بنتيجة " + chLog[today] + "/5 ✅ — يمكنك الإعادة للتدريب." : "اجمع نقاطاً وأكمل سلسلة أيامك!") + '</p></div><button class="btn btn-primary" id="chBtn" type="button">' + (doneToday ? "🔁 أعد التحدي" : "ابدأ التحدي") + "</button></div></div>";
+  if (KZ.on("w_challenge")) html += '<div class="tile chall" style="margin-bottom:22px"><div class="row" style="border:0;padding:0"><div><h2 style="margin:0 0 4px">🎯 تحدّي اليوم</h2><p class="muted" style="margin:0">٥ أسئلة سريعة من كلماتك. ' + (doneToday ? "أنجزت تحدّي اليوم بنتيجة " + chLog[today] + "/5 ✅ — يمكنك الإعادة للتدريب." : "اجمع نقاطاً وأكمل سلسلة أيامك!") + '</p></div><button class="btn btn-primary" id="chBtn" type="button">' + (doneToday ? "🔁 أعد التحدي" : "ابدأ التحدي") + "</button></div></div>";
   // ---------- student ideas / votes (teacher-approved) ----------
   var props = [], myVotes = {}, pcounts = {};
   try {
@@ -120,7 +120,7 @@
     for (var pi = 0; pi < props.length; pi++) if (props[pi].kind === "vote" && props[pi].status === "approved" && myVotes[props[pi].id] != null) pcounts[props[pi].id] = (await sb.rpc("proposal_counts", { p_id: props[pi].id })).data || [];
   } catch (e) {}
   var PK = { idea: "💡", competition: "🏆", vote: "🗳️" }, shown = props.filter(function (p) { return p.status === "approved" || p.user_id === KZ.user.id; });
-  html += '<div class="tile" style="margin-bottom:22px"><div class="row" style="border:0;padding:0 0 8px"><h2 style="margin:0">💬 اقتراحات وتصويتات الأكاديمية</h2><button class="btn btn-ghost sm" id="pSug" type="button">+ اقترح فكرة</button></div>' +
+  if (KZ.on("w_proposals")) html += '<div class="tile" style="margin-bottom:22px"><div class="row" style="border:0;padding:0 0 8px"><h2 style="margin:0">💬 اقتراحات وتصويتات الأكاديمية</h2><button class="btn btn-ghost sm" id="pSug" type="button">+ اقترح فكرة</button></div>' +
     (shown.length ? shown.map(function (p) {
       var c = pcounts[p.id] || [], tot = c.reduce(function (x, y) { return x + Number(y.n); }, 0), mine = myVotes[p.id];
       return '<div class="row" style="display:block"><strong>' + PK[p.kind] + " " + esc(p.title) + "</strong>" + (p.status === "pending" ? ' <span class="badge">بانتظار موافقة المعلم</span>' : "") + (p.body ? '<p class="muted" style="margin:4px 0">' + esc(p.body) + "</p>" : "") +
