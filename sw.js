@@ -1,6 +1,6 @@
-/* KIMZA service worker: network-first for our own files, cache as offline fallback.
-   Never touches Supabase or other sites, so data and logins are always live. */
-var CACHE = "kimza-v2";
+/* KIMZA service worker: serves our own files from the cache instantly and refreshes them in the background
+   (fast on slow networks in Yemen). Never touches Supabase or other sites, so data and logins are always live. */
+var CACHE = "kimza-v3";
 self.addEventListener("install", function () { self.skipWaiting(); });
 self.addEventListener("activate", function (e) {
   e.waitUntil(caches.keys().then(function (ks) { return Promise.all(ks.filter(function (k) { return k !== CACHE; }).map(function (k) { return caches.delete(k); })); }).then(function () { return self.clients.claim(); }));
@@ -8,10 +8,12 @@ self.addEventListener("activate", function (e) {
 self.addEventListener("fetch", function (e) {
   var r = e.request, u = new URL(r.url);
   if (r.method !== "GET" || u.origin !== location.origin) return;
-  e.respondWith(fetch(r).then(function (res) {
-    if (res && res.ok) { var c = res.clone(); caches.open(CACHE).then(function (ch) { ch.put(r, c); }); }
-    return res;
-  }).catch(function () { return caches.match(r).then(function (m) { return m || caches.match("login.html"); }); }));
+  e.respondWith(caches.open(CACHE).then(function (c) {
+    return c.match(r).then(function (hit) {
+      var net = fetch(r).then(function (res) { if (res && res.ok) c.put(r, res.clone()); return res; }).catch(function () { return hit || c.match("login.html"); });
+      return hit || net;
+    });
+  }));
 });
 
 /* Web Push: the server sends only a short generic text (never message content) */
