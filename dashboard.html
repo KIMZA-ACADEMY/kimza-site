@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwux2vn">
-<link rel="stylesheet" href="app.css?v=mwwux2vn">
+<link rel="stylesheet" href="site.css?v=mwxa4hcl">
+<link rel="stylesheet" href="app.css?v=mwxa4hcl">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwux2vn"></script>
-<script src="portal-i18n.js?v=mwwux2vn"></script>
+<script src="app.js?v=mwxa4hcl"></script>
+<script src="portal-i18n.js?v=mwxa4hcl"></script>
 
 <script>
 (async function () {
@@ -163,9 +163,12 @@
   if (KZ.on("lessons")) {
     html += '<h2 id="lessons" style="margin-top:26px">دروسك</h2>';
     if (!lessons.length) html += '<div class="tile"><p class="muted">لم يفتح المعلم دروساً بعد. دروس مستواك ظاهرة أدناه وستُفتح تباعاً.</p></div>';
+    var LVGOAL = {"A1":{"n":"المستوى A1 · مبتدئ","t":"بنهاية هذا المستوى ستستطيع:","b":["تعرّف بنفسك وتتحدث عن أسرتك وبيتك","تفهم وتستعمل الجمل اليومية البسيطة","تسأل وتجيب عن الوقت والأسعار والأماكن","تقرأ وتكتب نصوصاً قصيرة جداً بثقة"]},"A2":{"n":"المستوى A2 · أساسي","t":"بنهاية هذا المستوى ستستطيع:","b":["تتحدث عن الماضي والمستقبل والخطط","تتدبر أمرك في السفر والتسوق والمطعم","تكتب رسائل ورسائل بريد قصيرة","تفهم الحوارات البطيئة والواضحة"]},"B1":{"n":"المستوى B1 · متوسط","t":"بنهاية هذا المستوى ستستطيع:","b":["تتحدث بطلاقة عن الخبرات والآراء والأحلام","تفهم النقاط الرئيسية في الأخبار والقصص","تكتب فقرات منظمة وتشرح أسبابك","تتعامل مع معظم المواقف أثناء السفر والعمل"]},"B2":{"n":"المستوى B2 · فوق المتوسط","t":"بنهاية هذا المستوى ستستطيع:","b":["تناقش وتدافع عن رأيك بوضوح","تفهم المحاضرات والأفلام والنصوص الطويلة","تكتب مقالات وتقارير مفصلة","تتحدث مع الناطقين بالإنجليزية بسهولة"]},"C1":{"n":"المستوى C1 · متقدم","t":"بنهاية هذا المستوى ستستطيع:","b":["تستعمل الإنجليزية بمرونة في العمل والدراسة","تفهم النصوص الصعبة والمعاني الضمنية","تعبّر عن أفكارك بدقة وطلاقة","تكتب نصوصاً واضحة ومنظمة في مواضيع معقدة"]}}, lvSeen = {};
     var weeks = {};
     allLessons.forEach(function (l) { var w = l.level + "|" + Math.ceil(l.num / 4); (weeks[w] = weeks[w] || []).push(l); });
     Object.keys(weeks).forEach(function (w) {
+      var wl = w.split("|")[0];
+      if (!lvSeen[wl] && LVGOAL[wl]) { lvSeen[wl] = 1; var gg = LVGOAL[wl]; html += '<section class="lvban" data-lv="' + wl + '"><div class="lvban-big" aria-hidden="true">' + wl + '</div><div><h2>' + gg.n + '</h2><p>' + gg.t + '</p><ul>' + gg.b.map(function (x) { return "<li>" + x + "</li>"; }).join("") + "</ul></div></section>"; }
       html += '<h3 class="wk">' + (LV.length > 1 ? "مستوى " + esc(w.split("|")[0]) + " — " : "") + "الأسبوع " + w.split("|")[1] + '</h3><div class="lgrid">';
       weeks[w].forEach(function (l) {
         var h = hwMap[l.id];
@@ -294,6 +297,18 @@
     KZ.toast("تم تغيير كلمة المرور.");
     setTimeout(function () { location.reload(); }, 800);
   });
+  // ---------- message from the teacher (popup on entry) ----------
+  (async function dmPopup() {
+    try {
+      var ms = (await sb.from("direct_messages").select("id,kind,body,created_at").eq("student_id", KZ.user.id).eq("from_teacher", true).is("read_at", null).order("created_at")).data || [];
+      if (!ms.length) return;
+      var ov = document.createElement("div");
+      ov.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px";
+      ov.innerHTML = '<div role="dialog" aria-modal="true" aria-label="رسالة من معلمك" style="background:var(--surface,#fff);color:var(--text,#111);max-width:520px;width:100%;border-radius:18px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.4);border-top:6px solid var(--gold,#D4AF37)"><h2 style="margin:0 0 10px">✉️ رسالة من معلمك</h2><div style="max-height:50vh;overflow:auto">' + ms.map(function (m) { return '<p style="white-space:pre-wrap;margin:0 0 12px">' + esc(m.body) + "</p>"; }).join("") + '</div><div class="btns" style="margin-top:12px"><a class="btn btn-primary" href="messages.html">رد على المعلم</a> <button class="btn btn-ghost" id="dmOk" type="button">حسناً</button></div></div>';
+      document.body.appendChild(ov);
+      document.getElementById("dmOk").addEventListener("click", async function () { ov.remove(); try { await sb.rpc("mark_messages_read"); } catch (e) {} });
+    } catch (e) {}
+  })();
 })();
 
 </script>

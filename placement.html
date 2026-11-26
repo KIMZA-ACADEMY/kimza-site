@@ -7,7 +7,7 @@
 <meta name="description" content="KIMZA Academy: Your English. Your Future. Learn. Practise. Progress.">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
-<link rel="stylesheet" href="site.css?v=mwwubr1d">
+<link rel="stylesheet" href="site.css?v=mwxa4hhw">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -114,13 +114,13 @@
     <p class="copy">&copy; KIMZA Academy</p>
   </div>
 </footer>
-<script src="i18n.js?v=mwwubr1d"></script>
+<script src="i18n.js?v=mwxa4hhw"></script>
 <script src="config.js"></script>
-<script src="site-config.js?v=mwwubr1d"></script>
-<script src="site.js?v=mwwubr1d"></script>
+<script src="site-config.js?v=mwxa4hhw"></script>
+<script src="site.js?v=mwxa4hhw"></script>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="placement-data.js?v=mwwubr1d"></script>
+<script src="placement-data.js?v=mwxa4hhw"></script>
 <script>
 (function () {
   var Q = window.PLACEMENT || [], REF = window.PLACEMENT_REF || { reading: {}, listening: {} };
@@ -227,11 +227,15 @@
       if (a === undefined || a === -1) skipped++;
       else if (a === q.a) { by[q.level].correct++; skill[q.skill].correct++; correct++; }
     });
-    var rec = CFG.order[CFG.order.length - 1], strongest = "—", chain = true;
+    // Cumulative rule: a level counts as passed when the student got >= passMark of ALL questions up to it
+    // (one slip is forgiven) AND at least 60% of that level's own questions. Start level = the one after the highest passed.
+    var strongest = "—", rec = CFG.order[0], cc = 0, ct = 0;
     for (var k = 0; k < CFG.order.length; k++) {
-      var l = CFG.order[k], b = by[l], acc = b.total ? b.correct / b.total : 0;
-      if (acc >= CFG.passMark && chain) strongest = l;
-      else { chain = false; if (acc < CFG.passMark) { rec = l; break; } }
+      var l = CFG.order[k], b = by[l];
+      cc += b.correct; ct += b.total;
+      var own = b.total ? b.correct / b.total : 0;
+      if (own <= 0.4) break;
+      if (ct && cc / ct >= CFG.passMark - 0.0001 && own >= 0.6) { strongest = l; rec = CFG.order[Math.min(k + 1, CFG.order.length - 1)]; }
     }
     return { by: by, skill: skill, correct: correct, skipped: skipped, level: rec, strongest: strongest };
   }
