@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxa4hcl">
-<link rel="stylesheet" href="app.css?v=mwxa4hcl">
+<link rel="stylesheet" href="site.css?v=mwxai2yn">
+<link rel="stylesheet" href="app.css?v=mwxai2yn">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxa4hcl"></script>
-<script src="portal-i18n.js?v=mwxa4hcl"></script>
-<script src="i18n.js?v=mwxa4hcl"></script>
+<script src="app.js?v=mwxai2yn"></script>
+<script src="portal-i18n.js?v=mwxai2yn"></script>
+<script src="i18n.js?v=mwxai2yn"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -69,19 +69,37 @@
     var m = {}; (r.data || []).forEach(function (p) { m[p.id] = p; }); return { list: r.data || [], map: m };
   }
 
-  // ----- shell with tabs -----
-  app.innerHTML = '<h1>لوحة المعلم</h1><div class="tabs" role="tablist" id="tabs">' +
-    TABS.map(function (t) { return '<button data-tab="' + t[0] + '" aria-selected="false">' + t[1] + "</button>"; }).join("") + '</div><div id="view"></div>';
+  // ----- shell: 6 groups, each with its own tabs -----
+  var GROUPS = [
+    ["👥", "الطلاب", ["students", "applications", "groups", "attendance", "follow"]],
+    ["📚", "الدروس والاختبارات", ["lessons", "tests", "results", "lsearch", "examprep"]],
+    ["💬", "التواصل والمهام", ["messages", "news", "tasks", "speaking", "ideas", "fluency", "friends"]],
+    ["🎓", "الشهادات والمدفوعات", ["certs", "payments"]],
+    ["🎨", "الموقع والتصميم", ["designer", "texts", "courses", "themes", "features"]],
+    ["⚙️", "الإعدادات", ["settings"]]
+  ];
+  var TNAME = {}; TABS.forEach(function (t) { TNAME[t[0]] = t[1]; });
+  if (!TNAME.examprep) TNAME.examprep = "IELTS / TOEFL";
+  if (!TNAME.friends) TNAME.friends = "الأصدقاء";
+  function groupOf(name) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i][2].indexOf(name) >= 0) return i; return 0; }
+  app.innerHTML = '<h1>لوحة المعلم</h1><div class="agroups" id="agroups" role="tablist">' +
+    GROUPS.map(function (g, i) { return '<button type="button" data-g="' + i + '" aria-selected="false"><span aria-hidden="true">' + g[0] + "</span> " + g[1] + "</button>"; }).join("") +
+    '</div><div class="tabs" role="tablist" id="tabs"></div><div id="view"></div>';
   var view = $("view");
   var VIEWS = {};
+  function drawTabs(gi, name) {
+    $("tabs").innerHTML = GROUPS[gi][2].filter(function (k) { return VIEWS[k]; }).map(function (k) { return '<button data-tab="' + k + '" aria-selected="' + (k === name ? "true" : "false") + '">' + TNAME[k] + "</button>"; }).join("");
+    document.querySelectorAll("#tabs button").forEach(function (b) { b.addEventListener("click", function () { go(b.getAttribute("data-tab")); }); });
+    document.querySelectorAll("#agroups button").forEach(function (b) { b.setAttribute("aria-selected", Number(b.getAttribute("data-g")) === gi ? "true" : "false"); });
+  }
   function go(name) {
     if (!VIEWS[name]) name = "students";
     location.hash = name;
-    document.querySelectorAll("#tabs button").forEach(function (b) { b.setAttribute("aria-selected", b.getAttribute("data-tab") === name ? "true" : "false"); });
+    drawTabs(groupOf(name), name);
     view.innerHTML = '<p class="muted">جارٍ التحميل...</p>';
     VIEWS[name]().catch(function (e) { view.innerHTML = '<div class="warnbox">حدث خطأ في تحميل هذا القسم.</div>'; console.error(e); });
   }
-  document.querySelectorAll("#tabs button").forEach(function (b) { b.addEventListener("click", function () { go(b.getAttribute("data-tab")); }); });
+  document.querySelectorAll("#agroups button").forEach(function (b) { b.addEventListener("click", function () { var g = GROUPS[Number(b.getAttribute("data-g"))][2].filter(function (k) { return VIEWS[k]; }); if (g.length) go(g[0]); }); });
 
   // ----- per-student access: extra levels + lessons opened for this student only -----
   async function accessDialog(p) {
@@ -1280,6 +1298,52 @@
     $("dmSt").addEventListener("change", thread);
     view.querySelectorAll("[data-dmgo]").forEach(function (b) { b.addEventListener("click", function () { $("dmSt").value = b.getAttribute("data-dmgo"); thread(); }); });
     thread();
+  };
+
+  VIEWS.friends = async function () {
+    var nm = await nameMap();
+    var fs_ = (await sb.from("friendships").select("*").order("created_at", { ascending: false }).limit(300)).data || [];
+    var msgs = (await sb.from("friend_messages").select("*").order("created_at", { ascending: false }).limit(500)).data || [];
+    var pr = {}; ((await sb.from("student_prefs").select("user_id,nickname,emoji")).data || []).forEach(function (p) { pr[p.user_id] = p; });
+    function who(id) { var p = pr[id] || {}, n = nm.map[id]; return (p.emoji || "🙂") + " " + esc(p.nickname || "—") + ' <span class="muted">(' + esc(n ? n.full_name : "طالب") + ")</span>"; }
+    var ST = { pending: "بانتظار", accepted: "أصدقاء", rejected: "مرفوض", blocked: "محظور" };
+    var h = '<h2>الأصدقاء ومحادثاتهم</h2><p class="muted">للمراقبة والسلامة فقط. الطلاب يعلمون أن المعلم قد يراجع المحادثات. يمكنك حذف رسالة أو إنهاء صداقة.</p>';
+    if (!fs_.length) h += '<p class="muted">لا صداقات بعد.</p>';
+    fs_.forEach(function (f) {
+      var ms = msgs.filter(function (m) { return m.friendship_id === f.id; }).slice(0, 12).reverse();
+      h += '<div class="tile" style="margin-top:12px"><div class="row" style="border:0;padding:0"><div>' + who(f.requester) + " ⇄ " + who(f.addressee) + ' <span class="badge">' + (ST[f.status] || f.status) + '</span></div><button class="btn btn-ghost sm" data-fsdel="' + f.id + '" type="button">إنهاء الصداقة</button></div>' +
+        (ms.length ? '<div style="margin-top:8px;display:grid;gap:4px">' + ms.map(function (m) { return "<div><small class=\"muted\">" + (pr[m.sender] ? esc(pr[m.sender].nickname || "") : "") + ":</small> " + esc(m.body) + ' <button class="btn btn-ghost sm" data-fmdel="' + m.id + '" type="button">حذف</button></div>'; }).join("") + "</div>" : "") + "</div>";
+    });
+    view.innerHTML = h;
+    view.querySelectorAll("[data-fsdel]").forEach(function (b) { b.addEventListener("click", async function () { if (!confirm("إنهاء هذه الصداقة وحذف محادثتها؟")) return; await sb.from("friendships").delete().eq("id", b.getAttribute("data-fsdel")); VIEWS.friends(); }); });
+    view.querySelectorAll("[data-fmdel]").forEach(function (b) { b.addEventListener("click", async function () { await sb.from("friend_messages").delete().eq("id", b.getAttribute("data-fmdel")); VIEWS.friends(); }); });
+  };
+
+  // ---------- IELTS / TOEFL course review (teacher only until published) ----------
+  VIEWS.examprep = async function () {
+    var rows = (await sb.from("exam_weeks").select("*").order("stage").order("week")).data || [];
+    var ST = { draft: "مسودة", review: "قيد المراجعة", approved: "معتمد", published: "منشور للطلاب" };
+    var sel = view._ex || (rows[0] && rows[0].id) || null;
+    function md(t) {
+      return esc(t || "").replace(/^### (.*)$/gm, "<h4>$1</h4>").replace(/^## (.*)$/gm, "<h3>$1</h3>").replace(/^# (.*)$/gm, "<h2>$1</h2>").replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>").replace(/^&gt; (.*)$/gm, '<blockquote style="margin:6px 0;padding:6px 12px;border-inline-start:3px solid var(--gold)">$1</blockquote>').replace(/^\| ?-+.*$/gm, "").replace(/\n/g, "<br>");
+    }
+    var stages = {}; rows.forEach(function (r) { (stages[r.stage] = stages[r.stage] || []).push(r); });
+    var STN = { 1: "المرحلة 1 · تأسيس", 2: "المرحلة 2 · أساسي", 3: "المرحلة 3 · متقدم", 4: "المرحلة 4 · احتراف", 0: "التصميم العام" };
+    var h = '<h2>IELTS / TOEFL — مراجعة المعلم</h2><p class="muted">الدروس هنا للمراجعة فقط ولا يراها الطلاب. عدّل النص، اكتب ملاحظاتك، ثم غيّر الحالة إلى «معتمد». النشر للطلاب خطوة منفصلة لاحقاً.</p><div class="grid2" style="grid-template-columns:minmax(200px,260px) 1fr;align-items:start;gap:16px"><div class="tile">';
+    Object.keys(stages).forEach(function (k) {
+      h += '<h4 style="margin:10px 0 6px">' + (STN[k] || "المرحلة " + k) + "</h4>" + stages[k].map(function (r) { return '<button class="btn ' + (r.id === sel ? "btn-primary" : "btn-ghost") + ' sm" style="display:block;width:100%;text-align:start;margin-bottom:4px" data-exw="' + r.id + '" type="button">' + (r.week ? "أسبوع " + r.week + " · " : "") + esc(r.title) + ' <span class="badge">' + ST[r.status] + "</span></button>"; }).join("");
+    });
+    var cur = rows.filter(function (r) { return r.id === sel; })[0];
+    h += "</div><div>" + (cur ? '<div class="tile"><div class="row" style="border:0;padding:0"><h3 style="margin:0">' + esc(cur.title) + '</h3><span class="badge gold">' + ST[cur.status] + '</span></div><div id="exView" style="margin-top:10px;line-height:1.7">' + md(cur.content) + '</div></div><div class="tile form" style="margin-top:12px"><label for="exNote">ملاحظاتك (لي أنا، لأعدّل بناءً عليها)</label><textarea id="exNote" rows="3">' + esc(cur.notes || "") + '</textarea><label for="exSt">الحالة</label><select id="exSt">' + Object.keys(ST).filter(function (k) { return k !== "published"; }).map(function (k) { return '<option value="' + k + '"' + (cur.status === k ? " selected" : "") + ">" + ST[k] + "</option>"; }).join("") + '</select><div class="btns" style="margin-top:8px"><button class="btn btn-primary" id="exSave" type="button">حفظ الملاحظات والحالة</button><button class="btn btn-ghost" id="exEd" type="button">تعديل النص</button></div></div>' : '<p class="muted">لا محتوى بعد.</p>') + "</div></div>";
+    view.innerHTML = h;
+    view.querySelectorAll("[data-exw]").forEach(function (b) { b.addEventListener("click", function () { view._ex = Number(b.getAttribute("data-exw")); VIEWS.examprep(); }); });
+    if (cur) {
+      $("exSave").addEventListener("click", async function () { var r = await sb.from("exam_weeks").update({ notes: $("exNote").value, status: $("exSt").value, updated_at: new Date().toISOString() }).eq("id", cur.id); KZ.toast(r.error ? "تعذر الحفظ." : "تم الحفظ.", !!r.error); VIEWS.examprep(); });
+      $("exEd").addEventListener("click", function () {
+        $("exView").innerHTML = '<textarea id="exTx" rows="22" style="width:100%;font-family:inherit">' + esc(cur.content || "") + '</textarea><div class="btns" style="margin-top:8px"><button class="btn btn-primary" id="exTxS" type="button">حفظ النص</button></div>';
+        $("exTxS").addEventListener("click", async function () { var r = await sb.from("exam_weeks").update({ content: $("exTx").value, updated_at: new Date().toISOString() }).eq("id", cur.id); KZ.toast(r.error ? "تعذر الحفظ." : "تم حفظ النص.", !!r.error); VIEWS.examprep(); });
+      });
+    }
   };
 
   go((location.hash || "#students").slice(1));

@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxa4hcl">
-<link rel="stylesheet" href="app.css?v=mwxa4hcl">
+<link rel="stylesheet" href="site.css?v=mwxai2yn">
+<link rel="stylesheet" href="app.css?v=mwxai2yn">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxa4hcl"></script>
-<script src="portal-i18n.js?v=mwxa4hcl"></script>
+<script src="app.js?v=mwxai2yn"></script>
+<script src="portal-i18n.js?v=mwxai2yn"></script>
 
 <script>
 (async function () {
@@ -297,6 +297,20 @@
     KZ.toast("تم تغيير كلمة المرور.");
     setTimeout(function () { location.reload(); }, 800);
   });
+  // ---------- friend notifications (toast on entry) ----------
+  (async function friendNotes() {
+    try {
+      if (!KZ.on("friends")) return;
+      var fo = (await sb.rpc("friend_overview")).data || [];
+      var req = fo.filter(function (f) { return f.status === "pending" && !f.mine; }).length, un = fo.reduce(function (n, f) { return n + (f.status === "accepted" ? Number(f.unread) : 0); }, 0);
+      if (req || un) {
+        var bar = document.createElement("a"); bar.href = "friends.html";
+        bar.style.cssText = "position:fixed;bottom:16px;inset-inline-start:16px;z-index:9999;background:var(--navy,#0B1F44);color:#fff;padding:12px 16px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.3);text-decoration:none;font-weight:700";
+        bar.textContent = "👫 " + (req ? req + " طلب صداقة جديد" : "") + (req && un ? " · " : "") + (un ? un + " رسالة جديدة من أصدقائك" : "");
+        document.body.appendChild(bar); setTimeout(function () { bar.remove(); }, 12000);
+      }
+    } catch (e) {}
+  })();
   // ---------- message from the teacher (popup on entry) ----------
   (async function dmPopup() {
     try {

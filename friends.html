@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>أصدقائي · KIMZA Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
+<script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
+<link rel="stylesheet" href="site.css?v=mwxai2yn">
+<link rel="stylesheet" href="app.css?v=mwxai2yn">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B1F44">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<script>if("serviceWorker"in navigator&&location.protocol!=="file:")addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})</script>
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="supabase-lib.js"></script>
+<script src="config.js"></script>
+<script src="app.js?v=mwxai2yn"></script>
+<script src="portal-i18n.js?v=mwxai2yn"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("student");
+  if (!prof) return;
+  KZ.shell("friends");
+  var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app"), uid = KZ.user.id;
+  var cur = null, timer = null;
+  function when(d) { return new Date(d).toLocaleString("ar", { dateStyle: "short", timeStyle: "short" }); }
+  function av(f) { return '<span style="display:inline-flex;width:34px;height:34px;border-radius:50%;align-items:center;justify-content:center;background:' + esc(f.color) + ';font-size:18px">' + esc(f.emoji) + "</span>"; }
+  async function overview() { return (await sb.rpc("friend_overview")).data || []; }
+
+  async function main() {
+    clearInterval(timer); cur = null;
+    var me = (await sb.from("student_prefs").select("nickname,emoji").eq("user_id", uid).maybeSingle()).data;
+    var list = await overview();
+    var incoming = list.filter(function (f) { return f.status === "pending" && !f.mine; });
+    var sent = list.filter(function (f) { return f.status === "pending" && f.mine; });
+    var friends = list.filter(function (f) { return f.status === "accepted"; });
+    var h = '<h1>أصدقائي</h1><p class="muted">أضف زملاءك كأصدقاء ثم تحدثوا معاً. تظهر لكل واحد منكم شخصيته (الاسم المستعار) فقط، ولا يرى أحد رقمك أو اسمك الحقيقي. ممنوع كتابة أرقام الهواتف أو الروابط. المعلم قد يراجع المحادثات للحفاظ على سلامة الجميع.</p>';
+    if (!me || !me.nickname) h += '<div class="warnbox">اختر اسماً مستعاراً أولاً من صفحة «المجتمع» ثم «شخصيتي»، حتى تستطيع إضافة الأصدقاء.</div>';
+    h += '<div class="tile form"><h2 style="margin:0 0 8px">➕ إضافة صديق</h2><label for="fnN">الاسم المستعار لصديقك (اكتبه كما هو)</label><input id="fnN" maxlength="20"><div class="btns" style="margin-top:8px"><button class="btn btn-primary" id="fnS" type="button">بحث</button></div><div id="fnR" style="margin-top:10px"></div></div>';
+    if (incoming.length) h += '<div class="tile" style="margin-top:14px"><h2 style="margin:0 0 8px">🔔 طلبات صداقة جديدة</h2>' + incoming.map(function (f) { return '<div class="row">' + av(f) + ' <strong>' + esc(f.nickname || "طالب") + '</strong><span style="margin-inline-start:auto;display:flex;gap:6px"><button class="btn btn-primary sm" data-ok="' + f.id + '" type="button">قبول</button><button class="btn btn-ghost sm" data-no="' + f.id + '" type="button">رفض</button></span></div>'; }).join("") + "</div>";
+    if (sent.length) h += '<div class="tile" style="margin-top:14px"><h2 style="margin:0 0 8px">⏳ طلبات أرسلتها</h2>' + sent.map(function (f) { return '<div class="row">' + av(f) + " " + esc(f.nickname || "طالب") + ' <span class="badge" style="margin-inline-start:auto">بانتظار الرد</span></div>'; }).join("") + "</div>";
+    h += '<div class="tile" style="margin-top:14px"><h2 style="margin:0 0 8px">👫 أصدقائي (' + friends.length + ')</h2>' + (friends.length ? friends.map(function (f) { return '<div class="row" style="cursor:pointer" data-chat="' + f.id + '">' + av(f) + ' <strong>' + esc(f.nickname || "طالب") + "</strong>" + (Number(f.unread) ? ' <span class="badge gold">' + f.unread + " جديدة</span>" : "") + '<span class="muted" style="margin-inline-start:auto">محادثة ‹</span></div>'; }).join("") : '<p class="muted" style="margin:0">لا أصدقاء بعد. ابحث عن زميلك بالاسم المستعار.</p>') + "</div>";
+    app.innerHTML = h;
+    document.getElementById("fnS").addEventListener("click", async function () {
+      var n = document.getElementById("fnN").value.trim(), box = document.getElementById("fnR"); if (n.length < 2) return;
+      var r = (await sb.rpc("find_student", { p_nick: n })).data || [];
+      if (!r.length) { box.innerHTML = '<p class="muted">لم أجد طالباً بهذا الاسم المستعار. تأكد من كتابته كما هو.</p>'; return; }
+      var s = r[0];
+      box.innerHTML = '<div class="row">' + av(s) + " <strong>" + esc(s.nickname) + '</strong><button class="btn btn-primary sm" id="fnAdd" type="button" style="margin-inline-start:auto">إرسال طلب صداقة</button></div>';
+      document.getElementById("fnAdd").addEventListener("click", async function () {
+        var x = (await sb.rpc("send_friend_request", { p_target: s.id })).data;
+        var M = { sent: "أُرسل طلب الصداقة.", pending: "الطلب موجود بالفعل.", accepted: "أنتما صديقان بالفعل.", rejected: "لا يمكن إرسال الطلب.", nickname: "اختر اسماً مستعاراً أولاً.", limit: "وصلت للحد اليومي للطلبات." };
+        KZ.toast(M[x] || "تعذر الإرسال.", x !== "sent"); if (x === "sent") main();
+      });
+    });
+    app.querySelectorAll("[data-ok]").forEach(function (b) { b.addEventListener("click", async function () { await sb.rpc("respond_friend", { p_id: Number(b.getAttribute("data-ok")), p_ok: true }); KZ.toast("أصبحتما صديقين 🎉"); main(); }); });
+    app.querySelectorAll("[data-no]").forEach(function (b) { b.addEventListener("click", async function () { await sb.rpc("respond_friend", { p_id: Number(b.getAttribute("data-no")), p_ok: false }); main(); }); });
+    app.querySelectorAll("[data-chat]").forEach(function (b) { b.addEventListener("click", function () { openChat(Number(b.getAttribute("data-chat")), friends.filter(function (f) { return String(f.id) === b.getAttribute("data-chat"); })[0]); }); });
+  }
+
+  async function paint(f, keepText) {
+    var rows = (await sb.from("friend_messages").select("*").eq("friendship_id", f.id).order("created_at").limit(200)).data || [];
+    var box = document.getElementById("fcBox"); if (!box) return;
+    var atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 40;
+    box.innerHTML = rows.length ? rows.map(function (m) { var mine = m.sender === uid; return '<div style="align-self:' + (mine ? "flex-end" : "flex-start") + ';max-width:85%;background:' + (mine ? "var(--gold-soft,#f3e7bd)" : "var(--surface)") + ';border:1px solid var(--line);border-radius:14px;padding:8px 12px"><small class="muted">' + (mine ? "أنت" : esc(f.nickname || "صديقك")) + " · " + when(m.created_at) + '</small><div style="white-space:pre-wrap">' + esc(m.body) + "</div></div>"; }).join("") : '<p class="muted" style="margin:0">ابدأ المحادثة بتحية 👋</p>';
+    if (atEnd || !keepText) box.scrollTop = box.scrollHeight;
+    try { await sb.rpc("mark_friend_read", { p_id: f.id }); } catch (e) {}
+  }
+  async function openChat(id, f) {
+    cur = f;
+    app.innerHTML = '<p><button class="btn btn-ghost sm" id="fcBack" type="button">› رجوع</button></p><h1 style="display:flex;gap:10px;align-items:center">' + av(f) + " " + esc(f.nickname || "صديق") + '</h1><div class="tile"><div id="fcBox" style="max-height:55vh;min-height:120px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:4px"></div><div class="form" style="margin-top:12px"><textarea id="fcT" rows="2" maxlength="800" placeholder="اكتب رسالتك…"></textarea><div class="btns" style="margin-top:8px"><button class="btn btn-primary" id="fcS" type="button">إرسال</button></div><p class="muted" style="margin:6px 0 0">لا أرقام هواتف ولا روابط. كن لطيفاً ومحترماً.</p></div></div>';
+    document.getElementById("fcBack").addEventListener("click", main);
+    await paint(f);
+    document.getElementById("fcS").addEventListener("click", async function (ev) {
+      var t = document.getElementById("fcT").value.trim(); if (!t) return; ev.target.disabled = true;
+      var r = await sb.from("friend_messages").insert({ friendship_id: f.id, sender: uid, body: t });
+      ev.target.disabled = false;
+      if (r.error) { KZ.toast(/phone|links/.test(r.error.message) ? "ممنوع كتابة أرقام أو روابط." : /too many/.test(r.error.message) ? "رسائل كثيرة، انتظر قليلاً." : /cannot send/.test(r.error.message) ? "لا يمكنك الإرسال الآن." : "تعذر الإرسال.", true); return; }
+      document.getElementById("fcT").value = ""; paint(f);
+    });
+    clearInterval(timer); timer = setInterval(function () { if (document.getElementById("fcBox")) paint(f, true); else clearInterval(timer); }, 6000);
+  }
+  await main();
+})();
+
+</script>
+</body>
+</html>
