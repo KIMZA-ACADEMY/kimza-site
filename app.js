@@ -82,12 +82,12 @@
     var links = isT
       ? [["admin.html", "لوحة المعلم", "admin"], ["schedule.html", "مواعيد الحصص", "schedule"], ["account.html", "طلبات الأسماء", "account"], ["community.html", "المجتمع", "community"]]
       : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["tasks.html", "مهامي", "tasks"], ["messages.html", "رسائلي", "messages"], ["skills.html", "الكتابة والمحادثة", "skills"], ["exams.html", "الامتحانات", "exams"], ["friends.html", "أصدقائي", "friends"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"], ["schedule.html", "مواعيد الحصص", "schedule"], ["account.html", "حسابي", "account"], ["community.html", "المجتمع", "community"]].filter(function (l) { return !FOFF[l[0]] || KZ.on(FOFF[l[0]]); });
-    var h = '<div class="wrap"><a href="' + (isT ? "admin.html" : "dashboard.html") + '"><img src="kimza-logo-gold.png" alt="KIMZA Academy"></a>' + '<button class="btn btn-ghost sm" id="bellBtn" type="button" title="تفعيل الإشعارات" aria-label="تفعيل الإشعارات" style="color:var(--cream);position:relative;z-index:80;flex:none;font-size:1.25rem;min-width:44px;min-height:44px" hidden>🔔</button>' +
+    var h = '<div class="wrap"><a href="' + (isT ? "admin.html" : "dashboard.html") + '"><img src="kimza-logo-gold.png" alt="KIMZA Academy"></a>' + '' +
       '<nav class="links" aria-label="Main">' + links.map(function (l) { return '<a href="' + l[0] + '"' + (l[2] === active ? ' aria-current="page"' : "") + ">" + l[1] + "</a>"; }).join("") +
       '<button class="btn btn-ghost sm" id="lookBtn" type="button" title="مظهري" aria-label="مظهري" style="color:var(--cream)">🎨</button>' + '<span class="who">' + esc(prof ? prof.full_name : "") + '</span><button class="btn btn-ghost sm" id="logoutBtn" type="button" style="color:var(--cream)">خروج</button></nav></div>';
     var el = document.getElementById("appHeader");
     if (el) el.innerHTML = h;
-    try { KZ.mountBoardButton(); KZ.mountRecorderButton(); } catch (e) {}
+    try { KZ.mountBoardButton(); KZ.mountRecorderButton(); KZ.mountBellButton(); } catch (e) {}
     if (isT) { try { sb.from("name_requests").select("id", { count: "exact", head: true }).eq("status", "pending").then(function (r) { var n = r && r.count; var l = document.querySelector('#appHeader a[href="account.html"]'); if (n && l) l.insertAdjacentHTML("beforeend", ' <span style="background:#c62828;color:#fff;border-radius:20px;padding:0 8px;font-weight:800">' + n + "</span>"); }); } catch (e) {} }
     try { KZ.notifyStart(); } catch (e) {}
     var lkb = document.getElementById("lookBtn"); if (lkb) lkb.addEventListener("click", function () { KZ.openLook(); });
@@ -248,6 +248,65 @@
     b.setAttribute("aria-label", "السبورة (اسحب الزر لتحريكه)"); b.title = "السبورة (اسحب الزر لتحريكه)";
     b.textContent = "🧑‍🏫"; b.addEventListener("click", KZ.openBoard); document.body.appendChild(b);
     KZ.dragFab(b, "kz-fab-board", 8, function () { return Math.round(innerHeight * 0.42); });
+  };
+  // ----- notification centre: a draggable bell on every portal page (works without any device permission) -----
+  KZ.mountBellButton = function () {
+    if (document.getElementById("kzBell")) return;
+    var b = document.createElement("button"); b.id = "kzBell"; b.type = "button";
+    b.style.cssText = "position:fixed;z-index:901;width:44px;height:44px;font-size:20px;line-height:1;border:2px solid #D4AF37;background:#0B1F44;color:#F8F4E9;border-radius:50%;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:0;opacity:.95";
+    b.setAttribute("aria-label", "الإشعارات (اسحب الزر لتحريكه)"); b.title = "الإشعارات (اسحب الزر لتحريكه)";
+    b.innerHTML = '🔔<span id="kzBellN" style="position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;border-radius:10px;background:#c62828;color:#fff;font:700 12px/20px sans-serif;text-align:center;padding:0 5px;display:none"></span>';
+    document.body.appendChild(b);
+    KZ.dragFab(b, "kz-fab-bell", 8, function () { return Math.round(innerHeight * 0.42) - 52; });
+    var sb = KZ.sb, uid = KZ.user ? KZ.user.id : "", isT = KZ.profile && KZ.profile.role === "teacher", items = [], panel = null;
+    var seenKey = "kz-ann-seen-" + uid;
+    function seen() { try { return localStorage.getItem(seenKey) || ""; } catch (e) { return ""; } }
+    async function load() {
+      var out = [], r = {};
+      try { r = (await sb.rpc("my_notifications")).data || {}; } catch (e) {}
+      function add(n, icon, text, href) { n = Number(n) || 0; if (n > 0) out.push({ n: n, icon: icon, text: text + (n > 1 ? " (" + n + ")" : ""), href: href }); }
+      if (isT) {
+        add(r.student_msgs, "✉️", "رسائل جديدة من الطلاب", "admin.html"); add(r.name_req, "✏️", "طلبات تغيير اسم", "account.html"); add(r.new_students, "🧑‍🎓", "طلاب جدد ينتظرون القبول", "admin.html");
+      } else {
+        add(r.teacher_msgs, "✉️", "رسالة جديدة من معلمك", "messages.html"); add(r.fr_req, "🤝", "طلب صداقة جديد", "friends.html"); add(r.fr_msgs, "💬", "رسالة جديدة من صديق", "friends.html");
+        try {
+          var an = (await sb.from("announcements").select("id,title,created_at").order("created_at", { ascending: false }).limit(6)).data || [], sn = seen(), cut = sn || new Date(Date.now() - 7 * 864e5).toISOString();
+          an.filter(function (a) { return a.created_at > cut; }).forEach(function (a) { out.push({ n: 1, icon: "📢", text: "إعلان من المعلم: " + a.title, href: "dashboard.html" }); });
+        } catch (e) {}
+        try {
+          var pl = (await sb.from("vote_polls").select("id,title,closes_at").eq("status", "open").limit(5)).data || [];
+          for (var i = 0; i < pl.length; i++) { if (pl[i].closes_at && new Date(pl[i].closes_at) < new Date()) continue; var mv = await sb.from("votes").select("slot_id", { count: "exact", head: true }).eq("poll_id", pl[i].id).eq("user_id", uid); if (!(mv.count > 0)) out.push({ n: 1, icon: "🗳️", text: "تصويت متاح: " + pl[i].title, href: "schedule.html" }); }
+        } catch (e) {}
+        try {
+          var dt = (await sb.from("dtasks").select("id,title,kind").order("created_at", { ascending: false }).limit(20)).data || [], dn = {}; ((await sb.from("dtask_done").select("task_id").eq("user_id", uid)).data || []).forEach(function (x) { dn[x.task_id] = 1; });
+          var pend = dt.filter(function (t) { return !dn[t.id]; }); if (pend.length) out.push({ n: pend.length, icon: "✅", text: "مهام جديدة لك" + (pend.length > 1 ? " (" + pend.length + ")" : ""), href: "dashboard.html" });
+        } catch (e) {}
+      }
+      items = out;
+      var total = out.reduce(function (s, x) { return s + x.n; }, 0), nb = document.getElementById("kzBellN");
+      if (nb) { nb.textContent = total > 99 ? "99+" : total; nb.style.display = total ? "block" : "none"; }
+      if (panel) draw();
+    }
+    function draw() {
+      var canPush = "Notification" in window && Notification.permission === "default";
+      panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>🔔 الإشعارات</strong><button type="button" data-x style="border:0;background:none;font-size:20px;cursor:pointer;color:inherit">✕</button></div>' +
+        (items.length ? items.map(function (x, i) { return '<a href="' + x.href + '" data-i="' + i + '" style="display:flex;gap:8px;align-items:center;padding:10px;border-radius:10px;background:rgba(212,175,55,.14);margin-bottom:6px;color:inherit;text-decoration:none"><span style="font-size:1.2rem">' + x.icon + '</span><span>' + KZ.esc(x.text) + "</span></a>"; }).join("") : '<p style="margin:8px 0;opacity:.75">لا توجد إشعارات جديدة 🎉</p>') +
+        (canPush ? '<button type="button" data-push style="margin-top:6px;width:100%;padding:9px;border-radius:10px;border:1px solid #D4AF37;background:none;color:inherit;cursor:pointer">تفعيل تنبيهات الجهاز أيضاً</button>' : "");
+      panel.querySelector("[data-x]").onclick = function () { panel.remove(); panel = null; };
+      panel.querySelectorAll("[data-i]").forEach(function (a) { a.addEventListener("click", function () { try { localStorage.setItem(seenKey, new Date().toISOString()); } catch (e) {} }); });
+      var pb = panel.querySelector("[data-push]");
+      if (pb) pb.onclick = async function () { try { await Notification.requestPermission(); } catch (e) {} if (Notification.permission === "granted") { var ok = await KZ.pushSubscribe(); KZ.toast(ok ? "تم تفعيل التنبيهات 🔔" : "تم التفعيل (تعمل والتطبيق مفتوح)."); } draw(); };
+    }
+    b.addEventListener("click", function () {
+      if (panel) { panel.remove(); panel = null; return; }
+      panel = document.createElement("div"); panel.setAttribute("role", "dialog"); panel.setAttribute("aria-label", "الإشعارات");
+      var x = Math.min(Math.max(8, b.offsetLeft), innerWidth - 300), y = Math.min(b.offsetTop + 52, innerHeight - 260);
+      panel.style.cssText = "position:fixed;z-index:950;left:" + x + "px;top:" + Math.max(8, y) + "px;width:290px;max-width:calc(100vw - 16px);max-height:70vh;overflow:auto;background:var(--surface,#fff);color:var(--text,#111);border:2px solid #D4AF37;border-radius:14px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.35)";
+      document.body.appendChild(panel); draw(); load();
+    });
+    load(); setInterval(load, 20000);
+    document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") load(); });
+    KZ._bellRefresh = load;
   };
   // ----- colour themes chosen by the teacher: all / per level / per group -----
   KZ.themeMap = { primary: "--navy", deep: "--deep", accent: "--gold", accent2: "--gold-soft", bg: "--bg", surface: "--surface", text: "--text", link: "--link", muted: "--muted", line: "--line" };
@@ -456,8 +515,9 @@
         }
       });
       try { localStorage.setItem(key, JSON.stringify(r)); } catch (e) {}
+      try { if (KZ._bellRefresh) KZ._bellRefresh(); } catch (e) {}
     }
-    setTimeout(poll, 1500); setInterval(poll, 40000);
+    setTimeout(poll, 1500); setInterval(poll, 20000);
     document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") poll(); });
   };
   // Web Push: register this device so the server can notify even when the app is closed
