@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxe0g5o">
-<link rel="stylesheet" href="app.css?v=mwxe0g5o">
+<link rel="stylesheet" href="site.css?v=mwxfcq4b">
+<link rel="stylesheet" href="app.css?v=mwxfcq4b">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -37,8 +37,8 @@
   </div></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxe0g5o"></script>
-<script src="portal-i18n.js?v=mwxe0g5o"></script>
+<script src="app.js?v=mwxfcq4b"></script>
+<script src="portal-i18n.js?v=mwxfcq4b"></script>
 
 <script>
 (function () {
@@ -48,7 +48,7 @@
     var u = await sb.auth.getUser();
     if (!u.data.user) return;
     var p = await sb.from("profiles").select("role").eq("id", u.data.user.id).maybeSingle();
-    location.href = p.data && p.data.role === "teacher" ? "admin.html" : "dashboard.html";
+    location.href = p.data && (p.data.role === "teacher" || p.data.role === "staff") ? "admin.html" : "dashboard.html";
   }
   sb.auth.getSession().then(function (s) { if (s.data.session) go(); });
   $("form").addEventListener("submit", async function (e) {

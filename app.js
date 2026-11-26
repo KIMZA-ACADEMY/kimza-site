@@ -50,8 +50,16 @@
     var p = await sb.from("profiles").select("*").eq("id", session.user.id).maybeSingle();
     if (!p.data) { await sb.auth.signOut(); location.replace("login.html"); return null; }
     var prof = p.data;
-    if (role === "teacher" && prof.role !== "teacher") { location.replace("dashboard.html"); return null; }
+    var pgName = (location.pathname.split("/").pop() || "").replace(".html", "");
+    if (prof.role === "staff") {
+      // assistant teacher: only the teacher panel, only while active
+      var spr = await sb.from("staff_perms").select("*").eq("user_id", session.user.id).maybeSingle();
+      KZ.staff = spr.data || { perms: [], levels: [], suspended: true };
+      if (KZ.staff.suspended) { await sb.auth.signOut(); alert("تم إيقاف حسابك مؤقتاً من إدارة الأكاديمية. تواصل مع المدير."); location.replace("login.html"); return null; }
+      if (pgName !== "admin" && pgName !== "login") { location.replace("admin.html"); return null; }
+    } else if (role === "teacher" && prof.role !== "teacher") { location.replace("dashboard.html"); return null; }
     if (role === "student" && prof.role === "teacher") { location.replace("admin.html"); return null; }
+    if (role === "student" && prof.role === "staff") { location.replace("admin.html"); return null; }
     KZ.profile = prof; KZ.user = session.user;
     try { KZ.loadTheme(); } catch (e) {}
     KZ.features = {};
@@ -77,9 +85,9 @@
 
   function shell(active) {
     var prof = KZ.profile;
-    var isT = prof && prof.role === "teacher";
+    var isT = prof && (prof.role === "teacher" || prof.role === "staff");
     var FOFF = { "review.html": "review", "flashcards.html": "flashcards", "attendance.html": "attendance", "speaking.html": "speaking", "certificates.html": "certificates", "tasks.html": "p_tasks", "messages.html": "p_messages", "skills.html": "p_skills", "exams.html": "p_exams", "friends.html": "friends", "schedule.html": "p_schedule", "account.html": "p_account", "community.html": "p_community" };
-    var links = isT
+    var links = prof && prof.role === "staff" ? [["admin.html", "لوحة المعلم", "admin"]] : isT
       ? [["admin.html", "لوحة المعلم", "admin"], ["schedule.html", "مواعيد الحصص", "schedule"], ["account.html", "طلبات الأسماء", "account"], ["community.html", "المجتمع", "community"]]
       : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["tasks.html", "مهامي", "tasks"], ["messages.html", "رسائلي", "messages"], ["skills.html", "الكتابة والمحادثة", "skills"], ["exams.html", "الامتحانات", "exams"], ["friends.html", "أصدقائي", "friends"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"], ["schedule.html", "مواعيد الحصص", "schedule"], ["account.html", "حسابي", "account"], ["community.html", "المجتمع", "community"]].filter(function (l) { return !FOFF[l[0]] || KZ.on(FOFF[l[0]]); });
     var h = '<div class="wrap"><a href="' + (isT ? "admin.html" : "dashboard.html") + '"><img src="kimza-logo-gold.png" alt="KIMZA Academy"></a>' + '' +
@@ -88,6 +96,7 @@
     var el = document.getElementById("appHeader");
     if (el) el.innerHTML = h;
     try { KZ.mountBoardButton(); KZ.mountRecorderButton(); KZ.mountBellButton(); } catch (e) {}
+    try { KZ.startSelectSearch(); } catch (e) {}
     if (isT) { try { sb.from("name_requests").select("id", { count: "exact", head: true }).eq("status", "pending").then(function (r) { var n = r && r.count; var l = document.querySelector('#appHeader a[href="account.html"]'); if (n && l) l.insertAdjacentHTML("beforeend", ' <span style="background:#c62828;color:#fff;border-radius:20px;padding:0 8px;font-weight:800">' + n + "</span>"); }); } catch (e) {} }
     try { KZ.notifyStart(); } catch (e) {}
     var lkb = document.getElementById("lookBtn"); if (lkb) lkb.addEventListener("click", function () { KZ.openLook(); });
@@ -279,6 +288,39 @@
     box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end); box.addEventListener("pointerleave", end);
     return { get: function () { return st.id; }, clear: clear };
   };
+  // ----- search box above every long list (students, lessons ...): type a few letters to filter -----
+  function nrm(t) { return String(t || "").toLowerCase().replace(/[\u064B-\u0652\u0640]/g, "").replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 1632); }); }
+  KZ.enhanceSelects = function (root) {
+    (root || document).querySelectorAll("select").forEach(function (sel) {
+      if (sel.dataset.kzs || sel.dataset.nosearch || sel.options.length < 8) return;
+      sel.dataset.kzs = "1";
+      var inp = document.createElement("input"); inp.type = "search"; inp.placeholder = "🔎 ابحث بالاسم أو الرقم…"; inp.setAttribute("aria-label", "بحث في القائمة");
+      inp.style.cssText = "display:block;width:100%;margin-bottom:4px;box-sizing:border-box";
+      sel.parentNode.insertBefore(inp, sel);
+      var snap = null;
+      function opts() { return Array.prototype.map.call(sel.options, function (o) { return { v: o.value, t: o.textContent, sel: o.selected, d: o.disabled }; }); }
+      function fill(list, keep) {
+        var chosen = {}; Array.prototype.forEach.call(sel.selectedOptions || [], function (o) { chosen[o.value] = 1; });
+        sel.innerHTML = ""; list.forEach(function (o) { var e = document.createElement("option"); e.value = o.v; e.textContent = o.t; e.disabled = o.d; if (chosen[o.v] || (keep && o.sel && !Object.keys(chosen).length)) e.selected = true; sel.appendChild(e); });
+      }
+      inp.addEventListener("input", function () {
+        var q = nrm(inp.value.trim());
+        if (!snap) snap = opts();
+        var sv = sel.value;
+        if (!q) { var all = snap; snap = null; fill(all, false); if (sv) sel.value = sv; return; }
+        var words = q.split(/\s+/);
+        var m = snap.filter(function (o) { var t = nrm(o.t); return o.v === sv || words.every(function (w) { return t.indexOf(w) >= 0; }); });
+        fill(m, false); if (sv) sel.value = sv;
+      });
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); var f = Array.prototype.filter.call(sel.options, function (o) { return o.value !== ""; })[0]; if (f && !sel.multiple) { sel.value = f.value; sel.dispatchEvent(new Event("change", { bubbles: true })); } } });
+    });
+  };
+  KZ.startSelectSearch = function () {
+    if (KZ._selObs) return; KZ._selObs = true; var t = null;
+    function run() { try { KZ.enhanceSelects(document); } catch (e) {} }
+    new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 120); }).observe(document.body, { childList: true, subtree: true });
+    run();
+  };
   // ----- notification centre: a draggable bell on every portal page (works without any device permission) -----
   KZ.mountBellButton = function () {
     if (document.getElementById("kzBell")) return;
@@ -288,7 +330,7 @@
     b.innerHTML = '🔔<span id="kzBellN" style="position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;border-radius:10px;background:#c62828;color:#fff;font:700 12px/20px sans-serif;text-align:center;padding:0 5px;display:none"></span>';
     document.body.appendChild(b);
     KZ.dragFab(b, "kz-fab-bell", 8, function () { return Math.round(innerHeight * 0.42) - 52; });
-    var sb = KZ.sb, uid = KZ.user ? KZ.user.id : "", isT = KZ.profile && KZ.profile.role === "teacher", items = [], panel = null;
+    var sb = KZ.sb, uid = KZ.user ? KZ.user.id : "", isT = KZ.profile && (KZ.profile.role === "teacher" || KZ.profile.role === "staff"), items = [], panel = null;
     var seenKey = "kz-ann-seen-" + uid;
     function seen() { try { return localStorage.getItem(seenKey) || ""; } catch (e) { return ""; } }
     async function load() {
@@ -604,7 +646,7 @@
   };
   KZ.blockCopyIn = function (doc) {
     // the teacher can copy and paste everywhere; students only inside the story text (.kz-copyok)
-    if (KZ.profile && KZ.profile.role === "teacher") return;
+    if (KZ.profile && (KZ.profile.role === "teacher" || KZ.profile.role === "staff")) return;
     if (!doc || doc.__kzNoCopy) return; doc.__kzNoCopy = true;
     function ok(n) { try { while (n && n.nodeType !== 1) n = n.parentNode; return !!(n && n.closest && n.closest(".kz-copyok")); } catch (e) { return false; } }
     ["copy", "cut", "paste", "contextmenu", "dragstart", "selectstart"].forEach(function (ev) { doc.addEventListener(ev, function (e) {
