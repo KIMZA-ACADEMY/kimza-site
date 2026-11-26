@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxcwykg">
-<link rel="stylesheet" href="app.css?v=mwxcwykg">
+<link rel="stylesheet" href="site.css?v=mwxdljo0">
+<link rel="stylesheet" href="app.css?v=mwxdljo0">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxcwykg"></script>
-<script src="portal-i18n.js?v=mwxcwykg"></script>
+<script src="app.js?v=mwxdljo0"></script>
+<script src="portal-i18n.js?v=mwxdljo0"></script>
 
 <script>
 (async function () {
@@ -157,7 +157,21 @@
   (KZ.on("tests") ? myTests.filter(function (t) { return t.is_open && !atMap[t.id]; }) : []).forEach(function (t) {
     todo.push('<div class="row"><div><strong>' + esc(KINDS[t.kind]) + '</strong><div class="muted">مفتوح الآن · ' + t.minutes + ' دقيقة</div></div><a class="btn btn-primary sm" href="test.html?id=' + esc(t.id) + '">ابدأ</a></div>');
   });
-  if (KZ.on("todo")) html += '<h2 style="margin-top:22px">مهامك اليوم</h2><div class="tile">' + (todo.length ? todo.join("") : '<p class="muted">🎉 لا مهام متبقية اليوم. أحسنت!</p>') + "</div>";
+  // story practice: repeat the story + shadowing (latest lesson whose story is open)
+  var doneRows = [];
+  var stLessons = lessons.filter(function (l) { return l.open_story || l.open_audio; });
+  if (KZ.on("lessons") && stLessons.length) {
+    var stL = stLessons.slice().sort(function (a, b) { return (LV.indexOf(a.level) - LV.indexOf(b.level)) || (a.num - b.num); }).pop();
+    var repToday = 0; try { repToday = (await sb.from("story_reps").select("id", { count: "exact", head: true }).gte("created_at", startToday.toISOString())).count || 0; } catch (e) {}
+    var shadowKey = "kz-shadow-" + KZ.user.id + "-" + new Date().toISOString().slice(0, 10), shadowDone = false;
+    try { shadowDone = localStorage.getItem(shadowKey) === "1"; } catch (e) {}
+    var href = "lesson.html?id=" + encodeURIComponent(stL.id) + "&tab=story";
+    var repRow = '<div class="row"><div><strong>🔁 كرّر القصة (الدرس ' + stL.num + ')</strong><div class="muted">استمع للقصة كاملة 3 مرات على الأقل · اليوم: ' + repToday + " / 3</div></div>";
+    if (repToday >= 3) doneRows.push(repRow + '<span class="badge ok">تمّ ✅</span></div>'); else todo.push(repRow + '<a class="btn btn-primary sm" href="' + href + '">ابدأ</a></div>');
+    var shRow = '<div class="row"><div><strong>🗣️ ظلِّل القصة (Shadowing)</strong><div class="muted">شغّل الصوت وكرّر الجمل معه بنفس السرعة والنبرة، 5 دقائق</div></div>';
+    if (shadowDone) doneRows.push(shRow + '<span class="badge ok">تمّ ✅</span></div>'); else todo.push(shRow + '<span style="display:flex;gap:6px"><a class="btn btn-primary sm" href="' + href + '">ابدأ</a><button class="btn btn-ghost sm" data-shadow="1" type="button">أنجزتُها ✔</button></span></div>');
+  }
+  if (KZ.on("todo")) html += '<h2 style="margin-top:22px">مهامك اليوم</h2><div class="tile">' + (todo.length ? todo.join("") : '<p class="muted">🎉 لا مهام متبقية اليوم. أحسنت!</p>') + (doneRows.length ? '<div style="opacity:.7">' + doneRows.join("") + "</div>" : "") + "</div>";
 
   // lessons (big tappable cards, only opened ones)
   if (KZ.on("lessons")) {
@@ -337,6 +351,7 @@
       host.insertAdjacentElement("afterend", box);
     } catch (e) {}
   })();
+  document.querySelectorAll("[data-shadow]").forEach(function (b) { b.addEventListener("click", function () { try { localStorage.setItem("kz-shadow-" + KZ.user.id + "-" + new Date().toISOString().slice(0, 10), "1"); } catch (e) {} KZ.toast("أحسنت! سُجّل التظليل لليوم ✅"); location.reload(); }); });
 })();
 
 </script>
