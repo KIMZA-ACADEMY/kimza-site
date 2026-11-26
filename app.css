@@ -374,3 +374,8 @@ html[data-motion="off"] *{animation:none!important;transition:none!important}
 
 .lcard.locked .lnum{background:#6b7280!important;color:#e5e7eb!important;box-shadow:none!important}
 .lcard.locked strong,.lcard.locked .muted{color:#6b7280!important}
+
+/* bell button sits next to the logo, always clickable */
+.app-nav .wrap>a:first-child{flex:none;position:relative;z-index:1}
+.app-nav .wrap>a:first-child img{display:block;max-width:none}
+#bellBtn{position:relative;z-index:80}
