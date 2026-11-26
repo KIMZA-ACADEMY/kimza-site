@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxjt97b">
-<link rel="stylesheet" href="app.css?v=mwxjt97b">
+<link rel="stylesheet" href="site.css?v=mwxk4kr8">
+<link rel="stylesheet" href="app.css?v=mwxk4kr8">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,8 +24,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxjt97b"></script>
-<script src="portal-i18n.js?v=mwxjt97b"></script>
+<script src="app.js?v=mwxk4kr8"></script>
+<script src="portal-i18n.js?v=mwxk4kr8"></script>
 
 <script>
 (async function () {
@@ -43,11 +43,11 @@
   var startToday = new Date(); startToday.setHours(0, 0, 0, 0);
   var endToday = new Date(); endToday.setHours(23, 59, 59, 999);
 
-  // extra words: if the teacher released nothing new today, the student gets 2 extra words a day (from the far end of the level's deck, not tied to the lessons)
+  // extra words released by the teacher (from the back of the deck, not tied to the lessons)
   try {
     var relFresh = cards.filter(function (c) { return !prog[c.id]; }).length;
     var relNewToday = progRows.filter(function (p) { return new Date(p.first_seen) >= startToday && byId[p.card_id]; }).length;
-    var ex = await sb.rpc("extra_cards", { p_levels: KZ.levelsOf(prof), p_allow_new: relFresh === 0 && relNewToday === 0 });
+    var ex = await sb.rpc("extra_cards", { p_levels: KZ.levelsOf(prof), p_allow_new: false });
     (ex.data || []).forEach(function (c) { if (!byId[c.id]) { c.extra = true; cards.push(c); byId[c.id] = c; } });
   } catch (e) {}
   if (!cards.length) {

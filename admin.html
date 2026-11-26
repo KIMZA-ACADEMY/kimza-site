@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxfkdd2">
-<link rel="stylesheet" href="app.css?v=mwxfkdd2">
+<link rel="stylesheet" href="site.css?v=mwxk4kr8">
+<link rel="stylesheet" href="app.css?v=mwxk4kr8">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,9 +24,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxfkdd2"></script>
-<script src="portal-i18n.js?v=mwxfkdd2"></script>
-<script src="i18n.js?v=mwxfkdd2"></script>
+<script src="app.js?v=mwxk4kr8"></script>
+<script src="portal-i18n.js?v=mwxk4kr8"></script>
+<script src="i18n.js?v=mwxk4kr8"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -41,7 +41,7 @@
   var pendingPrefill = null;
   // ----- assistant teachers (staff): which tabs they may open -----
   var IS_OWNER = prof.role === "teacher", STAFF = KZ.staff || { perms: [], levels: [] };
-  var TABPERM = { students: "students_view", follow: "students_view", lsearch: "students_view", results: "students_view", messages: "messages", attendance: "attendance", skillgrade: "grading", tasks: "grading", news: "announce", dtasks: "announce", lessons: ["lessons_view", "lessons_open"], groups: "groups" };
+  var TABPERM = { students: "students_view", follow: "students_view", lsearch: "students_view", results: "students_view", messages: "messages", attendance: "attendance", skillgrade: "grading", tasks: "grading", news: "announce", dtasks: "announce", lessons: ["lessons_view", "lessons_open"], cardextra: "lessons_open", groups: "groups" };
   function canTab(k) { return IS_OWNER || (TABPERM[k] && [].concat(TABPERM[k]).some(function (p) { return STAFF.perms.indexOf(p) >= 0; })); }
 
   function $(id) { return document.getElementById(id); }
@@ -77,7 +77,7 @@
   // ----- shell: 6 groups, each with its own tabs -----
   var GROUPS = [
     ["👥", "الطلاب", ["perf", "students", "applications", "groups", "attendance", "follow"]],
-    ["📚", "الدروس والاختبارات", ["lessons", "tests", "results", "lsearch", "skillcourse", "skillexams", "skillgrade", "examprep"]],
+    ["📚", "الدروس والاختبارات", ["lessons", "tests", "results", "lsearch", "cardextra", "skillcourse", "skillexams", "skillgrade", "examprep"]],
     ["💬", "التواصل والمهام", ["dtasks", "messages", "news", "tasks", "speaking", "ideas", "fluency", "friends"]],
     ["🎓", "الشهادات والمدفوعات", ["certs", "payments"]],
     ["🎨", "الموقع والتصميم", ["designer", "texts", "courses", "themes", "features"]],
@@ -88,7 +88,7 @@
   TNAME.dtasks = "✅ مهام الطلاب اليومية"; TNAME.skillcourse = "✍️🎤 دورتا الكتابة والمحادثة"; TNAME.skillexams = "امتحانات المهارات"; TNAME.skillgrade = "تصحيح التمارين";
   if (!TNAME.perf) TNAME.perf = "📈 أداء الطلاب";
   if (!TNAME.friends) TNAME.friends = "الأصدقاء";
-  TNAME.staff = "👩‍🏫 المعلمون والصلاحيات"; TNAME.audit = "🕵️ مراقبة المراسلات";
+  TNAME.staff = "👩‍🏫 المعلمون والصلاحيات"; TNAME.cardextra = "🃏 كلمات إضافية"; TNAME.audit = "🕵️ مراقبة المراسلات";
   function groupOf(name) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i][2].indexOf(name) >= 0) return i; return 0; }
   app.innerHTML = '<h1>لوحة المعلم</h1><div class="agroups" id="agroups" role="tablist">' +
     GROUPS.map(function (g, i) { return g[2].some(canTab) ? '<button type="button" data-g="' + i + '" aria-selected="false"><span aria-hidden="true">' + g[0] + "</span> " + g[1] + "</button>" : ""; }).join("") +
@@ -1725,6 +1725,37 @@
     }).join("");
     view.innerHTML = h;
     $("auGo").addEventListener("click", function () { F.st = $("auSt").value; F.tc = $("auTc").value; F.q = $("auQ").value.trim(); VIEWS.audit(); });
+  };
+
+  // ---------- extra words released by the teacher ----------
+  VIEWS.cardextra = async function () {
+    var nm = await nameMap();
+    var groups = (await sb.from("student_groups").select("id,name").order("name")).data || [];
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var gr = (await sb.from("card_grants").select("user_id,granted_at").gte("granted_at", today.toISOString())).data || [];
+    var h = '<h2>🃏 كلمات إضافية للمراجعة</h2><div class="infobox">الكلمات الإضافية <strong>لا تُضاف تلقائياً أبداً</strong>. أنت تقرر متى ولمن وكم كلمة. تُؤخذ من <strong>آخر</strong> قائمة المستوى (بعيداً عن الدروس الحالية)، وتظهر عند الطالب كبطاقات جديدة في صفحة المراجعة، ويصله تنبيه. لا تتكرر الكلمة لنفس الطالب.</div>' +
+      '<div class="tile form"><div class="grid2"><div><label for="ceA">لمن؟</label><select id="ceA"><option value="all">كل الطلاب</option><option value="level">مستوى</option><option value="group">مجموعة</option><option value="users">طلاب محددون</option></select></div>' +
+      '<div><label for="ceN">عدد الكلمات لكل طالب (1 - 20)</label><input id="ceN" type="number" min="1" max="20" value="2"></div></div>' +
+      '<div id="ceLvW" hidden><label for="ceLv">المستوى</label><select id="ceLv">' + ["A1", "A2", "B1", "B2", "C1"].map(function (l) { return "<option>" + l + "</option>"; }).join("") + '</select></div>' +
+      '<div id="ceGrW" hidden><label for="ceGr">المجموعة</label><select id="ceGr">' + groups.map(function (g) { return '<option value="' + g.id + '">' + esc(g.name) + "</option>"; }).join("") + '</select></div>' +
+      '<div id="ceUsW" hidden><label for="ceUs">الطلاب (Ctrl لاختيار أكثر من واحد)</label><select id="ceUs" multiple size="8">' + nm.list.map(function (p) { return '<option value="' + p.id + '">' + esc(p.full_name) + " (" + esc(p.level || "") + ")</option>"; }).join("") + '</select></div>' +
+      '<div class="btns" style="margin-top:10px"><button class="btn btn-primary" id="ceGo" type="button">إتاحة الكلمات</button></div><div id="ceRes" class="muted"></div></div>' +
+      '<p class="muted" style="margin-top:14px">أُتيح اليوم ' + gr.length + ' بطاقة إضافية لـ ' + new Set(gr.map(function (x) { return x.user_id; })).size + ' طالب.</p>';
+    view.innerHTML = h;
+    function sync() { var a = $("ceA").value; $("ceLvW").hidden = a !== "level"; $("ceGrW").hidden = a !== "group"; $("ceUsW").hidden = a !== "users"; }
+    $("ceA").addEventListener("change", sync); sync();
+    $("ceGo").addEventListener("click", async function () {
+      var a = $("ceA").value, n = Number($("ceN").value), val = a === "level" ? $("ceLv").value : a === "group" ? $("ceGr").value : "", us = a === "users" ? Array.from($("ceUs").selectedOptions).map(function (o) { return o.value; }) : null;
+      if (!(n >= 1 && n <= 20)) { KZ.toast("اختر عدداً من 1 إلى 20.", true); return; }
+      if (a === "users" && !us.length) { KZ.toast("اختر طالباً على الأقل.", true); return; }
+      var who = a === "all" ? "كل الطلاب" : a === "level" ? "مستوى " + val : a === "group" ? "المجموعة المختارة" : us.length + " طالب";
+      if (!confirm("إتاحة " + n + " كلمة إضافية لكل طالب من: " + who + "؟")) return;
+      $("ceGo").disabled = true;
+      var r = await sb.rpc("teacher_release_extra", { p_scope: a, p_value: val, p_count: n, p_users: us });
+      $("ceGo").disabled = false;
+      if (r.error) { KZ.toast("تعذر الإتاحة.", true); return; }
+      $("ceRes").innerHTML = "✅ أُتيحت " + r.data + " بطاقة" + (r.data ? " وأُرسل التنبيه للطلاب." : " (لا توجد كلمات متبقية جديدة أو سبق إتاحتها)."); setTimeout(function () { VIEWS.cardextra(); }, 2500);
+    });
   };
 
   if (!IS_OWNER) {
