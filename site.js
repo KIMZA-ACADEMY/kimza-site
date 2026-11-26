@@ -61,13 +61,14 @@
     window.KIMZA_FEATURES_READY = fetch(cfg.url + "/rest/v1/site_features?select=key,enabled", { headers: { apikey: cfg.publishableKey } })
       .then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }).then(function (rows) {
         rows.forEach(function (f) { window.KIMZA_FEATURES[f.key] = f.enabled; });
-        var here = location.pathname.split("/").pop() || "index.html";
+        var here = (location.pathname.split("/").pop() || "index.html").replace(/\.html$/, "");
+        function hsel(p) { var b = p.replace(/\.html$/, ""); return 'a[href="' + p + '"],a[href="/' + b + '"],a[href="' + b + '"],a[href$="/' + p + '"],a[href$="/' + b + '"]'; }
         function apply() {
           document.querySelectorAll("[data-show]").forEach(function (el) { if (window.KIMZA_FEATURES[el.getAttribute("data-show")] === true) el.style.display = "block"; });
           Object.keys(pages).forEach(function (k) {
             if (window.KIMZA_FEATURES[k] !== false) return;
-            document.querySelectorAll('a[href="' + pages[k] + '"]').forEach(function (a) { a.style.display = "none"; });
-            if (here === pages[k]) {
+            document.querySelectorAll(hsel(pages[k])).forEach(function (a) { a.style.display = "none"; });
+            if (here === pages[k].replace(/\.html$/, "")) {
               var m = document.querySelector("main");
               if (m) m.innerHTML = '<section class="section"><div class="wrap" style="text-align:center;padding:80px 0"><h1>' + (window.KIMZA_LANG() === "ar" ? "هذه الصفحة متوقفة مؤقتاً" : "This page is temporarily unavailable") + '</h1><p><a class="btn btn-primary" href="index.html">' + (window.KIMZA_LANG() === "ar" ? "العودة للرئيسية" : "Back to home") + '</a></p></div></section>';
             }
@@ -176,7 +177,7 @@
     function navPages() {
       get("site_pages?enabled=eq.true&in_nav=eq.true&select=slug,title&order=sort.asc,slug.asc").then(function (ps) {
         var nav = document.getElementById("navLinks"); if (!nav || !ps.length) return;
-        var login = nav.querySelector('a[href="login.html"]');
+        var login = nav.querySelector('a[href="login.html"],a[href="/login"],a[href="login"]');
         ps.forEach(function (p) { var a = document.createElement("a"); a.href = "page.html?p=" + p.slug; a.textContent = p.title; nav.insertBefore(a, login); });
       });
     }

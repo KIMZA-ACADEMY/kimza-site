@@ -292,6 +292,7 @@
   function nrm(t) { return String(t || "").toLowerCase().replace(/[\u064B-\u0652\u0640]/g, "").replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 1632); }); }
   KZ.enhanceSelects = function (root) {
     (root || document).querySelectorAll("select").forEach(function (sel) {
+      if (!(KZ.profile && (KZ.profile.role === "teacher" || KZ.profile.role === "staff"))) return;
       if (sel.dataset.kzs || sel.dataset.nosearch || sel.options.length < 8) return;
       sel.dataset.kzs = "1";
       var inp = document.createElement("input"); inp.type = "search"; inp.placeholder = "🔎 ابحث بالاسم أو الرقم…"; inp.setAttribute("aria-label", "بحث في القائمة");
