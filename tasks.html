@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>مهامي · KIMZA Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
+<script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
+<link rel="stylesheet" href="site.css?v=mwwvtt2f">
+<link rel="stylesheet" href="app.css?v=mwwvtt2f">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B1F44">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<script>if("serviceWorker"in navigator&&location.protocol!=="file:")addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})</script>
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="supabase-lib.js"></script>
+<script src="config.js"></script>
+<script src="app.js?v=mwwvtt2f"></script>
+<script src="portal-i18n.js?v=mwwvtt2f"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("student");
+  if (!prof) return;
+  KZ.shell("tasks");
+  var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app"), uid = KZ.user.id;
+  var KIND = { writing: "✍️ كتابة", oral: "🎤 محادثة شفهية", other: "📌 مهمة" };
+  function when(d) { return d ? new Date(d).toLocaleString("ar", { dateStyle: "medium", timeStyle: "short" }) : ""; }
+  var rec = null, chunks = [], blob = null;
+
+  async function render() {
+    var tasks = (await sb.from("student_tasks").select("*").order("created_at", { ascending: false }).limit(30)).data || [];
+    var subs = {}; ((await sb.from("task_submissions").select("*").eq("user_id", uid)).data || []).forEach(function (s) { subs[s.task_id] = s; });
+    var h = "<h1>مهامي</h1><p class=\"muted\">كل أسبوعين تصلك مهمة كتابة أو محادثة. أنجزها بنفسك دون مساعدة خارجية، فهي لتدريبك أنت.</p>";
+    if (!tasks.length) h += "<div class=\"tile\"><p class=\"muted\" style=\"margin:0\">لا توجد مهام الآن. ستظهر هنا عندما يضيفها المعلم.</p></div>";
+    tasks.forEach(function (t) {
+      var s = subs[t.id], late = t.due_at && new Date(t.due_at) < new Date();
+      h += "<div class=\"tile\" style=\"margin-top:14px\"><div class=\"row\" style=\"border:0;padding:0\"><div><span class=\"badge gold\">" + (KIND[t.kind] || "") + "</span> <strong style=\"font-size:1.1rem\">" + esc(t.title) + "</strong>" + (t.due_at ? "<div class=\"muted\">آخر موعد: " + when(t.due_at) + (late && !s ? " (انتهى)" : "") + "</div>" : "") + "</div>" +
+        (s ? "<span class=\"badge\">" + (s.graded_at ? "تم التصحيح" : "تم التسليم") + "</span>" : "") + "</div>" +
+        (t.instructions ? "<p style=\"white-space:pre-wrap\">" + esc(t.instructions) + "</p>" : "");
+      if (s && s.graded_at) h += "<div class=\"infobox\"><strong>درجتك: " + (s.score == null ? "—" : esc(String(s.score))) + "</strong>" + (s.feedback ? "<p style=\"margin:6px 0 0;white-space:pre-wrap\">" + esc(s.feedback) + "</p>" : "") + "</div>";
+      else {
+        h += "<div class=\"form\" data-t=\"" + t.id + "\">" + (t.kind !== "oral" ? "<label>إجابتك المكتوبة</label><textarea rows=\"7\" data-body>" + esc(s ? s.body || "" : "") + "</textarea>" : "<label>ملاحظات مكتوبة (اختياري)</label><textarea rows=\"2\" data-body>" + esc(s ? s.body || "" : "") + "</textarea>") +
+          (t.kind === "oral" ? "<div class=\"btns\" style=\"margin-top:8px\"><button class=\"btn btn-ghost\" data-rec type=\"button\">🎙 ابدأ التسجيل</button><span class=\"muted\" data-rs>" + (s && s.audio_path ? "لديك تسجيل مُسلَّم، يمكنك استبداله" : "لم تسجّل بعد") + "</span></div><audio data-pl controls hidden style=\"width:100%;margin-top:8px\"></audio>" : "") +
+          "<div class=\"btns\" style=\"margin-top:10px\"><button class=\"btn btn-primary\" data-send type=\"button\">" + (s ? "تحديث التسليم" : "تسليم") + "</button></div></div>";
+      }
+      h += "</div>";
+    });
+    app.innerHTML = h;
+    app.querySelectorAll("[data-t]").forEach(function (box) {
+      var tid = Number(box.getAttribute("data-t")), rb = box.querySelector("[data-rec]"), rs = box.querySelector("[data-rs]"), pl = box.querySelector("[data-pl]");
+      if (rb) rb.addEventListener("click", async function () {
+        if (rec && rec.state === "recording") { rec.stop(); return; }
+        try {
+          var st = await navigator.mediaDevices.getUserMedia({ audio: true }); chunks = []; blob = null;
+          rec = new MediaRecorder(st); rec.ondataavailable = function (e) { if (e.data.size) chunks.push(e.data); };
+          rec.onstop = function () { st.getTracks().forEach(function (x) { x.stop(); }); blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" }); pl.src = URL.createObjectURL(blob); pl.hidden = false; rb.textContent = "🎙 سجّل من جديد"; rs.textContent = "تم التسجيل. استمع ثم اضغط تسليم."; };
+          rec.start(); rb.textContent = "⏹ إيقاف"; rs.textContent = "جارٍ التسجيل…";
+        } catch (e) { KZ.toast("لم أستطع الوصول إلى الميكروفون. اسمح به من المتصفح.", true); }
+      });
+      box.querySelector("[data-send]").addEventListener("click", async function (ev) {
+        var btn = ev.currentTarget, body = box.querySelector("[data-body]").value.trim(), path = null;
+        var t = tasks.filter(function (x) { return x.id === tid; })[0];
+        if (t.kind === "oral" && !blob && !(subs[tid] && subs[tid].audio_path)) { KZ.toast("سجّل إجابتك الصوتية أولاً.", true); return; }
+        if (t.kind !== "oral" && body.length < 20) { KZ.toast("اكتب إجابة أطول قليلاً.", true); return; }
+        btn.disabled = true;
+        if (blob) {
+          path = uid + "/" + tid + "-" + Date.now() + ".webm";
+          var up = await sb.storage.from("task-audio").upload(path, blob, { contentType: blob.type });
+          if (up.error) { KZ.toast("تعذر رفع التسجيل.", true); btn.disabled = false; return; }
+        }
+        var row = { task_id: tid, user_id: uid, body: body || null }; if (path) row.audio_path = path;
+        var r = await sb.from("task_submissions").upsert(row, { onConflict: "task_id,user_id" });
+        if (r.error) { KZ.toast("تعذر التسليم.", true); btn.disabled = false; return; }
+        KZ.toast("تم التسليم 🎉"); blob = null; render();
+      });
+    });
+  }
+  render();
+})();
+
+</script>
+</body>
+</html>

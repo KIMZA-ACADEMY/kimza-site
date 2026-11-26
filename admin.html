@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwux2vn">
-<link rel="stylesheet" href="app.css?v=mwwux2vn">
+<link rel="stylesheet" href="site.css?v=mwwvtt2f">
+<link rel="stylesheet" href="app.css?v=mwwvtt2f">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwux2vn"></script>
-<script src="portal-i18n.js?v=mwwux2vn"></script>
-<script src="i18n.js?v=mwwux2vn"></script>
+<script src="app.js?v=mwwvtt2f"></script>
+<script src="portal-i18n.js?v=mwwvtt2f"></script>
+<script src="i18n.js?v=mwwvtt2f"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -33,7 +33,7 @@
   KZ.shell("admin");
   var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
   var LEVELS = ["A1", "A2", "B1", "B2", "C1"];
-  var TABS = [["students", "الطلاب"], ["lessons", "الدروس"], ["tests", "الاختبارات"], ["results", "النتائج"], ["attendance", "الحضور"], ["payments", "المدفوعات"], ["applications", "الطلبات"], ["speaking", "المحادثة"], ["certs", "الشهادات"], ["news", "الإعلانات"], ["follow", "متابعة الطلاب"], ["fluency", "الطلاقة والجهد"], ["groups", "مجموعات الطلاب"], ["ideas", "اقتراحات وتصويتات"], ["themes", "الألوان والثيمات"], ["lsearch", "بحث الدروس"], ["designer", "تصميم الموقع"], ["texts", "النصوص"], ["courses", "الدورات والإعلانات"], ["features", "الميزات"], ["settings", "المستويات"]];
+  var TABS = [["students", "الطلاب"], ["lessons", "الدروس"], ["tests", "الاختبارات"], ["results", "النتائج"], ["attendance", "الحضور"], ["payments", "المدفوعات"], ["applications", "الطلبات"], ["speaking", "المحادثة"], ["certs", "الشهادات"], ["news", "الإعلانات"], ["follow", "متابعة الطلاب"], ["fluency", "الطلاقة والجهد"], ["groups", "مجموعات الطلاب"], ["ideas", "اقتراحات وتصويتات"], ["tasks", "مهام الطلاب"], ["themes", "الألوان والثيمات"], ["lsearch", "بحث الدروس"], ["designer", "تصميم الموقع"], ["texts", "النصوص"], ["courses", "الدورات والإعلانات"], ["features", "الميزات"], ["settings", "المستويات"]];
   var KIND = { weekly: "أسبوعي", monthly: "شهري", final: "نهاية المستوى" };
   var ST = { active: "نشط", paused: "متوقف مؤقتاً", graduated: "خريج", stopped: "موقوف", pending: "بانتظار القبول" };
   var AT = { present: "حاضر", absent: "غائب", late: "متأخر", excused: "بعذر" };
@@ -1210,6 +1210,44 @@
       var r = await sb.from("proposals").update({ status: b.getAttribute("data-pset") }).eq("id", b.getAttribute("data-id")); KZ.toast(r.error ? "تعذر التنفيذ." : "تم.", !!r.error); VIEWS.ideas(); }); });
     view.querySelectorAll("[data-pdel]").forEach(function (b) { b.addEventListener("click", async function () {
       if (!confirm("حذف هذا الاقتراح نهائياً مع أصواته؟")) return; await sb.from("proposals").delete().eq("id", b.getAttribute("data-pdel")); VIEWS.ideas(); }); });
+  };
+
+  // ---- fortnightly tasks (writing / oral): create, read submissions, listen, grade
+  VIEWS.tasks = async function () {
+    var nm = await nameMap();
+    var groups = (await sb.from("student_groups").select("id,name").order("name")).data || [];
+    var tasks = (await sb.from("student_tasks").select("*").order("created_at", { ascending: false }).limit(30)).data || [];
+    var subs = (await sb.from("task_submissions").select("*").limit(1000)).data || [];
+    var KIND = { writing: "✍️ كتابة", oral: "🎤 محادثة", other: "📌 أخرى" };
+    var due = new Date(Date.now() + 14 * 864e5 - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+    var h = '<h2>مهام الطلاب (كل أسبوعين)</h2><p class="muted">أنشئ مهمة كتابة أو محادثة لمستوى أو مجموعة. يسلّمها الطالب كتابةً أو بتسجيل صوتي، وتصحّحها هنا وتعطيه درجة وملاحظة.</p>' +
+      '<form class="tile form" id="tkNew"><div class="grid2"><div><label for="tkK">النوع</label><select id="tkK"><option value="writing">✍️ كتابة</option><option value="oral">🎤 محادثة شفهية</option><option value="other">📌 أخرى</option></select></div><div><label for="tkT">العنوان</label><input id="tkT" maxlength="160" required></div></div>' +
+      '<label for="tkI">التعليمات</label><textarea id="tkI" rows="3"></textarea><div class="grid2"><div><label for="tkL">المستوى</label><select id="tkL"><option value="">الجميع</option>' + ["A1", "A2", "B1", "B2", "C1"].map(function (l) { return "<option>" + l + "</option>"; }).join("") + '</select></div><div><label for="tkG">أو مجموعة</label><select id="tkG"><option value="">—</option>' + groups.map(function (g) { return '<option value="' + g.id + '">' + esc(g.name) + "</option>"; }).join("") + '</select></div></div>' +
+      '<label for="tkD">آخر موعد</label><input id="tkD" type="datetime-local" value="' + due + '"><button class="btn btn-primary" type="submit">نشر المهمة</button></form>';
+    if (!tasks.length) h += '<p class="muted" style="margin-top:14px">لا توجد مهام بعد.</p>';
+    tasks.forEach(function (t) {
+      var ss = subs.filter(function (s) { return s.task_id === t.id; });
+      h += '<div class="tile" style="margin-top:14px"><div class="row" style="border:0;padding:0"><div><strong>' + (KIND[t.kind] || "") + " " + esc(t.title) + '</strong> <span class="badge">' + (t.level || (t.group_id ? "مجموعة" : "الجميع")) + '</span> <span class="badge gold">' + ss.length + ' تسليم</span></div><button class="btn btn-ghost sm" data-tkdel="' + t.id + '" type="button">حذف المهمة</button></div>';
+      ss.forEach(function (s) {
+        h += '<div class="row" style="display:block;border-top:1px solid var(--line);margin-top:10px;padding-top:10px"><strong>' + esc(nm.map[s.user_id] ? nm.map[s.user_id].full_name : "طالب") + '</strong> <span class="muted">' + (s.graded_at ? "مصحَّح" : "بانتظار التصحيح") + "</span>" +
+          (s.body ? '<p style="white-space:pre-wrap;margin:6px 0">' + esc(s.body) + "</p>" : "") + (s.audio_path ? '<div><button class="btn btn-ghost sm" data-tkau="' + esc(s.audio_path) + '" type="button">▶ استمع للتسجيل</button><audio controls hidden style="width:100%;margin-top:6px"></audio></div>' : "") +
+          '<div class="grid2" style="margin-top:8px"><div><label>الدرجة</label><input data-tksc type="number" step="0.5" value="' + (s.score == null ? "" : s.score) + '"></div><div><label>ملاحظتك</label><input data-tkfb value="' + esc(s.feedback || "") + '"></div></div><button class="btn btn-primary sm" data-tksave="' + t.id + "|" + s.user_id + '" type="button">حفظ التصحيح</button></div>';
+      });
+      h += "</div>";
+    });
+    view.innerHTML = h;
+    $("tkNew").addEventListener("submit", async function (e) {
+      e.preventDefault(); var d = $("tkD").value;
+      var r = await sb.from("student_tasks").insert({ kind: $("tkK").value, title: $("tkT").value.trim(), instructions: $("tkI").value.trim() || null, level: $("tkL").value || null, group_id: $("tkG").value ? Number($("tkG").value) : null, due_at: d ? new Date(d).toISOString() : null });
+      KZ.toast(r.error ? "تعذر النشر." : "نُشرت المهمة للطلاب.", !!r.error); VIEWS.tasks(); });
+    view.querySelectorAll("[data-tkdel]").forEach(function (b) { b.addEventListener("click", async function () { if (!confirm("حذف المهمة وكل تسليماتها؟")) return; await sb.from("student_tasks").delete().eq("id", b.getAttribute("data-tkdel")); VIEWS.tasks(); }); });
+    view.querySelectorAll("[data-tkau]").forEach(function (b) { b.addEventListener("click", async function () {
+      var r = await sb.storage.from("task-audio").createSignedUrl(b.getAttribute("data-tkau"), 600); if (r.error) { KZ.toast("تعذر فتح التسجيل.", true); return; }
+      var a = b.parentNode.querySelector("audio"); a.src = r.data.signedUrl; a.hidden = false; a.play(); }); });
+    view.querySelectorAll("[data-tksave]").forEach(function (b) { b.addEventListener("click", async function () {
+      var p = b.getAttribute("data-tksave").split("|"), box = b.parentNode, sc = box.querySelector("[data-tksc]").value;
+      var r = await sb.from("task_submissions").update({ score: sc === "" ? null : Number(sc), feedback: box.querySelector("[data-tkfb]").value.trim() || null, graded_at: new Date().toISOString() }).eq("task_id", p[0]).eq("user_id", p[1]);
+      KZ.toast(r.error ? "تعذر الحفظ." : "تم حفظ التصحيح.", !!r.error); VIEWS.tasks(); }); });
   };
 
   go((location.hash || "#students").slice(1));
