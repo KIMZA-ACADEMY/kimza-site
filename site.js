@@ -289,7 +289,7 @@
         }
         if (/Android/i.test(navigator.userAgent) && flags.apk_button !== false && (p === "index" || p === "login" || p === "") && !(window.matchMedia && matchMedia("(display-mode: standalone)").matches)) {
           var a = document.createElement("a"); a.href = APK; a.setAttribute("download", "KIMZA-Academy.apk");
-          a.style.cssText = "position:fixed;bottom:14px;left:14px;z-index:9998;background:#0B1F44;color:#F8F4E9;border:2px solid #D4AF37;padding:9px 16px;border-radius:999px;text-decoration:none;font:700 14px/1.4 Tajawal,Tahoma,Arial,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.35)";
+          a.style.cssText = "position:fixed;bottom:98px;left:50%;transform:translateX(-50%);white-space:nowrap;z-index:9998;background:#0B1F44;color:#F8F4E9;border:2px solid #D4AF37;padding:9px 16px;border-radius:999px;text-decoration:none;font:700 14px/1.4 Tajawal,Tahoma,Arial,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.35)";
           a.textContent = ar ? "📱 تحميل تطبيق الأندرويد" : "📱 Download the Android app";
           document.body.appendChild(a);
         }
