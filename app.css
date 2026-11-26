@@ -368,6 +368,6 @@ html[data-motion="off"] *{animation:none!important;transition:none!important}
 
 /* director signature above the line */
 .cert2 .c-sig.has-sign{position:relative}
-.cert2 .c-signimg{position:absolute;left:50%;bottom:100%;width:250px;height:auto;margin:0 0 -18px -125px;pointer-events:none;animation:kzsign 1.6s cubic-bezier(.4,0,.2,1) .9s both}
+.cert2 .c-signimg{position:absolute;left:50%;bottom:100%;width:150px;height:auto;margin:0 0 -4px -75px;pointer-events:none;animation:kzsign 1.6s cubic-bezier(.4,0,.2,1) .9s both}
 @keyframes kzsign{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
 @media print,(prefers-reduced-motion:reduce){.cert2 .c-signimg{animation:none}}

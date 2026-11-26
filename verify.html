@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>التحقق من شهادة · KIMZA Academy</title>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwl1t15">
-<link rel="stylesheet" href="app.css?v=mwwl1t15">
+<link rel="stylesheet" href="site.css?v=mwxd8e18">
+<link rel="stylesheet" href="app.css?v=mwxd8e18">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app" style="max-width:640px"></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwl1t15"></script>
-<script src="portal-i18n.js?v=mwwl1t15"></script>
+<script src="app.js?v=mwxd8e18"></script>
+<script src="portal-i18n.js?v=mwxd8e18"></script>
 
 <script>
 (async function () {
@@ -47,8 +47,7 @@
     '<div class="row"><span class="muted">رقم الشهادة</span><strong class="en">' + esc(d.number) + "</strong></div>" +
     (d.title ? '<div class="row"><span class="muted">نوع الشهادة</span><strong class="en">' + esc(d.title) + "</strong></div>" : "") +
     (d.level ? '<div class="row"><span class="muted">المستوى</span><strong class="en">' + esc(d.level) + "</strong></div>" : "") +
-    (d.hours ? '<div class="row"><span class="muted">ساعات الدراسة</span><strong>' + esc(String(d.hours)) + "</strong></div>" : "") +
-    (d.body ? '<div class="row"><span class="muted">الوصف</span><strong dir="auto">' + esc(d.body) + "</strong></div>" : "") +
+        (d.body ? '<div class="row"><span class="muted">الوصف</span><strong dir="auto">' + esc(d.body) + "</strong></div>" : "") +
     '<div class="row"><span class="muted">تاريخ الإصدار</span><strong>' + esc(d.issued_on) + "</strong></div>" +
     '<div class="row"><span class="muted">الجهة</span><strong class="en">' + esc(d.academy) + "</strong></div></div>" +
     '<p class="muted" style="margin-top:14px">تعرض هذه الصفحة البيانات المعتمدة للتحقق فقط.</p>';
