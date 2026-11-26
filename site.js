@@ -252,7 +252,13 @@
     var s = ""; v = v || {};
     Object.keys(map).forEach(function (k) { if (v[k] && /^#[0-9a-fA-F]{3,8}$/.test(v[k])) s += map[k] + ":" + v[k] + ";"; });
     var st = document.getElementById("kzTheme"); if (!st) { st = document.createElement("style"); st.id = "kzTheme"; document.head.appendChild(st); }
-    st.textContent = s ? ':root:not([data-theme="dark"]){' + s + "}" : "";
+    var dk = "";
+    if (v.primary && /^#[0-9a-fA-F]{6}$/.test(v.primary)) {
+      var mix = function (c1, c2, t) { function h(x) { x = x.replace("#", ""); return [parseInt(x.slice(0, 2), 16), parseInt(x.slice(2, 4), 16), parseInt(x.slice(4, 6), 16)]; } var A = h(c1), B = h(c2); return "#" + A.map(function (q, i) { return ("0" + Math.round(q + (B[i] - q) * t).toString(16)).slice(-2); }).join(""); };
+      var ac = /^#[0-9a-fA-F]{6}$/.test(v.accent || "") ? v.accent : "#D4AF37";
+      dk = ':root[data-theme="dark"]{--navy:' + v.primary + ";--deep:" + mix(v.primary, "#000000", .42) + ";--bg:" + mix(v.primary, "#000000", .42) + ";--surface:" + v.primary + ";--surface-2:" + mix(v.primary, "#ffffff", .1) + ";--line:" + mix(v.primary, "#ffffff", .2) + ";--gold:" + ac + ";--gold-soft:" + mix(ac, "#ffffff", .3) + ";--link:" + mix(ac, "#ffffff", .3) + "}";
+    }
+    st.textContent = (s ? ':root:not([data-theme="dark"]){' + s + "}" : "") + dk;
   }
   try { var c = localStorage.getItem("kz-theme-pub"); if (c) apply(JSON.parse(c)); } catch (e) {}
   fetch(cfg.url + "/rest/v1/theme_rules?scope=eq.all&select=themes(vars)", { headers: { apikey: cfg.publishableKey } })

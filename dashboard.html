@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>لوحة الطالب · KIMZA Academy</title>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwkfq92">
-<link rel="stylesheet" href="app.css?v=mwwkfq92">
+<link rel="stylesheet" href="site.css?v=mwwtle9b">
+<link rel="stylesheet" href="app.css?v=mwwtle9b">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwkfq92"></script>
-<script src="portal-i18n.js?v=mwwkfq92"></script>
+<script src="app.js?v=mwwtle9b"></script>
+<script src="portal-i18n.js?v=mwwtle9b"></script>
 
 <script>
 (async function () {
@@ -79,8 +79,21 @@
   }
 
   var html = "";
-  html += '<div class="welcome"><div><h1>مرحباً ' + esc(prof.full_name) + '</h1>';
-  html += '<p style="margin:0"><span class="badge gold">المستوى ' + esc(prof.level) + '</span> <span class="badge ' + (prof.status === "active" ? "ok" : "bad") + '">' + esc(STATUS[prof.status] || prof.status) + '</span></p></div><div class="wnum" aria-hidden="true">' + esc(prof.level) + '</div></div>';
+  var stRows = [];
+  try { stRows = (await sb.from("study_time").select("day").order("day", { ascending: false }).limit(90)).data || []; } catch (e) {}
+  var dset = {}; stRows.forEach(function (r) { dset[r.day] = 1; });
+  var streak = 0, cur = new Date(); function isoD(x) { return x.toISOString().slice(0, 10); }
+  if (!dset[isoD(cur)]) cur.setUTCDate(cur.getUTCDate() - 1);
+  while (dset[isoD(cur)]) { streak++; cur.setUTCDate(cur.getUTCDate() - 1); }
+  var LVN = { A1: "مبتدئ", A2: "أساسي", B1: "متوسط", B2: "فوق المتوسط", C1: "متقدم" };
+  var hr = new Date().getHours(), hi = hr < 5 ? "ليلة موفقة" : hr < 12 ? "صباح الخير" : hr < 18 ? "نهارك سعيد" : "مساء الخير";
+  var chips = '<span class="dh-chip">المستوى ' + esc(prof.level) + (LVN[prof.level] ? " · " + LVN[prof.level] : "") + "</span>";
+  if (prof.status !== "active") chips += '<span class="dh-chip">' + esc(STATUS[prof.status] || prof.status) + "</span>";
+  if (streak > 0) chips += '<span class="dh-chip">🔥 ' + streak + (streak === 1 ? " يوم" : " أيام متتالية") + "</span>";
+  if (learnedCards > 0) chips += '<span class="dh-chip">📚 ' + learnedCards + " كلمة محفوظة</span>";
+  if (hwOpen.length) chips += '<span class="dh-chip">✅ الواجبات ' + doneHw + "/" + hwOpen.length + "</span>";
+  var acts = (KZ.on("review") ? '<a class="btn btn-primary" href="review.html">🧠 مراجعة اليوم' + (dueCards ? " (" + dueCards + ")" : "") + "</a>" : "") + '<a class="btn btn-ghost" href="#lessons">📖 دروسي</a>';
+  html += '<section class="dhero"><span class="dh-orb"></span><div class="dh-in"><div><div class="dh-hi">' + hi + ' 👋</div><h1>' + esc(prof.full_name) + '</h1><div class="dh-chips">' + chips + '</div><div class="dh-acts">' + acts + '</div></div><div class="dh-lvl" aria-hidden="true">' + esc(prof.level) + "</div></div></section>";
 
   if (prof.must_change_password) {
     html += '<div class="infobox"><strong>غيّر كلمة المرور المؤقتة الآن</strong><div class="form" style="margin-top:10px"><div><label for="np">كلمة مرور جديدة (8 أحرف على الأقل)</label><input id="np" type="password" dir="ltr" autocomplete="new-password"></div><div><button class="btn btn-primary sm" id="npBtn" type="button">حفظ كلمة المرور</button></div></div></div>';

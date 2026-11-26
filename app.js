@@ -83,11 +83,13 @@
       : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"], ["schedule.html", "مواعيد الحصص", "schedule"], ["account.html", "حسابي", "account"], ["community.html", "المجتمع", "community"]].filter(function (l) { return !FOFF[l[0]] || KZ.on(FOFF[l[0]]); });
     var h = '<div class="wrap"><a href="' + (isT ? "admin.html" : "dashboard.html") + '"><img src="kimza-logo-gold.png" alt="KIMZA Academy"></a>' +
       '<nav class="links" aria-label="Main">' + links.map(function (l) { return '<a href="' + l[0] + '"' + (l[2] === active ? ' aria-current="page"' : "") + ">" + l[1] + "</a>"; }).join("") +
-      '<span class="who">' + esc(prof ? prof.full_name : "") + '</span><button class="btn btn-ghost sm" id="logoutBtn" type="button" style="color:var(--cream)">خروج</button></nav></div>';
+      '<button class="btn btn-ghost sm" id="lookBtn" type="button" title="مظهري" aria-label="مظهري" style="color:var(--cream)">🎨</button>' + '<span class="who">' + esc(prof ? prof.full_name : "") + '</span><button class="btn btn-ghost sm" id="logoutBtn" type="button" style="color:var(--cream)">خروج</button></nav></div>';
     var el = document.getElementById("appHeader");
     if (el) el.innerHTML = h;
     try { KZ.mountBoardButton(); KZ.mountRecorderButton(); } catch (e) {}
     if (isT) { try { sb.from("name_requests").select("id", { count: "exact", head: true }).eq("status", "pending").then(function (r) { var n = r && r.count; var l = document.querySelector('#appHeader a[href="account.html"]'); if (n && l) l.insertAdjacentHTML("beforeend", ' <span style="background:#c62828;color:#fff;border-radius:20px;padding:0 8px;font-weight:800">' + n + "</span>"); }); } catch (e) {} }
+    var lkb = document.getElementById("lookBtn"); if (lkb) lkb.addEventListener("click", function () { KZ.openLook(); });
+    try { KZ.initReveal(); } catch (e) {}
     var lb = document.getElementById("logoutBtn");
     if (lb) lb.addEventListener("click", async function () { await sb.auth.signOut(); location.href = "login.html"; });
     if (window.KZ_PORTAL) window.KZ_PORTAL.mount();
@@ -247,10 +249,19 @@
   };
   // ----- colour themes chosen by the teacher: all / per level / per group -----
   KZ.themeMap = { primary: "--navy", deep: "--deep", accent: "--gold", accent2: "--gold-soft", bg: "--bg", surface: "--surface", text: "--text", link: "--link", muted: "--muted", line: "--line" };
+  KZ.mix = function (c1, c2, t) {
+    function h(x) { x = String(x).replace("#", ""); if (x.length === 3) x = x.split("").map(function (c) { return c + c; }).join(""); return [parseInt(x.slice(0, 2), 16), parseInt(x.slice(2, 4), 16), parseInt(x.slice(4, 6), 16)]; }
+    var A = h(c1), B = h(c2); return "#" + A.map(function (v, i) { return ("0" + Math.round(v + (B[i] - v) * t).toString(16)).slice(-2); }).join("");
+  };
   KZ.themeCss = function (v) {
-    var s = ""; v = v || {};
+    var s = ""; v = v || {}; var ok = function (x) { return x && /^#[0-9a-fA-F]{6}$/.test(x); };
     Object.keys(KZ.themeMap).forEach(function (k) { if (v[k] && /^#[0-9a-fA-F]{3,8}$/.test(v[k])) s += KZ.themeMap[k] + ":" + v[k] + ";"; });
-    return s ? ':root:not([data-theme="dark"]){' + s + "}" : "";
+    var out = s ? ':root:not([data-theme="dark"]){' + s + "}" : "";
+    if (ok(v.primary)) {
+      var p = v.primary, ac = ok(v.accent) ? v.accent : "#D4AF37";
+      out += ':root[data-theme="dark"]{--navy:' + p + ";--deep:" + KZ.mix(p, "#000000", .42) + ";--bg:" + KZ.mix(p, "#000000", .42) + ";--surface:" + p + ";--surface-2:" + KZ.mix(p, "#ffffff", .1) + ";--line:" + KZ.mix(p, "#ffffff", .2) + ";--gold:" + ac + ";--gold-soft:" + KZ.mix(ac, "#ffffff", .3) + ";--link:" + KZ.mix(ac, "#ffffff", .3) + "}";
+    }
+    return out;
   };
   KZ.applyThemeVars = function (v) {
     var st = document.getElementById("kzTheme");
@@ -271,6 +282,124 @@
       try { if (v) localStorage.setItem(key, JSON.stringify(v)); else localStorage.removeItem(key); } catch (e) {}
     } catch (e) {}
   };
+  // ----- certificate v4 -----
+  KZ.certTypeAr = function (c) {
+    var k = (c.kind || "completion");
+    return { completion: "شهادة إتمام مستوى", participation: "شهادة مشاركة", excellence: "شهادة تفوّق", attendance: "شهادة حضور" }[k] || "";
+  };
+  KZ.certHtml = function (c, verifyUrl) {
+    var LV = { A1: "A1 · Beginner", A2: "A2 · Elementary", B1: "B1 · Intermediate", B2: "B2 · Upper-Intermediate", C1: "C1 · Advanced" };
+    var title = c.title || "CERTIFICATE OF COMPLETION", ar = /[؀-ۿ]/.test(c.holder_name || "");
+    var arTitle = KZ.certTypeAr(c);
+    var nm = esc(c.holder_name || ""), long = (c.holder_name || "").length > 22;
+    var body = c.body || "has successfully completed the English course level";
+    // gold seal: scalloped star + ribbon tails
+    var pts = []; for (var i = 0; i < 48; i++) { var a = i * Math.PI / 24, r = i % 2 ? 56 : 62; pts.push((75 + r * Math.sin(a)).toFixed(1) + "," + (75 - r * Math.cos(a)).toFixed(1)); }
+    var star8 = []; for (var j = 0; j < 16; j++) { var b = j * Math.PI / 8, r2 = j % 2 ? 17 : 34; star8.push((75 + r2 * Math.sin(b)).toFixed(1) + "," + (75 - r2 * Math.cos(b)).toFixed(1)); }
+    var seal = '<svg viewBox="0 0 150 170" aria-hidden="true"><defs><radialGradient id="gSeal" cx="38%" cy="32%" r="80%"><stop offset="0" stop-color="#FBE9A6"/><stop offset=".45" stop-color="#D4AF37"/><stop offset="1" stop-color="#8A6D1E"/></radialGradient><linearGradient id="gRib" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#9B1236"/><stop offset="1" stop-color="#5E0A22"/></linearGradient></defs>' +
+      '<polygon points="52,110 36,168 62,154 76,168 84,116" fill="url(#gRib)"/><polygon points="98,110 114,168 88,154 74,168 66,116" fill="url(#gRib)"/>' +
+      '<polygon points="' + pts.join(" ") + '" fill="url(#gSeal)" stroke="#8A6D1E" stroke-width="1"/><circle cx="75" cy="75" r="46" fill="none" stroke="#FFF3C4" stroke-opacity=".85" stroke-width="1.6"/><circle cx="75" cy="75" r="41" fill="none" stroke="#8A6D1E" stroke-opacity=".6" stroke-width="1"/>' +
+      '<polygon points="' + star8.join(" ") + '" fill="#0B1F44" stroke="#FFF3C4" stroke-width="1.2"/><text x="75" y="80" text-anchor="middle" font-family="Playfair Display,Georgia,serif" font-weight="700" font-size="15" fill="#F4D98A">K</text></svg>';
+    var corner = '<svg class="corner %C%" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 116V30C4 15 15 4 30 4h86"/><path d="M14 116V34c0-11 9-20 20-20h82" stroke-opacity=".6"/><path d="M30 30c18 0 30 12 30 30M30 30c0 18 12 30 30 30" stroke-opacity=".8"/><circle cx="30" cy="30" r="4" fill="currentColor"/><path d="M60 60l8 0M60 60l0 8" stroke-opacity=".7"/></svg>';
+    var wm = '<svg class="c-wm" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><rect x="22" y="22" width="56" height="56"/><rect x="22" y="22" width="56" height="56" transform="rotate(45 50 50)"/><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="20"/></svg>';
+    return '<div class="cert-stage"><div class="cert-scale" id="certScale"><div class="cert2" id="certBox">' +
+      '<div class="c-paper"></div><div class="c-frame"></div>' + corner.replace("%C%", "tl") + corner.replace("%C%", "tr") + corner.replace("%C%", "bl") + corner.replace("%C%", "br") + wm +
+      '<div class="c-in"><img class="c-logo" src="kimza-logo-gold.png" alt="KIMZA Academy">' +
+      '<div class="c-kicker">KIMZA ACADEMY · ENGLISH FOR ARABIC SPEAKERS</div>' +
+      '<div class="c-title">' + esc(title) + (arTitle ? "<small>" + esc(arTitle) + "</small>" : "") + "</div>" +
+      '<div class="c-rule"><i></i><svg width="22" height="22" viewBox="0 0 24 24" fill="#C9A24B" aria-hidden="true"><path d="M12 1l2.4 6.6L21 10l-6.6 2.4L12 19l-2.4-6.6L3 10l6.6-2.4z"/></svg><i></i></div>' +
+      '<p class="c-lead">This is to certify that</p>' +
+      '<div class="c-name' + (ar ? " ar" : "") + (long ? " long" : "") + '" dir="auto">' + nm + "</div><div class=\"c-line\"></div>" +
+      '<p class="c-body" dir="auto">' + esc(body) + "</p>" +
+      (c.level ? '<div class="c-level">' + esc(LV[c.level] || c.level) + "</div>" : "") +
+      (c.hours ? '<div class="c-hours">TOTAL STUDY HOURS · ' + esc(String(c.hours)) + "</div>" : "") +
+      '<div class="c-foot"><div class="c-col"><div class="c-sig"><b>' + esc(String(c.issued_on || "")) + '</b>Date of issue · تاريخ الإصدار</div></div>' +
+      '<div class="c-seal">' + seal + '</div>' +
+      '<div class="c-col"><div class="c-qr"><div id="qr"></div><div class="no">No. ' + esc(c.number || "") + '</div><div class="vf">' + esc(verifyUrl || "") + "</div></div></div></div></div>" +
+      (c.status && c.status !== "valid" ? '<div class="c-rev"><b>REVOKED</b></div>' : "") +
+      "</div></div></div>";
+  };
+  KZ.fitCert = function () {
+    var sc = document.getElementById("certScale"); if (!sc) return;
+    var w = sc.parentNode.clientWidth || 1123, k = Math.min(1, (w - 8) / 1123);
+    sc.style.transform = "scale(" + k + ")"; sc.parentNode.style.height = Math.round(794 * k) + "px";
+    sc.style.marginInline = "0";
+  };
+  window.addEventListener("resize", function () { try { KZ.fitCert(); } catch (e) {} });
+  window.addEventListener("beforeprint", function () { var sc = document.getElementById("certScale"); if (sc) { sc.style.transform = "none"; sc.parentNode.style.height = "auto"; } });
+  window.addEventListener("afterprint", function () { try { KZ.fitCert(); } catch (e) {} });
+  // ----- /certificate v4 -----
+  // ----- look v4 -----
+  // student-chosen look: palette, text size, motion (saved on this device only)
+  KZ.PALETTES = [
+    ["الملكي (الأصلي)", "#0B1F44", "#D4AF37", "#F8F4E9", "#FFFDF7", "#0B1F44", "#7A0F2D", "#475569", "#E7E7EA"],
+    ["زمردي", "#0F3D3A", "#E0B84C", "#F1F6F2", "#FBFEFB", "#0F2B29", "#0F6B5E", "#4A6360", "#DCE6E2"],
+    ["غابة", "#1B4332", "#F4A261", "#F0F7EE", "#FBFFFA", "#14301F", "#2D6A4F", "#4F6B5A", "#D8E8D5"],
+    ["محيطي", "#0B3C5D", "#F2A541", "#EEF5FA", "#FBFDFF", "#0B2A3F", "#1766A6", "#4B6478", "#D9E5EE"],
+    ["سماوي", "#12457A", "#F7B32B", "#EFF6FD", "#FCFEFF", "#0E2F52", "#1D78C9", "#4C6580", "#D6E6F5"],
+    ["فيروزي", "#0B5563", "#FFB703", "#ECF8FA", "#F9FEFF", "#08404B", "#0F8FA3", "#47686E", "#CFE8EC"],
+    ["بنفسجي", "#3B1F5C", "#E3B45C", "#F6F1FA", "#FFFCFF", "#2A1646", "#7A2E8E", "#5E5470", "#E5DCEE"],
+    ["لافندر", "#4B3F8F", "#F2C14E", "#F3F2FC", "#FDFDFF", "#2B2560", "#6D5FD0", "#5A5878", "#DEDDF3"],
+    ["غروب", "#7A2E12", "#F2B544", "#FBF3EA", "#FFFCF8", "#3B1A0B", "#B4461E", "#6B5446", "#EDDFD2"],
+    ["عنابي", "#6A1B2D", "#E6B25A", "#FBF1F2", "#FFFBFB", "#3A0F19", "#B3243F", "#6E5258", "#F0D9DC"],
+    ["وردي", "#5C1F3B", "#E8A5B8", "#FCF1F4", "#FFFBFC", "#3B1426", "#B02E5E", "#6B5560", "#F0DDE3"],
+    ["فحمي وذهبي", "#222222", "#D4AF37", "#F6F4EF", "#FFFFFF", "#1A1A1A", "#8C6D0F", "#555555", "#E6E2D8"]
+  ];
+  KZ.look = function () { try { return Object.assign({ pal: -1, fs: 1, motion: true }, JSON.parse(localStorage.getItem("kz-look") || "{}")); } catch (e) { return { pal: -1, fs: 1, motion: true }; } };
+  KZ.applyLook = function () {
+    var L = KZ.look(), st = document.getElementById("kzLook");
+    if (!st) { st = document.createElement("style"); st.id = "kzLook"; document.head.appendChild(st); }
+    var css = "", p = KZ.PALETTES[L.pal];
+    if (p) {
+      var v = { primary: p[1], deep: p[1], accent: p[2], accent2: p[2], bg: p[3], surface: p[4], text: p[5], link: p[6], muted: p[7], line: p[8] };
+      css = KZ.themeCss(v).replace(/:root:not/g, "html:root:not").replace(/:root\[data-theme="dark"\]/g, 'html:root[data-theme="dark"]');
+    }
+    st.textContent = css + ":root{--kz-fs:" + (Number(L.fs) || 1) + "}";
+    document.documentElement.setAttribute("data-motion", L.motion === false ? "off" : "on");
+  };
+  KZ.saveLook = function (patch) { var L = Object.assign(KZ.look(), patch); try { localStorage.setItem("kz-look", JSON.stringify(L)); } catch (e) {} KZ.applyLook(); };
+  KZ.openLook = function () {
+    var old = document.getElementById("kzLookOv"); if (old) old.remove();
+    var L = KZ.look(), ov = document.createElement("div"); ov.className = "look-ov"; ov.id = "kzLookOv";
+    function draw() {
+      L = KZ.look();
+      ov.innerHTML = '<div class="look-box" role="dialog" aria-label="مظهري"><div style="display:flex;justify-content:space-between;align-items:center"><h2>🎨 مظهري</h2><button class="btn btn-ghost sm" type="button" id="lkX" aria-label="إغلاق">✕</button></div>' +
+        '<p class="muted" style="margin:0">اختر الألوان التي تحبها. يُحفظ اختيارك على جهازك فقط.</p>' +
+        '<div class="look-grid">' + KZ.PALETTES.map(function (p, i) { return '<button type="button" class="look-sw" data-pal="' + i + '" aria-pressed="' + (L.pal === i) + '"><i><b style="background:' + p[1] + '"></b><b style="background:' + p[2] + '"></b><b style="background:' + p[3] + '"></b><b style="background:' + p[6] + '"></b></i>' + p[0] + "</button>"; }).join("") + "</div>" +
+        '<div class="look-row"><strong>حجم الخط</strong><div class="btns"><button class="btn btn-ghost sm" data-fs="0.92" type="button">أصغر</button><button class="btn btn-ghost sm" data-fs="1" type="button">عادي</button><button class="btn btn-ghost sm" data-fs="1.12" type="button">أكبر</button><button class="btn btn-ghost sm" data-fs="1.25" type="button">كبير جداً</button></div></div>' +
+        '<div class="look-row"><strong>الحركة والتأثيرات</strong><div class="btns"><button class="btn ' + (L.motion === false ? "btn-ghost" : "btn-primary") + ' sm" data-mo="1" type="button">تشغيل</button><button class="btn ' + (L.motion === false ? "btn-primary" : "btn-ghost") + ' sm" data-mo="0" type="button">إيقاف</button></div></div>' +
+        '<div class="look-row"><strong>جرّب الاحتفال</strong><div class="btns"><button class="btn btn-ghost sm" id="lkC" type="button">🎉</button><button class="btn btn-ghost sm" id="lkR" type="button">إعادة الضبط</button></div></div></div>';
+      ov.querySelector("#lkX").onclick = function () { ov.remove(); };
+      ov.querySelectorAll("[data-pal]").forEach(function (b) { b.onclick = function () { KZ.saveLook({ pal: Number(b.getAttribute("data-pal")) }); draw(); }; });
+      ov.querySelectorAll("[data-fs]").forEach(function (b) { b.onclick = function () { KZ.saveLook({ fs: Number(b.getAttribute("data-fs")) }); }; });
+      ov.querySelectorAll("[data-mo]").forEach(function (b) { b.onclick = function () { KZ.saveLook({ motion: b.getAttribute("data-mo") === "1" }); draw(); }; });
+      ov.querySelector("#lkC").onclick = function () { KZ.confetti(); };
+      ov.querySelector("#lkR").onclick = function () { try { localStorage.removeItem("kz-look"); } catch (e) {} KZ.applyLook(); draw(); };
+    }
+    ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    document.addEventListener("keydown", function esc2(e) { if (e.key === "Escape") { ov.remove(); document.removeEventListener("keydown", esc2); } });
+    draw(); document.body.appendChild(ov);
+  };
+  KZ.confetti = function () {
+    if (document.documentElement.getAttribute("data-motion") === "off" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+    var c = document.getElementById("kzConf") || document.createElement("canvas"); c.id = "kzConf"; document.body.appendChild(c);
+    c.width = innerWidth; c.height = innerHeight; var x = c.getContext("2d"), cols = ["#D4AF37", "#F4D98A", "#7A0F2D", "#F8F4E9", "#17356E", "#E8A5B8"], P = [];
+    for (var i = 0; i < 140; i++) P.push({ x: innerWidth / 2 + (Math.random() - .5) * 200, y: innerHeight * .35, vx: (Math.random() - .5) * 14, vy: -Math.random() * 13 - 4, s: 5 + Math.random() * 7, r: Math.random() * 6, vr: (Math.random() - .5) * .3, c: cols[i % cols.length] });
+    var t0 = performance.now();
+    (function f(t) {
+      var k = (t - t0) / 2600; x.clearRect(0, 0, c.width, c.height);
+      P.forEach(function (p) { p.vy += .32; p.x += p.vx; p.y += p.vy; p.vx *= .99; p.r += p.vr; x.save(); x.globalAlpha = Math.max(0, 1 - k); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.c; x.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); x.restore(); });
+      if (k < 1) requestAnimationFrame(f); else c.remove();
+    })(t0);
+  };
+  KZ.initReveal = function () {
+    if (KZ._rv || !("IntersectionObserver" in window)) return; KZ._rv = true;
+    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }); }, { threshold: .06 });
+    function scan() { document.querySelectorAll(".app-main .tile,.app-main .lcard,.app-main .dhero,.app-main .ring,.app-main h2,.app-main .row").forEach(function (el) { if (el.__rv) return; el.__rv = 1; el.classList.add("kz-rv"); io.observe(el); }); }
+    scan(); var host = document.getElementById("app") || document.body; new MutationObserver(function () { scan(); }).observe(host, { childList: true, subtree: true });
+  };
+  KZ.applyLook();
+  // ----- /look v4 -----
   KZ.features = {};
   // A feature is on unless the teacher switched it off.
   KZ.on = function (k) { return KZ.features[k] !== false; };

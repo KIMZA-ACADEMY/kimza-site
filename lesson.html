@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>الدرس · KIMZA Academy</title>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwnthk0">
-<link rel="stylesheet" href="app.css?v=mwwnthk0">
+<link rel="stylesheet" href="site.css?v=mwwtle9b">
+<link rel="stylesheet" href="app.css?v=mwwtle9b">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwnthk0"></script>
-<script src="portal-i18n.js?v=mwwnthk0"></script>
+<script src="app.js?v=mwwtle9b"></script>
+<script src="portal-i18n.js?v=mwwtle9b"></script>
 
 <script>
 (async function () {
@@ -59,7 +59,37 @@
   var first = (TABS.filter(function (t) { return t[2]; })[0] || TABS[0])[0];
   var ME = null;
   try { if (!IS_T) { var mp = await sb.from("student_prefs").select("nickname,emoji,color").maybeSingle(); if (mp.data && mp.data.nickname) ME = mp.data; } } catch (e) {}
+  function unifyCss() {
+    var cs = getComputedStyle(document.documentElement), g = function (n, d) { return (cs.getPropertyValue(n) || "").trim() || d; };
+    var dark = document.documentElement.getAttribute("data-theme") === "dark";
+    var bg = g("--bg", "#07162F"), sf = g("--surface", "#0B1F44"), sf2 = g("--surface-2", sf), tx = g("--text", "#F8F4E9"), mu = g("--muted", "#CBD5E1"), ln = g("--line", "#1F3B6B"), ac = g("--gold", "#D4AF37"), lk = g("--link", "#7A0F2D");
+    var btn = dark ? "#7A0F2D" : lk, hc = dark ? ac : lk;
+    return "<style id='kzUnify'>:root{--navy:" + g("--navy", "#0B1F44") + ";--gold:" + ac + "}" +
+      "html,body{background:" + bg + "!important;color:" + tx + "!important}" +
+      ".top,header{background:transparent!important;border:0!important;box-shadow:none!important;padding:8px 8px 0!important}.top:after{display:none!important}.brand{display:none!important}.title,.lesson{color:" + tx + "!important}" +
+      ".bar,.card,.section,#result,#score,.plan span{background:" + sf + "!important;border:1px solid " + ln + "!important;color:" + tx + "!important;border-radius:20px!important;box-shadow:0 10px 26px rgba(11,31,68,.12)!important}" +
+      ".q,.setup-row,.sentence,.picked .p,.prompt,.reveal-box,#gramPanel>div,.rule,.scene,.timer,.score{background:" + sf2 + "!important;color:" + tx + "!important;border-color:" + ln + "!important}" +
+      "h1,h2,.card h2,.section h2,.q .text,.reveal,label,.fb,.title{color:" + tx + "!important}h3,#gramPanel h3,.prompt small,.blank{color:" + hc + "!important}.blank{border-bottom-color:" + hc + "!important}" +
+      "input,textarea,select,input[type=number]{background:" + bg + "!important;color:" + tx + "!important;border:1.5px solid " + ln + "!important;border-radius:12px!important}input:focus,textarea:focus,select:focus{outline:2px solid " + ac + "!important}" +
+      ".opts label,.chip,.btn.ghost{background:" + bg + "!important;color:" + tx + "!important;border:1.5px solid " + ln + "!important;border-radius:12px!important}.opts label:hover,.chip:hover{border-color:" + ac + "!important}" +
+      ".btn,.btn.gold{background:" + btn + "!important;color:#fff!important;border:1px solid " + ac + "!important;border-radius:999px!important;transition:transform .15s,filter .15s!important}.btn:hover{filter:brightness(1.1);transform:translateY(-1px)}" +
+      ".badge{background:" + btn + "!important;color:#F4D98A!important}.note,.hint,.rules,.selfnote,.why,footer{color:" + mu + "!important}.timer{color:" + hc + "!important}" +
+      "main{max-width:880px!important;margin-top:8px!important}</style>";
+  }
+  function autoFit(fr) {
+    try {
+      var d = fr.contentDocument; if (!d || !d.documentElement) return;
+      var set = function () { if (fr.closest && fr.closest(".fs")) { fr.style.height = ""; return; } fr.style.height = Math.max(Math.round(innerHeight * 0.7), d.documentElement.scrollHeight + 6) + "px"; };
+      set(); if (window.ResizeObserver) new ResizeObserver(set).observe(d.documentElement); else setInterval(set, 900);
+    } catch (e) {}
+  }
   function withMe(html) {
+    var out = withMe0(html);
+    if (!out) return out;
+    var st = unifyCss();
+    return /<\/body>/i.test(out) ? out.replace(/<\/body>/i, function () { return st + "</body>"; }) : out + st;
+  }
+  function withMe0(html) {
     if (!ME || !html) return html;
     var cfg = JSON.stringify({ name: ME.nickname, emoji: ME.emoji, color: ME.color }).replace(/</g, "\\u003c");
     var js = "<script>window.KZ_ME=" + cfg + ";document.addEventListener('DOMContentLoaded',function(){try{var m=window.KZ_ME;var b=document.createElement('div');b.id='kzMe';b.style.cssText='position:fixed;top:8px;left:8px;z-index:99999;display:flex;align-items:center;gap:8px;background:#fff;color:#0B1F44;border:3px solid '+m.color+';border-radius:30px;padding:3px 14px 3px 4px;font:700 15px Tajawal,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)';var e=document.createElement('span');e.style.cssText='font-size:26px;line-height:1';e.textContent=m.emoji;var n=document.createElement('span');n.textContent=m.name;b.appendChild(e);b.appendChild(n);document.body.appendChild(b);document.querySelectorAll('.kz-me-emoji').forEach(function(x){x.textContent=m.emoji});document.querySelectorAll('.kz-me-name').forEach(function(x){x.textContent=m.name})}catch(err){}});<" + "/script>";
@@ -209,7 +239,7 @@
           tc = d.today; tt = d.total;
           var m = (d.today % 5 === 0) ? "🔥 " + d.today + " تكرارات اليوم! أنت على الطريق لتتحدث الإنجليزية بطلاقة." : MSGS[(d.total * 7 + d.today) % MSGS.length];
           draw("✅ " + m);
-          try { KZ.toast(m); } catch (e) {}
+          try { KZ.toast(m); if (d.today % 5 === 0) KZ.confetti(); } catch (e) {}
         };
         refresh();
       })();
@@ -363,6 +393,7 @@
       wireFs();
       var exf = document.getElementById("ex");
       exf.addEventListener("load", function () { try { KZ.blockCopyIn(exf.contentDocument); } catch (e) {} });
+      exf.addEventListener("load", function () { autoFit(exf); });
       exf.srcdoc = withMe(content["class"] || "");
       return;
     }
@@ -435,6 +466,7 @@
         return { ok: true };
       };
     });
+    fr.addEventListener("load", function () { autoFit(fr); });
     fr.srcdoc = withMe(hwHtml);
   }
   document.querySelectorAll(".tabs button").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-t")); }); });
