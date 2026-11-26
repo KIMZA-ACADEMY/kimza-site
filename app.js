@@ -773,27 +773,34 @@
 })();
 
 
-/* official-link banner (only on the old github.io address) + Android app button (login and home pages, Android phones only) */
+/* official-link banner (only on the old github.io address) + Android app button (login and home pages, Android phones only); both can be switched off in the teacher panel (Features) */
 (function () {
   var OFFICIAL = "https://kimza-academy.netlify.app/", APK = "https://kimza-academy.netlify.app/KIMZA-Academy.apk";
   function ready(f) { if (document.readyState !== "loading") f(); else document.addEventListener("DOMContentLoaded", f); }
   ready(function () {
-    try {
-      var host = location.hostname, p = (location.pathname.split("/").pop() || "index").replace(/\.html$/, "");
-      var ar = (document.documentElement.lang || "ar").indexOf("ar") === 0;
-      if (/github\.io$/.test(host) && !sessionStorage.getItem("kz-official-closed")) {
-        var b = document.createElement("div"); b.setAttribute("role", "region"); b.setAttribute("aria-label", "official link");
-        b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99999;background:#D4AF37;color:#0B1F44;padding:8px 12px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;font:700 14px/1.5 Tajawal,Tahoma,Arial,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.3)";
-        b.innerHTML = '<span>' + (ar ? "📢 الرابط الرسمي الجديد للأكاديمية:" : "📢 Our new official link:") + ' <strong dir="ltr">kimza-academy.netlify.app</strong></span><a href="' + OFFICIAL + '" style="background:#0B1F44;color:#fff;padding:5px 14px;border-radius:999px;text-decoration:none">' + (ar ? "افتح الرابط الجديد" : "Open it") + '</a><button type="button" aria-label="close" style="border:0;background:none;font-size:20px;cursor:pointer;color:#0B1F44;line-height:1">×</button>';
-        b.querySelector("button").onclick = function () { b.remove(); document.body.style.paddingTop = ""; try { sessionStorage.setItem("kz-official-closed", "1"); } catch (e) {} };
-        document.body.appendChild(b); document.body.style.paddingTop = "46px";
-      }
-      if (/Android/i.test(navigator.userAgent) && (p === "index" || p === "login" || p === "") && !(window.matchMedia && matchMedia("(display-mode: standalone)").matches)) {
-        var a = document.createElement("a"); a.href = APK; a.setAttribute("download", "KIMZA-Academy.apk");
-        a.style.cssText = "position:fixed;bottom:14px;left:14px;z-index:9998;background:#0B1F44;color:#F8F4E9;border:2px solid #D4AF37;padding:9px 16px;border-radius:999px;text-decoration:none;font:700 14px/1.4 Tajawal,Tahoma,Arial,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.35)";
-        a.textContent = ar ? "📱 تحميل تطبيق الأندرويد" : "📱 Download the Android app";
-        document.body.appendChild(a);
-      }
-    } catch (e) {}
+    var cfg = window.KIMZA_SUPABASE, flags = {};
+    function run() {
+      try {
+        var host = location.hostname, p = (location.pathname.split("/").pop() || "index").replace(/\.html$/, "");
+        var ar = (document.documentElement.lang || "ar").indexOf("ar") === 0;
+        if (/github\.io$/.test(host) && flags.official_banner !== false && !sessionStorage.getItem("kz-official-closed")) {
+          var b = document.createElement("div"); b.setAttribute("role", "region"); b.setAttribute("aria-label", "official link");
+          b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99999;background:#D4AF37;color:#0B1F44;padding:8px 12px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;font:700 14px/1.5 Tajawal,Tahoma,Arial,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.3)";
+          b.innerHTML = '<span>' + (ar ? "📢 الرابط الرسمي الجديد للأكاديمية:" : "📢 Our new official link:") + ' <strong dir="ltr">kimza-academy.netlify.app</strong></span><a href="' + OFFICIAL + '" style="background:#0B1F44;color:#fff;padding:5px 14px;border-radius:999px;text-decoration:none">' + (ar ? "افتح الرابط الجديد" : "Open it") + '</a><button type="button" aria-label="close" style="border:0;background:none;font-size:20px;cursor:pointer;color:#0B1F44;line-height:1">×</button>';
+          b.querySelector("button").onclick = function () { b.remove(); document.body.style.paddingTop = ""; try { sessionStorage.setItem("kz-official-closed", "1"); } catch (e) {} };
+          document.body.appendChild(b); document.body.style.paddingTop = "46px";
+        }
+        if (/Android/i.test(navigator.userAgent) && flags.apk_button !== false && (p === "index" || p === "login" || p === "") && !(window.matchMedia && matchMedia("(display-mode: standalone)").matches)) {
+          var a = document.createElement("a"); a.href = APK; a.setAttribute("download", "KIMZA-Academy.apk");
+          a.style.cssText = "position:fixed;bottom:14px;left:14px;z-index:9998;background:#0B1F44;color:#F8F4E9;border:2px solid #D4AF37;padding:9px 16px;border-radius:999px;text-decoration:none;font:700 14px/1.4 Tajawal,Tahoma,Arial,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.35)";
+          a.textContent = ar ? "📱 تحميل تطبيق الأندرويد" : "📱 Download the Android app";
+          document.body.appendChild(a);
+        }
+      } catch (e) {}
+    }
+    if (!cfg || !window.fetch) { run(); return; }
+    fetch(cfg.url + "/rest/v1/site_features?select=key,enabled&key=in.(official_banner,apk_button)", { headers: { apikey: cfg.publishableKey } })
+      .then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; })
+      .then(function (rows) { rows.forEach(function (f) { flags[f.key] = f.enabled; }); run(); });
   });
 })();
