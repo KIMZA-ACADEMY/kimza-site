@@ -7,7 +7,7 @@
 <meta name="description" content="KIMZA Academy: Your English. Your Future. Learn. Practise. Progress.">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
-<link rel="stylesheet" href="site.css?v=mwwtle1o">
+<link rel="stylesheet" href="site.css?v=mwwubr1d">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -59,7 +59,7 @@
       <p class="muted"><span data-i18n="pt.s2.p">اكتب اسمك الحقيقي كما تريده أن يظهر في نظامنا وعلى شهادتك لاحقاً. ورقم واتساب صحيح نتواصل معك عليه.</span></p>
       <div class="form">
         <div><label for="ptName"><span data-i18n="pt.name2">الاسم الكامل (إجباري)</span></label><input id="ptName" autocomplete="name" maxlength="120"></div>
-        <div><label for="ptContact"><span data-i18n="pt.wa">رقم واتساب مع رمز الدولة (إجباري)</span></label><input id="ptContact" inputmode="tel" dir="ltr" maxlength="25" placeholder="+967 7XX XXX XXX"></div>
+        <div><label for="ptContact"><span data-i18n="pt.wa">رقم واتساب (مع رمز الدولة أو بدونه، إجباري)</span></label><input id="ptContact" inputmode="tel" dir="ltr" maxlength="25" placeholder="7XX XXX XXX  /  +967 7XX XXX XXX"></div>
         <div id="ptErr" class="msg bad" role="alert" hidden></div>
         <div class="btns"><button class="btn btn-ghost" id="ptBack2" type="button"><span data-i18n="pt.back">رجوع</span></button><button class="btn btn-primary" id="ptNext2" type="button"><span data-i18n="pt.next">التالي</span></button></div>
       </div>
@@ -114,13 +114,13 @@
     <p class="copy">&copy; KIMZA Academy</p>
   </div>
 </footer>
-<script src="i18n.js?v=mwwtle1o"></script>
+<script src="i18n.js?v=mwwubr1d"></script>
 <script src="config.js"></script>
-<script src="site-config.js?v=mwwtle1o"></script>
-<script src="site.js?v=mwwtle1o"></script>
+<script src="site-config.js?v=mwwubr1d"></script>
+<script src="site.js?v=mwwubr1d"></script>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="placement-data.js?v=mwwtle1o"></script>
+<script src="placement-data.js?v=mwwubr1d"></script>
 <script>
 (function () {
   var Q = window.PLACEMENT || [], REF = window.PLACEMENT_REF || { reading: {}, listening: {} };
@@ -269,6 +269,8 @@
     var res = await sb.from("placement_attempts").insert(payload);
     // the new student also appears in the teacher's applications list
     if (!res.error) await sb.from("applications").insert({ full_name: payload.full_name, phone: payload.contact, placement_level: r.level, current_level: r.level, status: "new" });
+    // the person is registered at once as a PENDING student (number = username, shared temporary password); the teacher accepts or rejects
+    try { await sb.rpc("register_from_placement", { p_name: payload.full_name, p_user: localNum(payload.contact), p_level: r.level }); } catch (e) {}
     $("ptSave").textContent = res.error ? T("js.notsaved") : "";
   }
 
@@ -283,11 +285,19 @@
   $("ptBack2").addEventListener("click", function () { step(1); });
   $("ptBack3").addEventListener("click", function () { step(2); });
   $("ptNoHelp").addEventListener("change", function () { $("ptStart").disabled = !$("ptNoHelp").checked; });
+  function asciiDigits(t) { return String(t || "").replace(/[\u0660-\u0669]/g, function (c) { return c.charCodeAt(0) - 1632; }).replace(/[\u06F0-\u06F9]/g, function (c) { return c.charCodeAt(0) - 1776; }); }
+  // the number without the country code (Yemen 967 and the other common codes), digits only
+  function localNum(raw) {
+    var d = asciiDigits(raw).replace(/[^0-9]/g, ""); if (d.indexOf("00") === 0) d = d.slice(2);
+    var codes = ["967", "966", "971", "965", "968", "974", "973", "962", "963", "964", "961", "218", "212", "213", "216", "249", "225", "20", "90", "44", "1"];
+    if (d.length >= 11) for (var i = 0; i < codes.length; i++) { var c = codes[i]; if (d.indexOf(c) === 0 && d.length - c.length >= 7 && d.length - c.length <= 10) return d.slice(c.length); }
+    return d;
+  }
   $("ptNext2").addEventListener("click", function () {
-    var name = $("ptName").value.trim().replace(/\s+/g, " "), wa = $("ptContact").value.replace(/[\s\-().]/g, ""), er = $("ptErr");
+    var name = $("ptName").value.trim().replace(/\s+/g, " "), wa = asciiDigits($("ptContact").value).replace(/[\s\-().]/g, "").replace(/\+/g, ""), er = $("ptErr");
     var ar = window.KIMZA_LANG() === "ar", msg = "";
     if (name.split(" ").length < 2 || name.length < 5) msg = ar ? "اكتب اسمك الكامل الحقيقي (اسمان على الأقل)." : "Write your real full name (at least two names).";
-    else if (!/^\+?\d{8,15}$/.test(wa)) msg = ar ? "اكتب رقم واتساب صحيحاً مع رمز الدولة، مثل 967770000000+." : "Enter a valid WhatsApp number with the country code, for example +967770000000.";
+    else if (!/^\d{7,15}$/.test(wa)) msg = ar ? "اكتب رقم واتساب صحيحاً (أرقام فقط، مع رمز الدولة أو بدونه)." : "Enter a valid WhatsApp number (digits only, with or without the country code).";
     if (msg) { er.textContent = msg; er.hidden = false; return; }
     er.hidden = true; $("ptName").value = name; $("ptContact").value = wa; step(3);
   });

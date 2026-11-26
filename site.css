@@ -400,18 +400,19 @@ html{scrollbar-color:#B8963A transparent;scrollbar-width:thin}
 .lift{transition:transform .3s var(--ease-out,ease),box-shadow .3s,border-color .3s}
 .lift:hover{box-shadow:0 22px 50px rgba(0,0,0,.28),0 0 0 1px rgba(212,175,55,.35)}
 /* mini certificate (home page) */
-.cert-mini{position:relative;border:2px solid var(--navy);outline:1px solid #C9A24B;outline-offset:-8px;background:linear-gradient(180deg,#FFFDF6,#F6EEDA);color:#0B1F44;padding:22px 20px 16px;text-align:center;direction:ltr;border-radius:6px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.3)}
-.cert-mini:before{content:"";position:absolute;inset:0;opacity:.7;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='46' height='46' viewBox='0 0 80 80'><g fill='none' stroke='%23C9A24B' stroke-opacity='.2'><rect x='20' y='20' width='40' height='40'/><rect x='20' y='20' width='40' height='40' transform='rotate(45 40 40)'/></g></svg>")}
-.cert-mini>*{position:relative}
-.cert-mini small{display:block;letter-spacing:.22em;color:#8A6D1E;font:700 10px Manrope,sans-serif}
-.cert-mini .cm-ar{display:block;margin-top:2px;color:#7A0F2D;font:700 14px Tajawal,sans-serif}
-.cert-mini .cm-rule{display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0 2px;color:#C9A24B;font-size:12px}
-.cert-mini .cm-rule b{display:block;width:54px;height:1px;background:linear-gradient(90deg,transparent,#C9A24B)}.cert-mini .cm-rule b:last-child{background:linear-gradient(270deg,transparent,#C9A24B)}.cert-mini .cm-rule em{font-style:normal}
-.cert-mini .t{font:italic 500 13px "Cormorant Garamond",Georgia,serif;color:#475569}
-.cert-mini .n{font:400 2.1rem/1.2 "Great Vibes","Cormorant Garamond",cursive;color:#7A0F2D;margin:0}
-.cert-mini .cm-line{width:70%;height:1.5px;margin:0 auto 8px;background:linear-gradient(90deg,transparent,#C9A24B,transparent)}
-.cert-mini .l{display:inline-block;padding:3px 14px;border-radius:999px;background:linear-gradient(135deg,#0B1F44,#17356E);color:#F4D98A;font:700 12px "Playfair Display",serif;letter-spacing:.05em;border:1px solid #C9A24B}
-.cert-mini .cm-foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:12px;font:600 9.5px Manrope,sans-serif;color:#64748B}
-.cert-mini .cm-seal{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font:700 16px "Playfair Display",serif;color:#F4D98A;background:radial-gradient(circle at 35% 30%,#25417B,#0B1F44 70%);border:3px solid #D4AF37;box-shadow:0 0 0 3px #F4D98A,0 6px 12px rgba(11,31,68,.35)}
-.cert-mini .cm-c{position:absolute;width:22px;height:22px;border:1.5px solid #C9A24B}
-.cert-mini .cm-tl{top:8px;left:8px;border-right:0;border-bottom:0}.cert-mini .cm-tr{top:8px;right:8px;border-left:0;border-bottom:0}.cert-mini .cm-bl{bottom:8px;left:8px;border-right:0;border-top:0}.cert-mini .cm-br{bottom:8px;right:8px;border-left:0;border-top:0}
+.cert-mini{position:relative;display:grid;grid-template-columns:34% 1fr;min-height:210px;border-radius:12px;overflow:hidden;background:#fff;color:#0B1F44;direction:ltr;text-align:left;box-shadow:0 20px 44px rgba(0,0,0,.34)}
+.cert-mini .cm-side{position:relative;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:14px 12px 14px 16px;background:linear-gradient(165deg,#0B1F44,#143373);color:#fff;overflow:hidden}
+.cert-mini .cm-side b{font:800 2.6rem/1 "Playfair Display",serif;color:transparent;-webkit-text-stroke:1.5px #E9C766}
+.cert-mini .cm-side span{font:700 9.5px Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#E9D18A}
+.cert-mini .cm-ring{position:absolute;width:150px;height:150px;border-radius:50%;border:1.5px solid rgba(212,175,55,.5);left:-50px;bottom:-50px;animation:cmSpin 40s linear infinite}
+.cert-mini .cm-main{padding:18px 18px 14px}
+.cert-mini small{display:block;font:800 9.5px Manrope,sans-serif;letter-spacing:.34em;color:#B8912F}
+.cert-mini h4{margin:6px 0 0;font:700 1.18rem/1.2 "Playfair Display",serif;color:#0B1F44}
+.cert-mini .cm-bar{display:block;width:44px;height:3px;border-radius:3px;margin:9px 0;background:linear-gradient(90deg,#C8A24A,#F4DA8A);animation:cmBar 1.2s .3s both}
+.cert-mini .t{font:500 11px Manrope,sans-serif;color:#64748B}
+.cert-mini .n{margin:2px 0 8px;font:italic 700 1.55rem/1.2 "Playfair Display",serif;color:#0B1F44}
+.cert-mini .cm-foot{display:flex;justify-content:space-between;align-items:center}
+.cert-mini .l{display:inline-block;padding:3px 12px;border-radius:9px;background:linear-gradient(135deg,#0B1F44,#17356E);color:#F6DE8A;font:700 11.5px "Playfair Display",serif}
+.cert-mini .cm-emb{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:16px;color:#0B1F44;background:linear-gradient(135deg,#F9E7A8,#C8A24A);box-shadow:0 0 0 3px #0B1F44,0 0 0 4.5px #C8A24A}
+@keyframes cmSpin{to{transform:rotate(360deg)}}@keyframes cmBar{from{transform:scaleX(0);transform-origin:left}to{transform:scaleX(1);transform-origin:left}}
+@media (prefers-reduced-motion:reduce){.cert-mini *{animation:none!important}}

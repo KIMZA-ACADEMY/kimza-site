@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwtle9b">
-<link rel="stylesheet" href="app.css?v=mwwtle9b">
+<link rel="stylesheet" href="site.css?v=mwwubr8b">
+<link rel="stylesheet" href="app.css?v=mwwubr8b">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwtle9b"></script>
-<script src="portal-i18n.js?v=mwwtle9b"></script>
+<script src="app.js?v=mwwubr8b"></script>
+<script src="portal-i18n.js?v=mwwubr8b"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 (async function () {
@@ -39,7 +39,7 @@
   var c = r.data;
   var verifyUrl = new URL("verify.html?c=" + encodeURIComponent(c.number), location.href).href;
   app.innerHTML = '<div class="cert-actions noprint"><button class="btn btn-primary" id="pr" type="button">🖨 طباعة / حفظ PDF</button><a class="btn btn-ghost" href="' + (prof.role === "teacher" ? "admin.html#certs" : "certificates.html") + '">← رجوع</a></div><p class="muted noprint" style="text-align:center;margin:0 0 6px">للحفظ كملف PDF: اضغط «طباعة»، واختر «حفظ بصيغة PDF»، ثم اجعل الاتجاه أفقياً (Landscape) وأزل الهوامش.</p>' + KZ.certHtml(c, verifyUrl);
-  try { new QRCode(document.getElementById("qr"), { text: verifyUrl, width: 96, height: 96, colorDark: "#0B1F44", colorLight: "#ffffff" }); } catch (e) {}
+  try { new QRCode(document.getElementById("qr"), { text: verifyUrl, width: 112, height: 112, colorDark: "#0B1F44", colorLight: "#ffffff" }); } catch (e) {}
   KZ.fitCert(); setTimeout(KZ.fitCert, 300); setTimeout(KZ.fitCert, 1200);
   document.getElementById("pr").addEventListener("click", function () { window.print(); });
 })();

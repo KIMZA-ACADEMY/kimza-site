@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwtle9b">
-<link rel="stylesheet" href="app.css?v=mwwtle9b">
+<link rel="stylesheet" href="site.css?v=mwwubr8b">
+<link rel="stylesheet" href="app.css?v=mwwubr8b">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwtle9b"></script>
-<script src="portal-i18n.js?v=mwwtle9b"></script>
+<script src="app.js?v=mwwubr8b"></script>
+<script src="portal-i18n.js?v=mwwubr8b"></script>
 
 <script>
 (async function () {
@@ -32,7 +32,7 @@
   if (!prof) return;
   KZ.shell("home");
   var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app");
-  var STATUS = { active: "نشط", paused: "متوقف مؤقتاً", graduated: "خريج", stopped: "موقوف" };
+  var STATUS = { active: "نشط", paused: "متوقف مؤقتاً", graduated: "خريج", stopped: "موقوف", pending: "بانتظار القبول" };
   var KINDS = { weekly: "اختبار أسبوعي", monthly: "امتحان شهري", final: "امتحان نهاية المستوى" };
   var KGROUP = { weekly: "الاختبارات الأسبوعية", monthly: "الامتحانات الشهرية", final: "امتحان نهاية المستوى" };
 
@@ -98,7 +98,8 @@
   if (prof.must_change_password) {
     html += '<div class="infobox"><strong>غيّر كلمة المرور المؤقتة الآن</strong><div class="form" style="margin-top:10px"><div><label for="np">كلمة مرور جديدة (8 أحرف على الأقل)</label><input id="np" type="password" dir="ltr" autocomplete="new-password"></div><div><button class="btn btn-primary sm" id="npBtn" type="button">حفظ كلمة المرور</button></div></div></div>';
   }
-  if (prof.status !== "active") html += '<div class="warnbox">حسابك ليس نشطاً حالياً، لذلك قد لا تظهر بعض المواد. تواصل مع المعلم.</div>';
+  if (prof.status === "pending") html += '<div class="infobox">🎉 أهلاً بك! أنهيت اختبار تحديد المستوى وطلبك الآن عند المعلم للموافقة. عندما يقبلك ستُفتح لك الدروس هنا. يمكنك الآن تغيير كلمة المرور من الأعلى.</div>';
+  else if (prof.status !== "active") html += '<div class="warnbox">حسابك ليس نشطاً حالياً، لذلك قد لا تظهر بعض المواد. تواصل مع المعلم.</div>';
   if (absences > 3) html += '<div class="warnbox">لديك ' + absences + ' غيابات. أكثر من 3 غيابات قد تعرّضك لعدم اجتياز الاختبار النهائي. تواصل مع المعلم، ويمكنك متابعة مواد الدروس وحل الواجبات لتعويض ما فاتك.</div>';
 
   // quick links

@@ -267,50 +267,53 @@ html[data-motion="off"] *{animation:none!important;transition:none!important}
 .look-row .btns{display:flex;gap:6px;flex-wrap:wrap}
 #kzConf{position:fixed;inset:0;z-index:3000;pointer-events:none}
 
-/* ===== design v4: certificate (landscape A4, designed at 1123x794 px and scaled to fit) ===== */
+/* ===== design v4: certificate (modern v5) ===== */
 .cert-stage{width:100%;display:flex;justify-content:center;margin:10px 0 20px}
-.cert-scale{width:1123px;height:794px;transform-origin:top center;flex:none}
-.cert2{position:relative;width:1123px;height:794px;box-sizing:border-box;background:#FBF6EA;color:#0B1F44;overflow:hidden;font-family:"Cormorant Garamond","Playfair Display",Georgia,serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:0 30px 70px rgba(7,22,47,.35);direction:ltr;text-align:center}
-.cert2 .c-paper{position:absolute;inset:0;background:
-  radial-gradient(900px 520px at 50% 40%,rgba(255,255,255,.85),rgba(255,255,255,0) 70%),
-  url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='70' height='70' viewBox='0 0 80 80'><g fill='none' stroke='%23C9A24B' stroke-opacity='.16' stroke-width='1'><rect x='20' y='20' width='40' height='40'/><rect x='20' y='20' width='40' height='40' transform='rotate(45 40 40)'/></g></svg>"),
-  linear-gradient(180deg,#FFFDF6,#F6EEDA)}
-.cert2 .c-frame{position:absolute;inset:22px;border:3px solid #0B1F44;border-radius:6px}
-.cert2 .c-frame:before{content:"";position:absolute;inset:8px;border:1.5px solid #C9A24B;border-radius:3px}
-.cert2 .c-frame:after{content:"";position:absolute;inset:16px;border:1px solid rgba(201,162,75,.55)}
-.cert2 .corner{position:absolute;width:120px;height:120px;color:#C9A24B}
-.cert2 .corner.tl{top:30px;left:30px} .cert2 .corner.tr{top:30px;right:30px;transform:scaleX(-1)}
-.cert2 .corner.bl{bottom:30px;left:30px;transform:scaleY(-1)} .cert2 .corner.br{bottom:30px;right:30px;transform:scale(-1,-1)}
-.cert2 .c-wm{position:absolute;left:50%;top:50%;width:520px;height:520px;margin:-260px 0 0 -260px;opacity:.07;color:#0B1F44}
-.cert2 .c-in{position:absolute;inset:60px 90px 52px;display:flex;flex-direction:column;align-items:center}
-.cert2 .c-logo{height:62px;background:#0B1F44;padding:9px 20px;border-radius:10px;box-shadow:0 6px 16px rgba(11,31,68,.25)}
-.cert2 .c-kicker{margin-top:14px;font:600 13px/1 Manrope,Tajawal,sans-serif;letter-spacing:.5em;color:#8A6D1E;text-transform:uppercase}
-.cert2 .c-title{margin-top:8px;font:700 54px/1.05 "Playfair Display",Georgia,serif;letter-spacing:.04em;color:#0B1F44}
-.cert2 .c-title small{display:block;margin-top:2px;font:700 26px/1.4 Tajawal,sans-serif;color:#7A0F2D;letter-spacing:0}
-.cert2 .c-rule{display:flex;align-items:center;gap:14px;margin:12px 0 8px;color:#C9A24B}
-.cert2 .c-rule i{display:block;width:150px;height:1.5px;background:linear-gradient(90deg,transparent,#C9A24B)}
-.cert2 .c-rule i:last-child{background:linear-gradient(270deg,transparent,#C9A24B)}
-.cert2 .c-lead{margin:6px 0 0;font:italic 500 21px/1.3 "Cormorant Garamond",Georgia,serif;color:#475569}
-.cert2 .c-name{margin:2px 0 0;font:400 76px/1.15 "Great Vibes","Cormorant Garamond",cursive;color:#7A0F2D;max-width:880px;text-shadow:0 2px 0 rgba(201,162,75,.25)}
-.cert2 .c-name.ar{font:800 52px/1.5 Tajawal,sans-serif;text-shadow:none}
-.cert2 .c-name.long{font-size:56px}
-.cert2 .c-line{width:520px;height:2px;margin:2px 0 10px;background:linear-gradient(90deg,transparent,#C9A24B 25%,#C9A24B 75%,transparent)}
-.cert2 .c-body{margin:0;max-width:760px;font:500 22px/1.5 "Cormorant Garamond",Georgia,serif;color:#1B2A4A}
-.cert2 .c-level{margin-top:12px;display:inline-flex;align-items:center;gap:12px;padding:8px 30px;border-radius:999px;background:linear-gradient(135deg,#0B1F44,#17356E);color:#F4D98A;font:700 26px/1.2 "Playfair Display",Georgia,serif;letter-spacing:.06em;box-shadow:0 8px 22px rgba(11,31,68,.3);border:1.5px solid #C9A24B}
-.cert2 .c-hours{margin-top:8px;font:700 17px Manrope,Tajawal,sans-serif;letter-spacing:.08em;color:#0B1F44}
-.cert2 .c-foot{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:1fr 190px 1fr;align-items:end;gap:10px}
-.cert2 .c-col{font:600 13px/1.5 Manrope,Tajawal,sans-serif;color:#475569}
-.cert2 .c-col b{display:block;font:700 18px/1.3 "Playfair Display",Georgia,serif;color:#0B1F44;margin-bottom:2px}
-.cert2 .c-sig{border-top:1.5px solid #0B1F44;padding-top:6px;margin:0 auto;width:230px}
-.cert2 .c-qr{display:flex;flex-direction:column;align-items:center;gap:4px}
-.cert2 .c-qr #qr{background:#fff;padding:6px;border:1.5px solid #C9A24B;border-radius:6px;line-height:0}
-.cert2 .c-qr .no{font:700 12px Manrope,sans-serif;letter-spacing:.06em;color:#0B1F44;direction:ltr}
-.cert2 .c-qr .vf{font:500 10.5px Manrope,sans-serif;color:#64748B;max-width:300px;word-break:break-all}
-.cert2 .c-seal{position:relative;width:150px;height:170px;margin:0 auto}
-.cert2 .c-seal svg{width:150px;height:170px;filter:drop-shadow(0 8px 10px rgba(11,31,68,.3))}
+.cert-scale{width:1123px;height:794px;transform-origin:top center;flex:none;animation:certIn .9s var(--ease-out,ease) both}
+.cert2{position:relative;width:1123px;height:794px;box-sizing:border-box;background:#fff;color:#0B1F44;overflow:hidden;font-family:Manrope,"Plus Jakarta Sans",system-ui,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:0 34px 80px rgba(7,22,47,.38);border-radius:8px;direction:ltr;text-align:left}
+.cert2 .c-bg{position:absolute;inset:0;background:radial-gradient(720px 460px at 92% -4%,rgba(212,175,55,.16),transparent 70%),radial-gradient(640px 440px at 38% 108%,rgba(23,53,110,.08),transparent 70%),#fff}
+.cert2 .c-dots{position:absolute;right:34px;top:34px;width:150px;height:150px;opacity:.5;background:radial-gradient(circle,#C8A24A 1.6px,transparent 1.8px) 0 0/16px 16px}
+.cert2 .c-side{position:absolute;left:0;top:0;bottom:0;width:276px;background:linear-gradient(165deg,#0B1F44 0%,#143373 58%,#0B1F44 100%);color:#fff;overflow:hidden}
+.cert2 .c-side:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.045) 0 2px,transparent 2px 24px)}
+.cert2 .c-ring{position:absolute;border-radius:50%;border:1.5px solid rgba(212,175,55,.55);animation:certSpin 60s linear infinite}
+.cert2 .c-ring.r1{width:380px;height:380px;left:-130px;bottom:-120px}
+.cert2 .c-ring.r2{width:250px;height:250px;left:-62px;bottom:-56px;border-color:rgba(212,175,55,.32);animation-duration:45s;animation-direction:reverse}
+.cert2 .c-ring:after{content:"";position:absolute;top:-5px;left:50%;width:9px;height:9px;border-radius:50%;background:#E9C766;box-shadow:0 0 12px #E9C766}
+.cert2 .c-shine{position:absolute;top:0;bottom:0;width:90px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);animation:certShine 6s 1.8s ease-in-out infinite}
+.cert2 .c-logo{position:absolute;left:38px;top:46px;height:56px;width:auto;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))}
+.cert2 .c-lv{position:absolute;left:34px;right:20px;top:196px;font:800 138px/.95 "Playfair Display",Georgia,serif;color:transparent;-webkit-text-stroke:2px rgba(233,199,102,.9);letter-spacing:-.02em}
+.cert2 .c-lvn{position:absolute;left:38px;right:24px;top:352px;font:700 14px/1.6 Manrope,sans-serif;letter-spacing:.26em;text-transform:uppercase;color:#E9D18A}
+.cert2 .c-qrbox{position:absolute;left:38px;bottom:42px;width:210px;color:#CBD5E1;font:600 11px/1.5 Manrope,sans-serif}
+.cert2 .c-qrbox #qr{display:inline-block;background:#fff;padding:7px;border-radius:12px;line-height:0}
+.cert2 .c-qrbox .scan{display:block;margin-top:9px;font:700 10.5px Manrope;letter-spacing:.18em;color:#E9D18A;text-transform:uppercase}
+.cert2 .c-qrbox .no{margin-top:3px;color:#fff;font:800 12.5px Manrope;letter-spacing:.07em}
+.cert2 .c-qrbox .vf{margin-top:3px;opacity:.6;font-size:9px;word-break:break-all}
+.cert2 .c-main{position:absolute;left:276px;right:0;top:0;bottom:0;padding:74px 78px 56px 86px;display:flex;flex-direction:column}
+.cert2 .c-kick{font:800 13px Manrope,sans-serif;letter-spacing:.44em;color:#B8912F;text-transform:uppercase}
+.cert2 .c-title{margin-top:16px;font:700 52px/1.1 "Playfair Display",Georgia,serif;color:#0B1F44;max-width:640px}
+.cert2 .c-bar{width:104px;height:5px;border-radius:5px;margin:22px 0 28px;background:linear-gradient(90deg,#C8A24A,#F4DA8A);transform-origin:left;animation:certBar .9s .55s ease-out both}
+.cert2 .c-lead{font:500 17px Manrope,sans-serif;color:#64748B;letter-spacing:.01em}
+.cert2 .c-name{margin:10px 0 0;font:italic 700 60px/1.15 "Playfair Display",Georgia,serif;color:#0B1F44;max-width:700px;animation:certIn .9s .4s both}
+.cert2 .c-name.ar{font:800 50px/1.4 Tajawal,sans-serif;font-style:normal}
+.cert2 .c-name.long{font-size:44px}
+.cert2 .c-line{width:100%;max-width:600px;height:2px;margin:6px 0 4px;background:linear-gradient(90deg,#0B1F44,rgba(11,31,68,.04))}
+.cert2 .c-body{margin:16px 0 0;max-width:620px;font:500 20px/1.65 Manrope,sans-serif;color:#334155}
+.cert2 .c-meta{margin-top:26px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.cert2 .c-level{padding:11px 28px;border-radius:14px;background:linear-gradient(135deg,#0B1F44,#17356E);color:#F6DE8A;font:700 24px/1.1 "Playfair Display",Georgia,serif;letter-spacing:.03em;box-shadow:0 12px 26px rgba(11,31,68,.28)}
+.cert2 .c-hours{padding:10px 20px;border-radius:14px;border:1.5px solid #C8A24A;color:#0B1F44;font:800 14px Manrope,sans-serif;letter-spacing:.1em}
+.cert2 .c-foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
+.cert2 .c-sig{min-width:230px;border-top:2px solid #0B1F44;padding-top:8px;font:600 13px/1.5 Manrope,sans-serif;color:#64748B}
+.cert2 .c-sig b{display:block;font:800 16px Manrope,sans-serif;color:#0B1F44;letter-spacing:.02em}
+.cert2 .c-emblem{width:98px;height:98px;filter:drop-shadow(0 10px 16px rgba(11,31,68,.28));animation:certPop .9s .95s cubic-bezier(.34,1.4,.5,1) both}
 .cert2 .c-rev{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
-.cert2 .c-rev b{transform:rotate(-24deg);font:800 120px Manrope,sans-serif;color:rgba(155,28,28,.28);border:10px solid rgba(155,28,28,.28);padding:0 36px;border-radius:20px;letter-spacing:.1em}
+.cert2 .c-rev b{transform:rotate(-24deg);font:800 120px Manrope,sans-serif;color:rgba(185,28,28,.26);border:10px solid rgba(185,28,28,.26);padding:0 36px;border-radius:20px;letter-spacing:.1em}
 .cert-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:6px}
+@keyframes certIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes certBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes certPop{0%{transform:scale(.3) rotate(-35deg);opacity:0}70%{transform:scale(1.12) rotate(6deg);opacity:1}100%{transform:none;opacity:1}}
+@keyframes certShine{0%{transform:translateX(-160%) skewX(-18deg)}55%,100%{transform:translateX(420%) skewX(-18deg)}}
+@keyframes certSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.cert-scale,.cert2 *{animation:none!important}}
 @media print{
   @page{size:A4 landscape;margin:0}
   html,body{background:#fff!important}
@@ -318,7 +321,9 @@ html[data-motion="off"] *{animation:none!important;transition:none!important}
   body.app .app-main{padding:0!important;max-width:none!important;margin:0!important}
   .cert-stage{margin:0!important;display:block!important}
   .cert-scale{transform:none!important;width:1123px;height:794px;margin:0!important}
-  .cert2{box-shadow:none!important}
+  .cert-scale,.cert2 *{animation:none!important}
+  .cert2 .c-shine{display:none}
+  .cert2{box-shadow:none!important;border-radius:0!important}
 }
 
 .app-nav .links{gap:2px}

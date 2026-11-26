@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>لوحة المعلم · KIMZA Academy</title>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwozp5x">
-<link rel="stylesheet" href="app.css?v=mwwozp5x">
+<link rel="stylesheet" href="site.css?v=mwwubr8b">
+<link rel="stylesheet" href="app.css?v=mwwubr8b">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,9 +23,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwozp5x"></script>
-<script src="portal-i18n.js?v=mwwozp5x"></script>
-<script src="i18n.js?v=mwwozp5x"></script>
+<script src="app.js?v=mwwubr8b"></script>
+<script src="portal-i18n.js?v=mwwubr8b"></script>
+<script src="i18n.js?v=mwwubr8b"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -35,7 +35,7 @@
   var LEVELS = ["A1", "A2", "B1", "B2", "C1"];
   var TABS = [["students", "الطلاب"], ["lessons", "الدروس"], ["tests", "الاختبارات"], ["results", "النتائج"], ["attendance", "الحضور"], ["payments", "المدفوعات"], ["applications", "الطلبات"], ["speaking", "المحادثة"], ["certs", "الشهادات"], ["news", "الإعلانات"], ["follow", "متابعة الطلاب"], ["fluency", "الطلاقة والجهد"], ["groups", "مجموعات الطلاب"], ["themes", "الألوان والثيمات"], ["lsearch", "بحث الدروس"], ["designer", "تصميم الموقع"], ["texts", "النصوص"], ["courses", "الدورات والإعلانات"], ["features", "الميزات"], ["settings", "المستويات"]];
   var KIND = { weekly: "أسبوعي", monthly: "شهري", final: "نهاية المستوى" };
-  var ST = { active: "نشط", paused: "متوقف مؤقتاً", graduated: "خريج", stopped: "موقوف" };
+  var ST = { active: "نشط", paused: "متوقف مؤقتاً", graduated: "خريج", stopped: "موقوف", pending: "بانتظار القبول" };
   var AT = { present: "حاضر", absent: "غائب", late: "متأخر", excused: "بعذر" };
   var pendingPrefill = null;
 
@@ -162,6 +162,9 @@
       '<div><label for="bPw">كلمة المرور المؤقتة لكل هؤلاء</label><input id="bPw" dir="ltr" value="' + DEFAULT_PW + '"></div>' +
       '<textarea id="bulk" rows="6" placeholder="776258366/A1, 784979244/A2&#10;774172469/A1/A2"></textarea><div><button class="btn btn-primary" type="submit">إنشاء الحسابات</button></div></form></div>' +
       '<div id="creds"></div>';
+    var pend = nm.list.filter(function (p) { return p.status === "pending"; });
+    if (pend.length) h += '<div class="tile" style="margin-top:24px;border:2px solid var(--gold)"><h2 style="margin-top:0">🆕 طلبات انضمام جديدة (' + pend.length + ')</h2><p class="muted">أنهى هؤلاء اختبار تحديد المستوى وسُجّلوا تلقائياً. اسم الدخول رقمهم، وكلمة المرور المؤقتة Kimza2026Demo. اقبل من تريد ليدخل ويدرس.</p>' +
+      pend.map(function (p) { return '<div class="row"><div><strong>' + esc(p.full_name) + '</strong> <span class="muted en">' + esc(p.username || "") + '</span></div><div class="btns"><select data-pl="' + p.id + '" aria-label="المستوى">' + opts(LEVELS, p.level) + '</select> <button class="btn btn-primary sm" data-pok="' + p.id + '" type="button">✅ قبول</button> <button class="btn danger sm" data-pno="' + p.id + '" type="button">رفض</button></div></div>'; }).join("") + "</div>";
     h += '<div class="tile form" style="margin-top:24px"><div><label for="stQ">🔎 بحث عن طالب (الاسم أو اسم المستخدم أو الرقم أو المستوى)</label><input id="stQ" dir="auto" autocomplete="off" placeholder="اكتب جزءاً من الاسم أو الرقم..."></div></div>';
     h += '<h2 style="margin-top:24px">الطلاب (' + nm.list.length + ')</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>المستخدم</th><th>المستوى</th><th>الحالة</th><th>مستويات إضافية</th><th>غياب</th><th></th></tr></thead><tbody>';
     nm.list.forEach(function (p) {
@@ -173,6 +176,14 @@
     });
     h += "</tbody></table></div>";
     view.innerHTML = h;
+    view.querySelectorAll("[data-pok]").forEach(function (b) { b.addEventListener("click", async function () {
+      var id = b.getAttribute("data-pok"), lv = view.querySelector('[data-pl="' + id + '"]').value;
+      var r = await sb.from("profiles").update({ status: "active", level: lv }).eq("id", id);
+      KZ.toast(r.error ? "تعذر القبول." : "تم القبول. يستطيع الدخول والدراسة الآن.", !!r.error); VIEWS.students(); }); });
+    view.querySelectorAll("[data-pno]").forEach(function (b) { b.addEventListener("click", async function () {
+      var id = b.getAttribute("data-pno"), p = nm.map[id];
+      if (!confirm("رفض " + (p ? p.full_name : "الطلب") + " وحذف حسابه؟")) return;
+      try { await fn({ action: "delete", user_id: id }); KZ.toast("تم الرفض وحُذف الحساب."); } catch (er) { KZ.toast("تعذر الرفض.", true); } VIEWS.students(); }); });
     $("stQ").addEventListener("input", function () { var q = $("stQ").value.trim().toLowerCase().replace(/^\+?967/, ""); view.querySelectorAll("tr[data-q]").forEach(function (tr) { tr.style.display = !q || tr.getAttribute("data-q").indexOf(q) >= 0 ? "" : "none"; }); });
 
     function showCreds(rows) {

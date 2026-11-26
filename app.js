@@ -288,34 +288,26 @@
     return { completion: "شهادة إتمام مستوى", participation: "شهادة مشاركة", excellence: "شهادة تفوّق", attendance: "شهادة حضور" }[k] || "";
   };
   KZ.certHtml = function (c, verifyUrl) {
-    var LV = { A1: "A1 · Beginner", A2: "A2 · Elementary", B1: "B1 · Intermediate", B2: "B2 · Upper-Intermediate", C1: "C1 · Advanced" };
-    var title = c.title || "CERTIFICATE OF COMPLETION", ar = /[؀-ۿ]/.test(c.holder_name || "");
-    var arTitle = KZ.certTypeAr(c);
-    var nm = esc(c.holder_name || ""), long = (c.holder_name || "").length > 22;
-    var body = c.body || "has successfully completed the English course level";
-    // gold seal: scalloped star + ribbon tails
-    var pts = []; for (var i = 0; i < 48; i++) { var a = i * Math.PI / 24, r = i % 2 ? 56 : 62; pts.push((75 + r * Math.sin(a)).toFixed(1) + "," + (75 - r * Math.cos(a)).toFixed(1)); }
-    var star8 = []; for (var j = 0; j < 16; j++) { var b = j * Math.PI / 8, r2 = j % 2 ? 17 : 34; star8.push((75 + r2 * Math.sin(b)).toFixed(1) + "," + (75 - r2 * Math.cos(b)).toFixed(1)); }
-    var seal = '<svg viewBox="0 0 150 170" aria-hidden="true"><defs><radialGradient id="gSeal" cx="38%" cy="32%" r="80%"><stop offset="0" stop-color="#FBE9A6"/><stop offset=".45" stop-color="#D4AF37"/><stop offset="1" stop-color="#8A6D1E"/></radialGradient><linearGradient id="gRib" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#9B1236"/><stop offset="1" stop-color="#5E0A22"/></linearGradient></defs>' +
-      '<polygon points="52,110 36,168 62,154 76,168 84,116" fill="url(#gRib)"/><polygon points="98,110 114,168 88,154 74,168 66,116" fill="url(#gRib)"/>' +
-      '<polygon points="' + pts.join(" ") + '" fill="url(#gSeal)" stroke="#8A6D1E" stroke-width="1"/><circle cx="75" cy="75" r="46" fill="none" stroke="#FFF3C4" stroke-opacity=".85" stroke-width="1.6"/><circle cx="75" cy="75" r="41" fill="none" stroke="#8A6D1E" stroke-opacity=".6" stroke-width="1"/>' +
-      '<polygon points="' + star8.join(" ") + '" fill="#0B1F44" stroke="#FFF3C4" stroke-width="1.2"/><text x="75" y="80" text-anchor="middle" font-family="Playfair Display,Georgia,serif" font-weight="700" font-size="15" fill="#F4D98A">K</text></svg>';
-    var corner = '<svg class="corner %C%" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 116V30C4 15 15 4 30 4h86"/><path d="M14 116V34c0-11 9-20 20-20h82" stroke-opacity=".6"/><path d="M30 30c18 0 30 12 30 30M30 30c0 18 12 30 30 30" stroke-opacity=".8"/><circle cx="30" cy="30" r="4" fill="currentColor"/><path d="M60 60l8 0M60 60l0 8" stroke-opacity=".7"/></svg>';
-    var wm = '<svg class="c-wm" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><rect x="22" y="22" width="56" height="56"/><rect x="22" y="22" width="56" height="56" transform="rotate(45 50 50)"/><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="20"/></svg>';
+    var LV = { A1: "Beginner", A2: "Elementary", B1: "Intermediate", B2: "Upper-Intermediate", C1: "Advanced" };
+    var DEF = { completion: "has successfully completed the English course level", participation: "has actively participated in English classes at KIMZA Academy", excellence: "has shown outstanding performance and dedication to learning English", attendance: "has attended English classes at KIMZA Academy" };
+    var isAr = function (t) { return /[؀-ۿ]/.test(t || ""); };
+    var title = c.title && !isAr(c.title) ? c.title : ({ participation: "Certificate of Participation", excellence: "Certificate of Excellence", attendance: "Certificate of Attendance" }[c.kind] || "Certificate of Completion");
+    title = title.toLowerCase().replace(/\b[a-z]/g, function (m) { return m.toUpperCase(); }).replace(/\bOf\b/g, "of");
+    var body = c.body && !isAr(c.body) ? c.body : (DEF[c.kind] || DEF.completion);
+    var ar = isAr(c.holder_name), nm = esc(c.holder_name || ""), long = (c.holder_name || "").length > 24;
+    var dt = c.issued_on ? new Date(c.issued_on + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) : "";
+    var emblem = '<svg class="c-emblem" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="gE" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F9E7A8"/><stop offset="1" stop-color="#C8A24A"/></linearGradient></defs><circle cx="50" cy="50" r="47" fill="url(#gE)"/><circle cx="50" cy="50" r="39" fill="#0B1F44"/><circle cx="50" cy="50" r="35" fill="none" stroke="#C8A24A" stroke-opacity=".6" stroke-width="1"/><path d="M50 24l7.4 15 16.6 2.4-12 11.7 2.8 16.5L50 61.8l-14.8 7.8L38 53.1 26 41.4 42.6 39z" fill="url(#gE)"/></svg>';
     return '<div class="cert-stage"><div class="cert-scale" id="certScale"><div class="cert2" id="certBox">' +
-      '<div class="c-paper"></div><div class="c-frame"></div>' + corner.replace("%C%", "tl") + corner.replace("%C%", "tr") + corner.replace("%C%", "bl") + corner.replace("%C%", "br") + wm +
-      '<div class="c-in"><img class="c-logo" src="kimza-logo-gold.png" alt="KIMZA Academy">' +
-      '<div class="c-kicker">KIMZA ACADEMY · ENGLISH FOR ARABIC SPEAKERS</div>' +
-      '<div class="c-title">' + esc(title) + (arTitle ? "<small>" + esc(arTitle) + "</small>" : "") + "</div>" +
-      '<div class="c-rule"><i></i><svg width="22" height="22" viewBox="0 0 24 24" fill="#C9A24B" aria-hidden="true"><path d="M12 1l2.4 6.6L21 10l-6.6 2.4L12 19l-2.4-6.6L3 10l6.6-2.4z"/></svg><i></i></div>' +
-      '<p class="c-lead">This is to certify that</p>' +
-      '<div class="c-name' + (ar ? " ar" : "") + (long ? " long" : "") + '" dir="auto">' + nm + "</div><div class=\"c-line\"></div>" +
-      '<p class="c-body" dir="auto">' + esc(body) + "</p>" +
-      (c.level ? '<div class="c-level">' + esc(LV[c.level] || c.level) + "</div>" : "") +
-      (c.hours ? '<div class="c-hours">TOTAL STUDY HOURS · ' + esc(String(c.hours)) + "</div>" : "") +
-      '<div class="c-foot"><div class="c-col"><div class="c-sig"><b>' + esc(String(c.issued_on || "")) + '</b>Date of issue · تاريخ الإصدار</div></div>' +
-      '<div class="c-seal">' + seal + '</div>' +
-      '<div class="c-col"><div class="c-qr"><div id="qr"></div><div class="no">No. ' + esc(c.number || "") + '</div><div class="vf">' + esc(verifyUrl || "") + "</div></div></div></div></div>" +
+      '<div class="c-bg"></div><div class="c-dots"></div>' +
+      '<div class="c-side"><i class="c-ring r1"></i><i class="c-ring r2"></i><i class="c-shine"></i><img class="c-logo" src="kimza-logo-gold.png" alt="KIMZA Academy">' +
+      (c.level ? '<div class="c-lv">' + esc(c.level) + '</div><div class="c-lvn">' + esc(LV[c.level] || "") + " level</div>" : '<div class="c-lv" style="font-size:120px">&#10022;</div>') +
+      '<div class="c-qrbox"><div id="qr"></div><span class="scan">Scan to verify</span><div class="no">' + esc(c.number || "") + '</div><div class="vf">' + esc(verifyUrl || "") + "</div></div></div>" +
+      '<div class="c-main"><div class="c-kick">KIMZA Academy</div><div class="c-title">' + esc(title) + '</div><i class="c-bar"></i>' +
+      '<div class="c-lead">This certificate is proudly presented to</div>' +
+      '<div class="c-name' + (ar ? " ar" : "") + (long ? " long" : "") + '" dir="auto">' + nm + '</div><div class="c-line"></div>' +
+      '<p class="c-body">' + esc(body) + ".</p>" +
+      '<div class="c-meta">' + (c.level ? '<span class="c-level">' + esc(c.level) + " · " + esc(LV[c.level] || "") + "</span>" : "") + (c.hours ? '<span class="c-hours">' + esc(String(c.hours)) + " STUDY HOURS</span>" : "") + "</div>" +
+      '<div class="c-foot"><div class="c-sig"><b>' + esc(dt) + '</b>Date of issue</div>' + emblem + '<div class="c-sig"><b>Academy Director</b>KIMZA Academy</div></div></div>' +
       (c.status && c.status !== "valid" ? '<div class="c-rev"><b>REVOKED</b></div>' : "") +
       "</div></div></div>";
   };
