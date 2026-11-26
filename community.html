@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>المجتمع · KIMZA Academy</title>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwwfgzbd">
-<link rel="stylesheet" href="app.css?v=mwwfgzbd">
+<link rel="stylesheet" href="site.css?v=mwwuhe3x">
+<link rel="stylesheet" href="app.css?v=mwwuhe3x">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwwfgzbd"></script>
-<script src="portal-i18n.js?v=mwwfgzbd"></script>
+<script src="app.js?v=mwwuhe3x"></script>
+<script src="portal-i18n.js?v=mwwuhe3x"></script>
 
 <script>
 (async function () {
@@ -66,6 +66,12 @@
     (prof.completed_levels || []).forEach(function (l) { if (String(l) !== lvl) rooms.push(["L:" + l, "مجتمع " + l]); });
     rooms.push(["all", "المجتمع العام (كل المستويات)"]);
   }
+  // study-group rooms (the teacher makes the groups): "G:<id>"
+  try {
+    if (IS_T) ((await sb.from("student_groups").select("id,name").order("created_at")).data || []).forEach(function (g) { rooms.push(["G:" + g.id, "مجموعة: " + g.name]); });
+    else ((await sb.from("group_members").select("group_id,student_groups(name)")).data || []).forEach(function (g) { rooms.push(["G:" + g.group_id, "👥 مجموعتي: " + (g.student_groups ? g.student_groups.name : "")]); });
+  } catch (e) {}
+  var realName = {};
   room = rooms[0][0];
 
   var css = document.createElement("style");
@@ -202,6 +208,7 @@
       var go = async function () {
         var t = document.getElementById("mt").value.trim(); if (!t) return;
         var bad = check(t); if (bad) { KZ.toast(bad, true); return; }
+        if (!IS_T && !(prefs && prefs.nickname)) { KZ.toast("اختر لقباً وشكلاً لشخصيتك أولاً من تبويب «شخصيتي». يظهر لقبك فقط، لا اسمك الحقيقي.", true); return; }
         var me = prefs || { nickname: prof.full_name, emoji: "🧑‍🏫", color: "#D4AF37" };
         var row = { room: room, user_id: uid, nickname: me.nickname || prof.full_name, emoji: me.emoji, color: me.color, body: t };
         if (replyTo) row.reply_to = replyTo;
@@ -229,12 +236,13 @@
     var atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
     if (first) box.innerHTML = rows.length ? "" : '<p class="muted">لا رسائل بعد. ابدأ المحادثة! 👋</p>';
     else if (box.querySelector("p.muted")) box.innerHTML = "";
+    if (IS_T) { var need = []; rows.forEach(function (m) { if (!(m.user_id in realName) && need.indexOf(m.user_id) < 0) need.push(m.user_id); }); if (need.length) { ((await sb.from("profiles").select("id,full_name").in("id", need)).data || []).forEach(function (p) { realName[p.id] = p.full_name; }); need.forEach(function (i) { if (!(i in realName)) realName[i] = ""; }); } }
     rows.forEach(function (m) {
       if (m.id > lastId) lastId = m.id; msgMap[m.id] = m;
       if (!memberMap[m.user_id]) { memberMap[m.user_id] = { user_id: m.user_id, nickname: m.nickname, emoji: m.emoji, color: m.color }; drawSeats(); }
       var rq = m.reply_to && msgMap[m.reply_to] ? '<div class="rq">↩ ' + esc(msgMap[m.reply_to].nickname) + ": " + esc(msgMap[m.reply_to].body.slice(0, 60)) + "</div>" : "";
       var d = document.createElement("div"); d.className = "m" + (m.user_id === uid ? " me" : "") + (m.hidden ? " hid" : ""); d.dataset.id = m.id;
-      d.innerHTML = avatar(m.emoji, m.color) + '<div class="bd"><div class="hd"><strong>' + esc(m.nickname) + "</strong><span>" + fmtTime(m.created_at) + '</span><span class="act">' +
+      d.innerHTML = avatar(m.emoji, m.color) + '<div class="bd"><div class="hd"><strong>' + esc(m.nickname) + "</strong>" + (IS_T && realName[m.user_id] ? ' <small class="muted">(' + esc(realName[m.user_id]) + ")</small>" : "") + "<span>" + fmtTime(m.created_at) + '</span><span class="act">' +
         (m.user_id !== uid ? '<button data-rp="' + m.id + '" type="button">ردّ</button><button data-rt="' + m.id + '" type="button" title="إبلاغ">⚑</button>' : "") +
         (IS_T ? '<button data-hd="' + m.id + '" type="button">إخفاء</button>' + (m.user_id !== uid ? '<button data-mu="' + m.user_id + '" type="button">كتم 24س</button><button data-bn="' + m.user_id + '" type="button">حظر</button>' : "") : (m.user_id === uid ? '<button data-dm="' + m.id + '" type="button">حذف</button>' : "")) +
         "</span></div>" + rq + "<div>" + esc(m.body) + "</div></div>";
