@@ -266,7 +266,7 @@
       try { r = (await sb.rpc("my_notifications")).data || {}; } catch (e) {}
       function add(n, icon, text, href) { n = Number(n) || 0; if (n > 0) out.push({ n: n, icon: icon, text: text + (n > 1 ? " (" + n + ")" : ""), href: href }); }
       if (isT) {
-        add(r.student_msgs, "✉️", "رسائل جديدة من الطلاب", "admin.html"); add(r.name_req, "✏️", "طلبات تغيير اسم", "account.html"); add(r.new_students, "🧑‍🎓", "طلاب جدد ينتظرون القبول", "admin.html");
+        add(r.student_msgs, "✉️", "رسائل جديدة من الطلاب", "admin.html#messages"); add(r.name_req, "✏️", "طلبات تغيير اسم", "account.html"); add(r.new_students, "🧑‍🎓", "طلاب جدد ينتظرون القبول", "admin.html#applications");
       } else {
         add(r.teacher_msgs, "✉️", "رسالة جديدة من معلمك", "messages.html"); add(r.fr_req, "🤝", "طلب صداقة جديد", "friends.html"); add(r.fr_msgs, "💬", "رسالة جديدة من صديق", "friends.html");
         try {
@@ -493,7 +493,7 @@
     if ("Notification" in window && Notification.permission === "granted") KZ.pushSubscribe();
     bellState();
     function badge(href, n) {
-      var l = document.querySelector('#appHeader a[href="' + href + '"]'); if (!l) return;
+      var l = document.querySelector('#appHeader nav a[href="' + href + '"]'); if (!l) return;
       var b = l.querySelector(".nbadge"); if (b) b.remove();
       if (n > 0) l.insertAdjacentHTML("beforeend", ' <span class="nbadge">' + n + "</span>");
     }
