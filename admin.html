@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxfcq4b">
-<link rel="stylesheet" href="app.css?v=mwxfcq4b">
+<link rel="stylesheet" href="site.css?v=mwxfkdd2">
+<link rel="stylesheet" href="app.css?v=mwxfkdd2">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,9 +24,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxfcq4b"></script>
-<script src="portal-i18n.js?v=mwxfcq4b"></script>
-<script src="i18n.js?v=mwxfcq4b"></script>
+<script src="app.js?v=mwxfkdd2"></script>
+<script src="portal-i18n.js?v=mwxfkdd2"></script>
+<script src="i18n.js?v=mwxfkdd2"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -41,8 +41,8 @@
   var pendingPrefill = null;
   // ----- assistant teachers (staff): which tabs they may open -----
   var IS_OWNER = prof.role === "teacher", STAFF = KZ.staff || { perms: [], levels: [] };
-  var TABPERM = { students: "students_view", follow: "students_view", lsearch: "students_view", results: "students_view", messages: "messages", attendance: "attendance", skillgrade: "grading", tasks: "grading", news: "announce", dtasks: "announce", lessons: "lessons_open", groups: "groups" };
-  function canTab(k) { return IS_OWNER || (TABPERM[k] && STAFF.perms.indexOf(TABPERM[k]) >= 0); }
+  var TABPERM = { students: "students_view", follow: "students_view", lsearch: "students_view", results: "students_view", messages: "messages", attendance: "attendance", skillgrade: "grading", tasks: "grading", news: "announce", dtasks: "announce", lessons: ["lessons_view", "lessons_open"], groups: "groups" };
+  function canTab(k) { return IS_OWNER || (TABPERM[k] && [].concat(TABPERM[k]).some(function (p) { return STAFF.perms.indexOf(p) >= 0; })); }
 
   function $(id) { return document.getElementById(id); }
   function opts(list, sel) { return list.map(function (x) { var v = Array.isArray(x) ? x[0] : x, t = Array.isArray(x) ? x[1] : x; return '<option value="' + esc(v) + '"' + (v === sel ? " selected" : "") + ">" + esc(t) + "</option>"; }).join(""); }
@@ -81,14 +81,14 @@
     ["💬", "التواصل والمهام", ["dtasks", "messages", "news", "tasks", "speaking", "ideas", "fluency", "friends"]],
     ["🎓", "الشهادات والمدفوعات", ["certs", "payments"]],
     ["🎨", "الموقع والتصميم", ["designer", "texts", "courses", "themes", "features"]],
-    ["⚙️", "الإعدادات", ["settings", "staff"]]
+    ["⚙️", "الإعدادات", ["settings", "staff", "audit"]]
   ];
   var TNAME = {}; TABS.forEach(function (t) { TNAME[t[0]] = t[1]; });
   if (!TNAME.examprep) TNAME.examprep = "IELTS / TOEFL";
   TNAME.dtasks = "✅ مهام الطلاب اليومية"; TNAME.skillcourse = "✍️🎤 دورتا الكتابة والمحادثة"; TNAME.skillexams = "امتحانات المهارات"; TNAME.skillgrade = "تصحيح التمارين";
   if (!TNAME.perf) TNAME.perf = "📈 أداء الطلاب";
   if (!TNAME.friends) TNAME.friends = "الأصدقاء";
-  TNAME.staff = "👩‍🏫 المعلمون والصلاحيات";
+  TNAME.staff = "👩‍🏫 المعلمون والصلاحيات"; TNAME.audit = "🕵️ مراقبة المراسلات";
   function groupOf(name) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i][2].indexOf(name) >= 0) return i; return 0; }
   app.innerHTML = '<h1>لوحة المعلم</h1><div class="agroups" id="agroups" role="tablist">' +
     GROUPS.map(function (g, i) { return g[2].some(canTab) ? '<button type="button" data-g="' + i + '" aria-selected="false"><span aria-hidden="true">' + g[0] + "</span> " + g[1] + "</button>" : ""; }).join("") +
@@ -1618,12 +1618,14 @@
       ["attendance", "✅ تسجيل الحضور"],
       ["grading", "📝 تصحيح الكتابة والمحادثة والمهام"],
       ["announce", "📢 الإعلانات ومهام الطلاب اليومية"],
-      ["lessons_open", "🔓 فتح وإغلاق الدروس"],
+      ["lessons_view", "👁 الاطلاع على دروس مستوياته (قراءة فقط)"],
+      ["lessons_open", "🔓 فتح وإغلاق دروس مستوياته للطلاب"],
       ["groups", "🧩 إدارة مجموعات الطلاب"],
       ["contact", "📞 رؤية أرقام هواتف الطلاب (مخفية افتراضياً)"]
     ];
-    var PRESETS = { msg: ["مراسلة فقط", ["messages", "students_view"]], watch: ["مراقب حضور", ["students_view", "attendance", "messages"]], grader: ["مصحّح", ["students_view", "grading", "messages"]], all: ["كل شيء عدا الهاتف", ["students_view", "messages", "attendance", "grading", "announce", "lessons_open", "groups"]] };
+    var PRESETS = { msg: ["مراسلة فقط", ["messages", "students_view"]], watch: ["مراقب حضور", ["students_view", "attendance", "messages"]], grader: ["مصحّح", ["students_view", "grading", "messages"]], all: ["كل شيء عدا الهاتف", ["students_view", "messages", "attendance", "grading", "announce", "lessons_view", "lessons_open", "groups"]] };
     var staff = (await sb.from("profiles").select("id,full_name,username,created_at").eq("role", "staff").order("full_name")).data || [];
+    var stu = (await nameMap()).list;
     var sp = {}; ((await sb.from("staff_perms").select("*")).data || []).forEach(function (x) { sp[x.user_id] = x; });
     var warns = {}; ((await sb.from("staff_warnings").select("*").order("created_at", { ascending: false })).data || []).forEach(function (w) { (warns[w.staff_id] = warns[w.staff_id] || []).push(w); });
     var sent = {}; ((await sb.from("direct_messages").select("sender_id").not("sender_id", "is", null).limit(5000)).data || []).forEach(function (m) { sent[m.sender_id] = (sent[m.sender_id] || 0) + 1; });
@@ -1633,14 +1635,15 @@
     var h = '<h2>المعلمون المساعدون</h2><div class="infobox">أنت المدير ولك كل شيء. هنا تنشئ حسابات لمعلمين وتحدد بالضبط ما يستطيعون فعله. المعلم المساعد لا يرى المدفوعات ولا الشهادات ولا تصميم الموقع ولا الإعدادات، ولا ينشئ أو يحذف حسابات الطلاب، ويتواصل مع الطلاب <strong>داخل الموقع فقط</strong>. أرقام هواتف الطلاب مخفية عنه ما لم تعطه صلاحية «رؤية الأرقام». إن اخترتَ مستويات معيّنة فلن يرى غير طلابها.</div>' +
       '<div class="tile form"><h3 style="margin:0 0 8px">➕ حساب معلم جديد</h3><form id="stNew"><label for="stN">الاسم الكامل</label><input id="stN" required minlength="3"><label for="stU">اسم الدخول (حروف إنجليزية وأرقام)</label><input id="stU" required dir="ltr" pattern="[a-zA-Z0-9._-]{3,30}" placeholder="mr.ahmed"><label for="stP">كلمة المرور المؤقتة (8 أحرف فأكثر)</label><input id="stP" required minlength="8" dir="ltr" value="' + genPw() + '">' +
       '<label for="stCp">نسخ الصلاحيات من</label><select id="stCp"><option value="">— اختيار يدوي —</option>' + Object.keys(PRESETS).map(function (k) { return '<option value="p:' + k + '">قالب: ' + PRESETS[k][0] + "</option>"; }).join("") + staff.map(function (s) { return '<option value="s:' + s.id + '">معلم: ' + esc(s.full_name) + "</option>"; }).join("") + '</select>' +
-      '<div id="stBoxes">' + permBoxes([]) + '</div><p style="margin:8px 0 2px"><strong>المستويات المسموحة</strong> <span class="muted">(بلا اختيار = كل المستويات)</span></p><div id="stLv">' + lvBoxes([]) + '</div><div class="btns" style="margin-top:10px"><button class="btn btn-primary" type="submit">إنشاء الحساب</button></div><div id="stRes" class="muted"></div></form></div>' +
+      '<div id="stBoxes">' + permBoxes([]) + '</div><p style="margin:8px 0 2px"><strong>المستويات (الكورسات) المسموحة</strong> <span class="muted">(بلا اختيار = كل المستويات). تحدد طلابه ودروسه.</span></p><div id="stLv">' + lvBoxes([]) + '</div><div class="btns" style="margin-top:10px"><button class="btn btn-primary" type="submit">إنشاء الحساب</button></div><div id="stRes" class="muted"></div></form></div>' +
+      '<div class="tile form" style="margin-top:12px"><h3 style="margin:0 0 8px">🔄 ترقية طالب إلى معلم مساعد</h3><p class="muted">اختر طالباً موجوداً فيصبح معلماً مساعداً بلا صلاحيات (تعطيه ما تريد بعدها). يمكنك إرجاعه طالباً في أي وقت.</p><label for="stUp">الطالب</label><select id="stUp"><option value="">— اختر —</option>' + stu.map(function (p) { return '<option value="' + p.id + '">' + esc(p.full_name) + " (" + esc(p.level || "") + ")</option>"; }).join("") + '</select><div class="btns" style="margin-top:8px"><button class="btn btn-primary sm" id="stUpB" type="button">⬆ ترقية إلى معلم</button></div></div>' +
       '<h3 style="margin-top:20px">الحسابات الحالية (' + staff.length + ')</h3>';
     if (!staff.length) h += '<p class="muted">لا يوجد معلمون مساعدون بعد.</p>';
     staff.forEach(function (s) {
       var p = sp[s.id] || { perms: [], levels: [], suspended: false }, w = warns[s.id] || [];
       h += '<div class="tile" style="margin-top:10px;' + (p.suspended ? "opacity:.65;border-color:#c62828" : "") + '"><div class="row" style="border:0;padding:0"><div><strong>' + esc(s.full_name) + '</strong> <span class="badge">' + esc(s.username) + '</span> ' + (p.suspended ? '<span class="badge bad">موقوف</span>' : '<span class="badge ok">نشط</span>') + (w.length ? ' <span class="badge gold">⚠️ ' + w.length + " تحذير</span>" : "") +
         '<div class="muted">الصلاحيات: ' + (p.perms.length ? p.perms.map(function (k) { var f = PERMS.filter(function (x) { return x[0] === k; })[0]; return f ? f[1].replace(/^\S+\s/, "") : k; }).join("، ") : "لا شيء") + " · المستويات: " + (p.levels.length ? p.levels.join(" ") : "الكل") + " · رسائل أرسلها: " + (sent[s.id] || 0) + '</div></div>' +
-        '<div class="btns"><button class="btn btn-ghost sm" data-sted="' + s.id + '" type="button">✏️ الصلاحيات</button><button class="btn btn-ghost sm" data-stsus="' + s.id + '" type="button">' + (p.suspended ? "▶ تفعيل" : "⏸ إيقاف") + '</button><button class="btn btn-ghost sm" data-stwarn="' + s.id + '" type="button">⚠️ تحذير</button><button class="btn btn-ghost sm" data-stpw="' + s.id + '" type="button">🔑 كلمة مرور</button><button class="btn btn-ghost sm" data-stdel="' + s.id + '" type="button" style="color:#c62828">🗑 حذف</button></div></div>' +
+        '<div class="btns"><button class="btn btn-ghost sm" data-sted="' + s.id + '" type="button">✏️ الصلاحيات</button><button class="btn btn-ghost sm" data-stsus="' + s.id + '" type="button">' + (p.suspended ? "▶ تفعيل" : "⏸ إيقاف") + '</button><button class="btn btn-ghost sm" data-stwarn="' + s.id + '" type="button">⚠️ تحذير</button><button class="btn btn-ghost sm" data-stpw="' + s.id + '" type="button">🔑 كلمة مرور</button><button class="btn btn-ghost sm" data-stdown="' + s.id + '" type="button">⬇ تحويل إلى طالب</button><button class="btn btn-ghost sm" data-stdel="' + s.id + '" type="button" style="color:#c62828">🗑 حذف</button></div></div>' +
         (w.length ? '<details style="margin-top:6px"><summary class="muted">سجل التحذيرات</summary>' + w.map(function (x) { return '<div class="muted" style="margin:4px 0">• ' + esc(x.note) + " — " + new Date(x.created_at).toLocaleDateString("ar") + (x.seen_at ? " (اطّلع)" : " (لم يطّلع بعد)") + "</div>"; }).join("") + "</details>" : "") +
         '<div id="stBox' + s.id + '"></div></div>';
     });
@@ -1651,6 +1654,15 @@
       if (v.indexOf("p:") === 0) perms = PRESETS[v.slice(2)][1]; else if (v.indexOf("s:") === 0) { var x = sp[v.slice(2)]; if (x) { perms = x.perms; lv = x.levels; } }
       $("stBoxes").innerHTML = permBoxes(perms); $("stLv").innerHTML = lvBoxes(lv);
     });
+    $("stUpB").addEventListener("click", async function () {
+      var id = $("stUp").value; if (!id) { KZ.toast("اختر طالباً.", true); return; }
+      if (!confirm("ترقية هذا الطالب إلى معلم مساعد؟ (تبقى بياناته كطالب محفوظة)")) return;
+      var r = await sb.rpc("owner_set_role", { p_user: id, p_role: "staff" });
+      KZ.toast(r.error || r.data !== "ok" ? "تعذرت الترقية." : "أصبح معلماً مساعداً. حدّد صلاحياته من القائمة ✅", !!(r.error || r.data !== "ok")); VIEWS.staff(); });
+    view.querySelectorAll("[data-stdown]").forEach(function (b) { b.addEventListener("click", async function () {
+      var lv = prompt("حوّله إلى طالب في أي مستوى؟ (A1 / A2 / B1 / B2 / C1)", "A1"); if (!lv) return;
+      var r = await sb.rpc("owner_set_role", { p_user: b.getAttribute("data-stdown"), p_role: "student", p_level: lv.trim().toUpperCase() });
+      KZ.toast(r.error || r.data !== "ok" ? "تعذر التحويل (تأكد من المستوى)." : "عاد طالباً ✅", !!(r.error || r.data !== "ok")); VIEWS.staff(); }); });
     $("stNew").addEventListener("submit", async function (ev) {
       ev.preventDefault();
       var pm = readBoxes($("stNew")), un = $("stU").value.trim().toLowerCase(), pw = $("stP").value;
@@ -1688,6 +1700,31 @@
       if (prompt("للتأكيد اكتب كلمة: حذف") !== "حذف") return;
       var r = await sb.rpc("owner_delete_staff", { p_user: id });
       KZ.toast(r.error || r.data !== "ok" ? "تعذر الحذف." : "حُذف الحساب.", !!(r.error || r.data !== "ok")); VIEWS.staff(); }); });
+  };
+
+  // ---------- owner: read every teacher <-> student message ----------
+  VIEWS.audit = async function () {
+    if (!IS_OWNER) { view.innerHTML = '<div class="warnbox">هذا القسم للمدير فقط.</div>'; return; }
+    var nm = await nameMap();
+    var staff = (await sb.from("profiles").select("id,full_name").eq("role", "staff")).data || [], SN = {}; staff.forEach(function (x) { SN[x.id] = x.full_name; });
+    var F = view._au || { st: "", tc: "", q: "" }; view._au = F;
+    var q = sb.from("direct_messages").select("*").order("created_at", { ascending: false }).limit(300);
+    if (F.st) q = q.eq("student_id", F.st);
+    if (F.tc === "me") q = q.eq("from_teacher", true).or("sender_id.is.null,sender_id.eq." + KZ.user.id); else if (F.tc) q = q.eq("sender_id", F.tc);
+    var rows = (await q).data || [];
+    if (F.q) rows = rows.filter(function (m) { return String(m.body).toLowerCase().indexOf(F.q.toLowerCase()) >= 0; });
+    function when(d) { return new Date(d).toLocaleString("ar", { dateStyle: "short", timeStyle: "short" }); }
+    var h = '<h2>🕵️ مراقبة المراسلات</h2><div class="infobox">ترى هنا كل ما يكتبه المعلمون للطلاب وما يكتبه الطلاب للمعلمين (آخر 300 رسالة). محادثات الأصدقاء بين الطلاب خاصة ولا تظهر.</div>' +
+      '<div class="tile form"><div class="grid2"><div><label for="auSt">الطالب</label><select id="auSt"><option value="">الكل</option>' + nm.list.map(function (p) { return '<option value="' + p.id + '"' + (p.id === F.st ? " selected" : "") + ">" + esc(p.full_name) + "</option>"; }).join("") + '</select></div>' +
+      '<div><label for="auTc">المعلم</label><select id="auTc"><option value="">الكل</option><option value="me"' + (F.tc === "me" ? " selected" : "") + '>أنت (المدير)</option>' + staff.map(function (p) { return '<option value="' + p.id + '"' + (p.id === F.tc ? " selected" : "") + ">" + esc(p.full_name) + "</option>"; }).join("") + '</select></div></div>' +
+      '<label for="auQ">كلمة في النص</label><input id="auQ" value="' + esc(F.q) + '" placeholder="ابحث في نص الرسائل"><div class="btns" style="margin-top:8px"><button class="btn btn-primary sm" id="auGo" type="button">عرض</button></div></div>' +
+      '<p class="muted" style="margin-top:10px">' + rows.length + " رسالة</p>";
+    h += rows.map(function (m) {
+      var stn = nm.map[m.student_id] ? nm.map[m.student_id].full_name : "طالب", who = m.from_teacher ? ("👩‍🏫 " + (SN[m.sender_id] || "المدير") + " ← " + esc(stn)) : ("🧑‍🎓 " + esc(stn) + " ← المعلمين");
+      return '<div class="tile" style="margin-top:8px;border-inline-start:5px solid ' + (m.from_teacher ? "#D4AF37" : "#2F9E5B") + '"><div class="muted" style="font-size:.85rem">' + who + " · " + when(m.created_at) + '</div><div style="white-space:pre-wrap">' + esc(m.body) + '</div></div>';
+    }).join("");
+    view.innerHTML = h;
+    $("auGo").addEventListener("click", function () { F.st = $("auSt").value; F.tc = $("auTc").value; F.q = $("auQ").value.trim(); VIEWS.audit(); });
   };
 
   if (!IS_OWNER) {
