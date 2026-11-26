@@ -71,7 +71,7 @@
     } catch (e) {}
     if (prof.role === "student") {
       var page = (location.pathname.split("/").pop() || "").replace(".html", "");
-      var PAGE_FEATURE = { review: "review", flashcards: "flashcards", attendance: "attendance", speaking: "speaking", certificates: "certificates", lesson: "lessons", test: "tests", friends: "friends", tasks: "p_tasks", messages: "p_messages", skills: "p_skills", exams: "p_exams", schedule: "p_schedule", account: "p_account", community: "p_community" };
+      var PAGE_FEATURE = { review: "review", flashcards: "flashcards", attendance: "attendance", speaking: "speaking", certificates: "certificates", lesson: "lessons", test: "tests", friends: "friends", tasks: "p_tasks", messages: "p_messages", skills: "p_skills", examprep: "exam_prep", exams: "p_exams", schedule: "p_schedule", account: "p_account", community: "p_community" };
       var key = !KZ.on("portal") ? "portal" : PAGE_FEATURE[page];
       if (key && !KZ.on(key)) {
         shell("");
@@ -87,10 +87,10 @@
   function shell(active) {
     var prof = KZ.profile;
     var isT = prof && (prof.role === "teacher" || prof.role === "staff");
-    var FOFF = { "review.html": "review", "flashcards.html": "flashcards", "attendance.html": "attendance", "speaking.html": "speaking", "certificates.html": "certificates", "tasks.html": "p_tasks", "messages.html": "p_messages", "skills.html": "p_skills", "exams.html": "p_exams", "friends.html": "friends", "schedule.html": "p_schedule", "account.html": "p_account", "community.html": "p_community" };
+    var FOFF = { "review.html": "review", "flashcards.html": "flashcards", "attendance.html": "attendance", "speaking.html": "speaking", "certificates.html": "certificates", "tasks.html": "p_tasks", "messages.html": "p_messages", "skills.html": "p_skills", "examprep.html": "exam_prep", "exams.html": "p_exams", "friends.html": "friends", "schedule.html": "p_schedule", "account.html": "p_account", "community.html": "p_community" };
     var links = prof && prof.role === "staff" ? [["admin.html", "لوحة المعلم", "admin"]] : isT
       ? [["admin.html", "لوحة المعلم", "admin"], ["schedule.html", "مواعيد الحصص", "schedule"], ["account.html", "طلبات الأسماء", "account"], ["community.html", "المجتمع", "community"]]
-      : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["tasks.html", "مهامي", "tasks"], ["messages.html", "رسائلي", "messages"], ["skills.html", "الكتابة والمحادثة", "skills"], ["exams.html", "الامتحانات", "exams"], ["friends.html", "أصدقائي", "friends"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"], ["schedule.html", "مواعيد الحصص", "schedule"], ["account.html", "حسابي", "account"], ["community.html", "المجتمع", "community"]].filter(function (l) { return !FOFF[l[0]] || KZ.on(FOFF[l[0]]); });
+      : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["tasks.html", "مهامي", "tasks"], ["messages.html", "رسائلي", "messages"], ["skills.html", "الكتابة والمحادثة", "skills"], ["examprep.html", "IELTS / TOEFL", "examprep"], ["exams.html", "الامتحانات", "exams"], ["friends.html", "أصدقائي", "friends"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"], ["schedule.html", "مواعيد الحصص", "schedule"], ["account.html", "حسابي", "account"], ["community.html", "المجتمع", "community"]].filter(function (l) { return !FOFF[l[0]] || KZ.on(FOFF[l[0]]); });
     var h = '<div class="wrap"><a href="' + (isT ? "admin.html" : "dashboard.html") + '"><img src="kimza-logo-gold.png" alt="KIMZA Academy"></a>' + '' +
       '<nav class="links" aria-label="Main">' + links.map(function (l) { return '<a href="' + l[0] + '"' + (l[2] === active ? ' aria-current="page"' : "") + ">" + l[1] + "</a>"; }).join("") +
       '<button class="btn btn-ghost sm" id="lookBtn" type="button" title="مظهري" aria-label="مظهري" style="color:var(--cream)">🎨</button>' + '<span class="who">' + esc(prof ? prof.full_name : "") + '</span><button class="btn btn-ghost sm" id="logoutBtn" type="button" style="color:var(--cream)">خروج</button></nav></div>';
@@ -375,6 +375,7 @@
       function add(n, icon, text, href) { n = Number(n) || 0; if (isT) { var k = href; if (n <= (dis[k] || 0)) { if (n < (dis[k] || 0)) { dis[k] = n; } n = 0; } else n = n - (dis[k] || 0); } if (n > 0) out.push({ n: n, icon: icon, text: text + (n > 1 ? " (" + n + ")" : ""), href: href, key: href }); }
       if (isT) {
         add(r.student_msgs, "✉️", "رسائل جديدة من الطلاب", "admin.html#messages"); add(r.name_req, "✏️", "طلبات تغيير اسم", "account.html"); add(r.new_students, "🧑‍🎓", "طلاب جدد ينتظرون القبول", "admin.html#applications");
+        if (KZ.profile.role === "teacher") { try { var pb = await sb.from("speaking_bookings").select("id", { count: "exact", head: true }).eq("status", "pending"); add(pb.count, "📅", "طلبات حجز حصص محادثة", "admin.html#bookings"); } catch (e) {} }
       } else {
         add(r.teacher_msgs, "✉️", "رسالة جديدة من معلمك", "messages.html"); add(r.fr_req, "🤝", "طلب صداقة جديد", "friends.html"); add(r.fr_msgs, "💬", "رسالة جديدة من صديق", "friends.html");
         try {

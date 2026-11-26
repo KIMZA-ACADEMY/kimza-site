@@ -379,3 +379,39 @@ html[data-motion="off"] *{animation:none!important;transition:none!important}
 .app-nav .wrap>a:first-child{flex:none;position:relative;z-index:1}
 .app-nav .wrap>a:first-child img{display:block;max-width:none}
 #bellBtn{position:relative;z-index:80}
+
+/* ---- skills v2: situations, dice, pair role-plays, bookings ---- */
+.sk-sit{background:linear-gradient(135deg,rgba(212,175,55,.16),rgba(212,175,55,.05));border:1px solid var(--gold,#D4AF37);border-radius:14px;padding:4px 14px;margin:8px 0 12px;font-size:1.05rem}
+.sk-reveal{margin-top:12px;padding:12px;border:2px dashed var(--gold,#D4AF37);border-radius:14px;background:var(--surface)}
+.sk-bad,.sk-good,.sk-tips{border-radius:12px;padding:10px 12px;margin:8px 0}
+.sk-bad{background:rgba(198,40,40,.10);border-inline-start:4px solid #c62828}
+.sk-good{background:rgba(46,125,50,.12);border-inline-start:4px solid #2e7d32}
+.sk-tips{background:rgba(212,175,55,.12)}
+.sk-tips ul{margin:6px 0 0;padding-inline-start:20px}
+.sk-dice{text-align:center;padding:14px;border:1px dashed var(--line);border-radius:16px;background:var(--surface)}
+.sk-die{font-size:3rem;transition:transform .09s linear;display:inline-block}
+.sk-topic{font-size:1.25rem;min-height:2.2rem;margin:8px 0 12px}
+.sk-clock{font-size:1.4rem;margin-top:8px;min-height:1.8rem}
+.sk-pair{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+.sk-line{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:14px;max-width:92%;cursor:default}
+.sk-line.a{background:rgba(11,31,68,.10);align-self:flex-start}
+.sk-line.b{background:rgba(212,175,55,.2);align-self:flex-end}
+.sk-who{font-size:.75rem;opacity:.75;min-width:70px}
+.sk-txt{flex:1;text-align:left}
+.sk-line.hid .sk-txt{filter:blur(7px);cursor:pointer}
+.sk-book{border:2px solid var(--gold,#D4AF37);margin-bottom:12px}
+@media (prefers-reduced-motion:reduce){.sk-die{transition:none}}
+
+/* ---- IELTS / TOEFL student page ---- */
+.ep-hero{background:linear-gradient(135deg,rgba(11,31,68,.08),rgba(212,175,55,.14));border:1px solid var(--gold,#D4AF37)}
+.ep-bar{height:12px;border-radius:8px;background:var(--line);overflow:hidden;margin:10px 0}
+.ep-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--gold,#D4AF37),#f0d77a);border-radius:8px;transition:width .6s}
+.ep-md{line-height:1.85}
+.ep-md h2,.ep-md h3,.ep-md h4,.ep-md h5{margin:1.1em 0 .4em}
+.ep-md blockquote{margin:8px 0;padding:8px 14px;border-inline-start:4px solid var(--gold,#D4AF37);background:rgba(212,175,55,.1);border-radius:8px}
+.ep-md code{background:rgba(0,0,0,.08);padding:1px 6px;border-radius:5px;direction:ltr;unicode-bidi:embed}
+.ep-t{border-collapse:collapse;width:100%;margin:8px 0;font-size:.95rem}
+.ep-t th,.ep-t td{border:1px solid var(--line);padding:6px 10px;text-align:start}
+.ep-t th{background:rgba(212,175,55,.18)}
+.ep-clock{font-size:3rem;font-weight:700;text-align:center;margin:14px 0;font-variant-numeric:tabular-nums;direction:ltr}
+.ep-ck{display:block;padding:7px 0;cursor:pointer}

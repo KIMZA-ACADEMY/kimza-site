@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxe0g5o">
-<link rel="stylesheet" href="app.css?v=mwxe0g5o">
+<link rel="stylesheet" href="site.css?v=mwxn9iug">
+<link rel="stylesheet" href="app.css?v=mwxn9iug">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,8 +24,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxe0g5o"></script>
-<script src="portal-i18n.js?v=mwxe0g5o"></script>
+<script src="app.js?v=mwxn9iug"></script>
+<script src="portal-i18n.js?v=mwxn9iug"></script>
 
 <script>
 (async function () {
@@ -44,12 +44,34 @@
   function words(t) { return (String(t || "").trim().match(/[\p{L}\p{N}'’-]+/gu) || []).length; }
   function speak(t) { try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(t); u.lang = "en-GB"; u.rate = 0.9; speechSynthesis.speak(u); } catch (e) {} }
 
+  var BST = { pending: "⏳ بانتظار المعلم", confirmed: "✅ مؤكد", done: "🏁 تمّت", rejected: "❌ مرفوض", cancelled: "ملغى" };
+  async function bookingDialog(topic) {
+    var old = document.getElementById("bkDlg"); if (old) old.remove();
+    var d = document.createElement("div"); d.id = "bkDlg"; d.setAttribute("role", "dialog"); d.setAttribute("aria-modal", "true"); d.setAttribute("aria-label", "حجز حصة محادثة");
+    d.style.cssText = "position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:14px";
+    d.innerHTML = '<div class="tile" style="max-width:480px;width:100%;max-height:90vh;overflow:auto"><h2 style="margin-top:0">📅 احجز حصة محادثة مع المعلم</h2><p class="muted">اختر حصة فردية أو مع زميل (حصة ثنائية). سيراجع المعلم الطلب ويحدّد الموعد ويصلك تنبيه.</p><div class="form"><label>نوع الحصة</label><select id="bkKind"><option value="pair">ثنائية (أنا وزميل)</option><option value="solo">فردية (أنا فقط)</option></select><div id="bkPw"><label>اسم الزميل</label><input id="bkPartner" type="text" placeholder="اكتب اسم زميلك أو اسم المستخدم"></div><label>الموضوع المقترح</label><input id="bkTopic" type="text" value="' + esc(topic || "") + '" placeholder="مثال: التمرّن على مقابلة عمل"><label>الأيام والأوقات المناسبة لكما</label><textarea id="bkPref" rows="3" placeholder="مثال: السبت والاثنين بعد العصر، الخميس مساءً"></textarea></div><div class="btns" style="margin-top:10px"><button class="btn btn-primary" id="bkSend" type="button">إرسال الطلب</button><button class="btn btn-ghost" id="bkClose" type="button">إغلاق</button></div></div>';
+    document.body.appendChild(d);
+    var kd = d.querySelector("#bkKind"); kd.addEventListener("change", function () { d.querySelector("#bkPw").style.display = kd.value === "pair" ? "" : "none"; });
+    d.querySelector("#bkClose").addEventListener("click", function () { d.remove(); });
+    d.querySelector("#bkSend").addEventListener("click", async function () {
+      var pref = d.querySelector("#bkPref").value.trim(), pn = d.querySelector("#bkPartner").value.trim();
+      if (!pref) { KZ.toast("اكتب الأوقات المناسبة.", true); return; }
+      if (kd.value === "pair" && !pn) { KZ.toast("اكتب اسم زميلك.", true); return; }
+      var r = await sb.from("speaking_bookings").insert({ user_id: uid, kind: kd.value, partner_name: kd.value === "pair" ? pn : null, level: S.level, topic: d.querySelector("#bkTopic").value.trim() || null, preferred: pref });
+      if (r.error) { KZ.toast(/too many/.test(r.error.message) ? "لديك 5 طلبات معلقة. انتظر ردّ المعلم." : "تعذر الإرسال.", true); return; }
+      KZ.toast("أُرسل طلبك ✅"); d.remove(); home();
+    });
+  }
   async function home() {
     if (!courses.length) { app.innerHTML = '<h1>الكتابة والمحادثة</h1><div class="tile"><p class="muted" style="margin:0">لم يفتح المعلم دورتي الكتابة والمحادثة لك بعد. عندما يفتحها ستجدها هنا، وسيصلك تنبيه.</p></div><p><a class="btn btn-ghost" href="exams.html">📝 الامتحانات المفتوحة</a></p>'; return; }
     var lessons = (await sb.from("skill_lessons").select("id,course,level,week,title,title_en,goal").eq("course", S.course).eq("level", S.level).order("week")).data || [];
     var subs = {}; ((await sb.from("skill_submissions").select("lesson_id,ex,graded_at").eq("user_id", uid)).data || []).forEach(function (s) { (subs[s.lesson_id] = subs[s.lesson_id] || []).push(s); });
     var h = '<h1>' + CN[S.course] + '</h1><div class="agroups" role="tablist">' + courses.map(function (c) { return '<button type="button" data-c="' + c + '" aria-selected="' + (c === S.course) + '">' + CN[c] + "</button>"; }).join("") + '</div>';
     if (LV.length > 1) h += '<div class="agroups">' + LV.map(function (l) { return '<button type="button" data-l="' + l + '" aria-selected="' + (l === S.level) + '">' + l + "</button>"; }).join("") + "</div>";
+    if (S.course === "speaking") {
+      var bks = (await sb.from("speaking_bookings").select("*").order("created_at", { ascending: false }).limit(8)).data || [];
+      h += '<div class="tile sk-book"><div class="row" style="border:0;padding:0"><div><strong>🤝 حصص المحادثة مع المعلم</strong><div class="muted">احجز حصة فردية أو ثنائية مع زميل لتتدرّبا معاً أمام المعلم.</div></div><button class="btn btn-primary" id="bkNew" type="button">📅 احجز حصة</button></div>' + (bks.length ? '<div style="margin-top:10px">' + bks.map(function (b) { return '<div class="row" style="padding:8px 0"><span>' + (b.kind === "pair" ? "👥 " + esc(b.partner_name || "") : "👤 فردية") + (b.topic ? " · " + esc(b.topic) : "") + '</span><span><span class="badge">' + BST[b.status] + "</span>" + (b.scheduled_at ? ' <strong>' + new Date(b.scheduled_at).toLocaleString("ar", { weekday: "long", hour: "2-digit", minute: "2-digit", day: "numeric", month: "numeric" }) + "</strong>" : "") + (b.status === "pending" ? ' <button class="btn btn-ghost sm" data-bkx="' + b.id + '" type="button">إلغاء</button>' : "") + "</span></div>" + (b.teacher_note ? '<div class="muted" style="padding:0 0 6px">ملاحظة المعلم: ' + esc(b.teacher_note) + "</div>" : ""); }).join("") + "</div>" : "") + "</div>";
+    }
     h += '<p class="muted">درس جديد كل أسبوع. اقرأ الشرح، تأمّل النموذج، ثم أنجز التمارين بنفسك دون مساعدة خارجية. يراجع المعلم إجاباتك ويعلّق عليها.</p><p><a class="btn btn-ghost sm" href="exams.html">📝 الامتحانات المفتوحة</a></p>';
     if (!lessons.length) h += '<div class="tile"><p class="muted" style="margin:0">لم يفتح المعلم دروس هذا المستوى بعد.</p></div>';
     h += '<div class="lgrid">' + lessons.map(function (l) {
@@ -57,6 +79,8 @@
       return '<a class="lcard" href="#" data-open="' + esc(l.id) + '"><span class="lnum">' + l.week + '</span><span class="lbody"><strong>' + esc(l.title) + '</strong><span class="muted en">' + esc(l.title_en || "") + '</span><span class="lchips">' + (n ? '<span class="badge">أنجزتَ ' + n + " تمارين</span>" : '<span class="badge gold">جديد</span>') + (g ? ' <span class="badge ok">صُحّح ' + g + "</span>" : "") + '</span></span><span class="go" aria-hidden="true">‹</span></a>';
     }).join("") + "</div>";
     app.innerHTML = h;
+    var bkn = document.getElementById("bkNew"); if (bkn) bkn.addEventListener("click", function () { bookingDialog(""); });
+    app.querySelectorAll("[data-bkx]").forEach(function (b) { b.addEventListener("click", async function () { if (!confirm("إلغاء الطلب؟")) return; await sb.from("speaking_bookings").update({ status: "cancelled" }).eq("id", b.getAttribute("data-bkx")); home(); }); });
     app.querySelectorAll("[data-c]").forEach(function (b) { b.addEventListener("click", function () { S.course = b.getAttribute("data-c"); sessionStorage.setItem("sk-c", S.course); home(); }); });
     app.querySelectorAll("[data-l]").forEach(function (b) { b.addEventListener("click", function () { S.level = b.getAttribute("data-l"); sessionStorage.setItem("sk-l", S.level); home(); }); });
     app.querySelectorAll("[data-open]").forEach(function (b) { b.addEventListener("click", function (e) { e.preventDefault(); openLesson(b.getAttribute("data-open")); }); });
@@ -80,14 +104,24 @@
       if (k === "fix") h += '<p class="muted">في الجملة خطأ. اكتبها صحيحة:</p><p dir="ltr" style="text-align:left;font-size:1.1rem"><strong>' + esc(x.bad) + "</strong></p>";
       if (k === "speak") h += '<p>' + esc(x.p) + '</p>' + (x.hint ? '<p class="muted">' + esc(x.hint) + "</p>" : "");
       if (k === "shadow") h += '<p class="muted">استمع ثم كرّر الجملة بنفس الإيقاع (Shadowing) وسجّل صوتك:</p><p dir="ltr" style="text-align:left;font-size:1.15rem"><strong>' + esc(x.text) + '</strong> <button class="btn btn-ghost sm" data-say="' + esc(x.text) + '" type="button">🔊</button></p>';
-      var voice = (k === "speak" || k === "shadow");
+      if (k === "sit") h += '<div class="sk-sit"><p>' + esc(x.ar) + '</p></div><p><strong>' + esc(x.p) + '</strong></p>' + (x.min ? '<p class="muted">الحد الأدنى: ' + x.min + " كلمة</p>" : "");
+      if (k === "dice") h += '<p>' + esc(x.p) + '</p><div class="sk-dice"><div class="sk-die" data-die>🎲</div><div class="sk-topic" data-topic dir="ltr">' + (s && s.body ? esc(s.body) : "اضغط لتسحب موضوعاً") + '</div><div class="btns" style="justify-content:center"><button class="btn btn-primary" data-roll type="button">🎲 اسحب موضوعاً</button><button class="btn btn-ghost" data-timer type="button" disabled>⏱ ابدأ ' + (x.secs || 45) + ' ثانية</button></div><div class="sk-clock" data-clock></div></div>';
+      if (k === "qa") h += '<p>' + esc(x.p) + '</p><ol dir="ltr" style="text-align:left;line-height:2">' + (x.qs || []).map(function (q, qi) { return '<li>' + esc(q) + ' <button class="btn btn-ghost sm" data-say="' + esc(q) + '" type="button" aria-label="استمع للسؤال ' + (qi + 1) + '">🔊</button></li>'; }).join("") + '</ol><div class="btns"><button class="btn btn-ghost" data-qaall type="button">▶ اقرأ الأسئلة بالتتابع</button></div>';
+      if (k === "pair") h += '<p><strong>' + esc(x.title) + '</strong></p><p class="muted">' + esc(x.p) + '</p><div class="btns"><button class="btn btn-ghost sm" data-role="A" type="button">أنا ' + esc(x.roleA) + '</button><button class="btn btn-ghost sm" data-role="B" type="button">أنا ' + esc(x.roleB) + '</button><button class="btn btn-ghost sm" data-role="" type="button">إظهار الكل</button></div><div class="sk-pair">' + (x.lines || []).map(function (ln, li) { return '<div class="sk-line ' + (ln[0] === "A" ? "a" : "b") + '" data-who="' + ln[0] + '"><span class="sk-who">' + (ln[0] === "A" ? esc(x.roleA) : esc(x.roleB)) + '</span><span class="sk-txt" dir="ltr">' + esc(ln[1]) + '</span><button class="btn btn-ghost sm" data-say="' + esc(ln[1]) + '" type="button" aria-label="استمع">🔊</button></div>'; }).join("") + '</div><p class="muted">نصيحة: اختر دورك فتُخفى جُمَلك، وتحاول قولها من ذاكرتك. اضغط على الجملة المخفية لتراها.</p><label>اسم شريكك (اختياري)</label><input type="text" data-partner value="' + esc(s && s.body ? s.body : "") + '" style="width:100%"><p><a class="btn btn-ghost sm" href="#" data-book="' + esc(x.title) + '">📅 احجز حصة ثنائية مع المعلم</a></p>';
+      var voice = (k === "speak" || k === "shadow" || k === "dice" || k === "qa" || k === "pair" || (k === "sit" && x.mode === "speak"));
       if (voice) {
         h += '<div class="btns"><button class="btn btn-ghost" data-rec type="button">🎙 ابدأ التسجيل</button><span class="muted" data-rs>' + (s && s.audio_path ? "يوجد تسجيل سابق" : "") + '</span></div><audio data-pl controls hidden style="width:100%;margin-top:8px"></audio>' + (x.model ? '<p class="muted">فكرة إجابة: ' + esc(x.model) + "</p>" : "");
       } else {
-        h += '<textarea dir="ltr" rows="' + (k === "write" || k === "describe" ? 7 : 2) + '" style="width:100%;text-align:left" data-body ' + (graded ? "disabled" : "") + ">" + esc(s ? s.body || "" : "") + "</textarea>" + (k === "write" || k === "describe" ? '<div class="muted" data-wc></div>' : "");
+        h += '<textarea dir="ltr" rows="' + (k === "write" || k === "describe" || k === "sit" ? 7 : 2) + '" style="width:100%;text-align:left" data-body ' + (graded ? "disabled" : "") + ">" + esc(s ? s.body || "" : "") + "</textarea>" + (k === "write" || k === "describe" || k === "sit" ? '<div class="muted" data-wc></div>' : "");
       }
       if (!graded) h += '<div class="btns" style="margin-top:8px"><button class="btn btn-primary" data-send type="button">' + (done ? "تحديث الإجابة" : "تسليم") + "</button></div>";
       var reveal = (k === "translate" || k === "fix") && done ? '<div class="infobox" style="margin-top:10px"><strong>الإجابة النموذجية:</strong> <span dir="ltr">' + esc(x.model || x.good || "") + "</span></div>" : "";
+      if (k === "sit") reveal = done ? '<div class="sk-reveal"><h3 style="margin:0 0 8px">🔓 الآن قارن إجابتك</h3>' +
+        '<div class="sk-bad"><strong>❌ مثال ضعيف</strong><p dir="ltr" style="text-align:left;white-space:pre-wrap">' + esc(x.bad) + '</p><p class="muted">' + esc(x.badWhy) + '</p></div>' +
+        '<div class="sk-good"><strong>✅ مثال جيد</strong> <button class="btn btn-ghost sm" data-say="' + esc(x.good) + '" type="button" aria-label="استمع">🔊</button><p dir="ltr" style="text-align:left;white-space:pre-wrap">' + esc(x.good) + '</p><p class="muted">' + esc(x.goodWhy) + '</p></div>' +
+        ((x.tips || []).length ? '<div class="sk-tips"><strong>💡 نصائح</strong><ul>' + x.tips.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul></div>" : "") +
+        '<p class="muted">قارن: ما الذي فعلتَه مثل المثال الجيد؟ وما الذي يمكنك تحسينه؟ المعلم سيعلّق على إجابتك أيضاً.</p></div>'
+        : '<p class="muted" style="margin-top:8px">🔒 بعد التسليم يظهر لك المثال الضعيف والمثال الجيد مع الشرح.</p>';
       h += '<div data-rv>' + reveal + "</div>";
       if (graded && s.feedback) h += '<div class="infobox" style="margin-top:10px"><strong>تعليق المعلم:</strong><p style="margin:6px 0 0;white-space:pre-wrap">' + esc(s.feedback) + "</p></div>";
       h += "</div>";
@@ -111,14 +145,31 @@
           rec.start(); rb.textContent = "⏹ إيقاف"; rs.textContent = "جارٍ التسجيل…";
         } catch (e) { KZ.toast("لم أستطع الوصول إلى الميكروفون. اسمح به من المتصفح.", true); }
       });
+      if (k === "dice") {
+        var die = box.querySelector("[data-die]"), tpc = box.querySelector("[data-topic]"), rollB = box.querySelector("[data-roll]"), tmB = box.querySelector("[data-timer]"), clk = box.querySelector("[data-clock]");
+        rollB.addEventListener("click", function () {
+          var n = 0, tt = setInterval(function () { tpc.textContent = x.topics[Math.floor(Math.random() * x.topics.length)]; die.style.transform = "rotate(" + (n * 70) + "deg)"; n++; if (n > 12) { clearInterval(tt); box._topic = tpc.textContent; tmB.disabled = false; tpc.style.fontWeight = "700"; speak(box._topic); } }, 90);
+        });
+        tmB.addEventListener("click", function () {
+          var left = x.secs || 45; tmB.disabled = true; clk.textContent = "⏱ " + left; var ti = setInterval(function () { left--; clk.textContent = left > 0 ? "⏱ " + left : "⏰ انتهى الوقت! سجّل أو أعد المحاولة"; if (left <= 0) { clearInterval(ti); tmB.disabled = false; } }, 1000);
+        });
+      }
+      if (k === "qa") { var qb = box.querySelector("[data-qaall]"); if (qb) qb.addEventListener("click", function () { var qs = x.qs || [], qi = 0; function nx() { if (qi >= qs.length) return; try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(qs[qi++]); u.lang = "en-GB"; u.rate = 0.9; u.onend = function () { setTimeout(nx, 6000); }; speechSynthesis.speak(u); } catch (e) {} } nx(); }); }
+      if (k === "pair") {
+        box.querySelectorAll("[data-role]").forEach(function (rb2) { rb2.addEventListener("click", function () { var r = rb2.getAttribute("data-role"); box.querySelectorAll(".sk-line").forEach(function (ln) { var hide = r && ln.getAttribute("data-who") === r; ln.classList.toggle("hid", !!hide); }); }); });
+        box.querySelectorAll(".sk-line").forEach(function (ln) { ln.addEventListener("click", function (e) { if (e.target.closest("button")) return; ln.classList.remove("hid"); }); });
+        var bk = box.querySelector("[data-book]"); if (bk) bk.addEventListener("click", function (e) { e.preventDefault(); bookingDialog(bk.getAttribute("data-book")); });
+      }
       var sendBtn = box.querySelector("[data-send]");
       if (sendBtn) sendBtn.addEventListener("click", async function () {
         sendBtn.disabled = true;
         var row = { user_id: uid, lesson_id: id, ex: i, kind: k, body: ta ? ta.value.trim() : null };
+        if (k === "dice") { row.body = box._topic || (mine[i] && mine[i].body) || ""; if (!row.body) { KZ.toast("اسحب موضوعاً أولاً.", true); sendBtn.disabled = false; return; } }
+        var pnr = box.querySelector("[data-partner]"); if (k === "pair") row.body = pnr ? pnr.value.trim() : "";
         if (ta && !row.body) { KZ.toast("اكتب إجابتك أولاً.", true); sendBtn.disabled = false; return; }
         if (!ta) {
           if (blob) { var path = uid + "/skill-" + id + "-" + i + "-" + Date.now() + ".webm"; var up = await sb.storage.from("task-audio").upload(path, blob, { contentType: blob.type }); if (up.error) { KZ.toast("تعذر رفع التسجيل.", true); sendBtn.disabled = false; return; } row.audio_path = path; }
-          else if (!(mine[i] && mine[i].audio_path)) { KZ.toast("سجّل صوتك أولاً.", true); sendBtn.disabled = false; return; }
+          else if (!(mine[i] && mine[i].audio_path) && !(k === "pair" && row.body)) { KZ.toast(k === "pair" ? "سجّل صوتك أو اكتب اسم شريكك." : "سجّل صوتك أولاً.", true); sendBtn.disabled = false; return; }
         }
         var r = await sb.from("skill_submissions").upsert(row, { onConflict: "user_id,lesson_id,ex" });
         sendBtn.disabled = false;

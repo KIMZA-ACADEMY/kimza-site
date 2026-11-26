@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>IELTS / TOEFL · KIMZA Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
+<script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
+<link rel="stylesheet" href="site.css?v=mwxn9iug">
+<link rel="stylesheet" href="app.css?v=mwxn9iug">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B1F44">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<script>if("serviceWorker"in navigator&&location.protocol!=="file:")addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})</script>
+<script>(function(){var shown=false;function show(){if(shown||window.KZ)return;shown=true;var d=document.createElement("div");d.id="kzGuard";d.style.cssText="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#0B1F44;color:#fff;padding:12px 16px;text-align:center;font:15px/1.6 Tahoma,Arial,sans-serif";d.innerHTML='الصفحة لا تكتمل التحميل؟ قد يكون الاتصال ضعيفاً أو متصفحك قديماً. <a href="check.html" style="color:#D4AF37;font-weight:bold">اضغط هنا لاختبار الاتصال</a>';(document.body||document.documentElement).appendChild(d)}function hide(){var e=document.getElementById("kzGuard");if(e&&e.parentNode)e.parentNode.removeChild(e)}addEventListener("error",function(e){var t=e.target;if(t&&t.tagName==="SCRIPT")setTimeout(show,300)},true);setTimeout(function(){show();var i=setInterval(function(){if(window.KZ){hide();clearInterval(i)}},1000)},9000)})()</script>
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="supabase-lib.js"></script>
+<script src="config.js"></script>
+<script src="app.js?v=mwxn9iug"></script>
+<script src="portal-i18n.js?v=mwxn9iug"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("student");
+  if (!prof) return;
+  KZ.shell("examprep");
+  var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app"), uid = KZ.user.id;
+  var weeks = (await sb.from("exam_weeks").select("id,stage,week,title,content").eq("status", "published").order("stage").order("week")).data || [];
+  var res = (await sb.from("exam_resources").select("*").eq("published", true).order("sort")).data || [];
+  var STN = { 1: "المرحلة 1 · التأسيس", 2: "المرحلة 2 · الأساسي", 3: "المرحلة 3 · المتقدم", 4: "المرحلة 4 · الاحتراف", 0: "دليل الدورة" };
+  var doneKey = "kz-exp-done-" + uid, done = {};
+  try { done = JSON.parse(localStorage.getItem(doneKey) || "{}"); } catch (e) {}
+  var S = { view: "home", id: null, track: "all" };
+
+  function speak(t) { try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(t); u.lang = "en-GB"; u.rate = 0.9; speechSynthesis.speak(u); } catch (e) {} }
+  // small markdown renderer (headings, bold, italics, lists, quotes, tables)
+  function md(t) {
+    var lines = String(t || "").split("\n"), out = [], i = 0;
+    function inl(x) { return esc(x).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>").replace(/`(.+?)`/g, "<code>$1</code>"); }
+    while (i < lines.length) {
+      var l = lines[i];
+      if (/^\s*\|/.test(l) && i + 1 < lines.length && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) {
+        var head = l.split("|").slice(1, -1), rows = []; i += 2;
+        while (i < lines.length && /^\s*\|/.test(lines[i])) { rows.push(lines[i].split("|").slice(1, -1)); i++; }
+        out.push('<div style="overflow:auto"><table class="ep-t"><thead><tr>' + head.map(function (c) { return "<th>" + inl(c.trim()) + "</th>"; }).join("") + "</tr></thead><tbody>" + rows.map(function (r) { return "<tr>" + r.map(function (c) { return "<td>" + inl(c.trim()) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table></div>");
+        continue;
+      }
+      if (/^#{1,4} /.test(l)) { var lv = l.match(/^#+/)[0].length; out.push("<h" + (lv + 1) + ">" + inl(l.replace(/^#+ /, "")) + "</h" + (lv + 1) + ">"); i++; continue; }
+      if (/^\s*[-*] /.test(l)) { var li = []; while (i < lines.length && /^\s*[-*] /.test(lines[i])) { li.push("<li>" + inl(lines[i].replace(/^\s*[-*] /, "")) + "</li>"); i++; } out.push("<ul>" + li.join("") + "</ul>"); continue; }
+      if (/^\s*\d+[.)] /.test(l)) { var ol = []; while (i < lines.length && /^\s*\d+[.)] /.test(lines[i])) { ol.push("<li>" + inl(lines[i].replace(/^\s*\d+[.)] /, "")) + "</li>"); i++; } out.push("<ol>" + ol.join("") + "</ol>"); continue; }
+      if (/^> /.test(l)) { out.push("<blockquote>" + inl(l.replace(/^> /, "")) + "</blockquote>"); i++; continue; }
+      if (/^---+$/.test(l.trim())) { out.push("<hr>"); i++; continue; }
+      if (!l.trim()) { i++; continue; }
+      out.push("<p>" + inl(l) + "</p>"); i++;
+    }
+    return out.join("");
+  }
+
+  var RUBRIC = {
+    writing: ["Task Response: هل أجبتُ عن كل أجزاء السؤال وكان موقفي واضحاً؟", "Coherence: هل لكل فقرة فكرة رئيسية، وهل الروابط طبيعية؟", "Lexical Resource: هل استخدمت مفردات دقيقة دون تكرار؟", "Grammar: هل نوّعت الجمل (شرطية، موصولة) وقلّلت الأخطاء؟", "الطول والوقت: هل بلغتُ الحد الأدنى (150 / 250 كلمة) في الوقت؟"],
+    speaking: ["Fluency: هل تحدثت دون توقف طويل وبكتل لغوية؟", "Vocabulary: هل استخدمت تعابير وكلمات متنوعة؟", "Grammar: هل استخدمت أزمنة مختلفة بشكل صحيح؟", "Pronunciation: هل نطقي واضح، والنبر والتنغيم طبيعيان؟", "Development: هل مدّدتُ الإجابات بسبب ومثال؟"]
+  };
+
+  function nav() {
+    var h = '<div class="agroups" role="tablist">' + [["home", "الرئيسية"], ["weeks", "الأسابيع"], ["res", "مصادر مجانية"], ["tools", "أدوات التدريب"]].map(function (t) { return '<button type="button" data-v="' + t[0] + '" aria-selected="' + (S.view === t[0]) + '">' + t[1] + "</button>"; }).join("") + "</div>";
+    return h;
+  }
+  function bind() {
+    app.querySelectorAll("[data-v]").forEach(function (b) { b.addEventListener("click", function () { S.view = b.getAttribute("data-v"); S.id = null; render(); window.scrollTo(0, 0); }); });
+    app.querySelectorAll("[data-w]").forEach(function (b) { b.addEventListener("click", function (e) { e.preventDefault(); S.view = "week"; S.id = Number(b.getAttribute("data-w")); render(); window.scrollTo(0, 0); }); });
+    app.querySelectorAll("[data-tr]").forEach(function (b) { b.addEventListener("click", function () { S.track = b.getAttribute("data-tr"); render(); }); });
+  }
+
+  function home() {
+    var total = weeks.length, fin = weeks.filter(function (w) { return done[w.id]; }).length, pct = total ? Math.round(fin * 100 / total) : 0;
+    var h = '<h1>🎯 IELTS / TOEFL</h1>' + nav();
+    h += '<div class="tile ep-hero"><h2 style="margin-top:0">دورة التحضير للاختبارات الدولية</h2><p>مراحل متدرجة من الأساس إلى مستوى الاختبار، بدروس أسبوعية منظمة، نصوص قراءة، مفردات أكاديمية، نماذج كتابة ومحادثة، واختبارات تجريبية. وفي قسم «مصادر مجانية» روابط رسمية لاختبارات وتدريبات من واضعي الاختبارات أنفسهم.</p>' +
+      '<div class="ep-bar" aria-label="تقدّمك"><span style="width:' + pct + '%"></span></div><p class="muted">أنهيت ' + fin + " من " + total + " أسبوعاً (" + pct + "%)</p></div>";
+    if (!weeks.length) h += '<div class="tile"><p class="muted" style="margin:0">لم تُنشر أسابيع الدورة بعد. ستظهر هنا عندما ينشرها المعلم. في الأثناء، جرّب «مصادر مجانية» و«أدوات التدريب».</p></div>';
+    h += '<div class="lgrid" style="margin-top:14px"><a class="lcard" href="#" data-v="res"><span class="lnum">🆓</span><span class="lbody"><strong>مصادر مجانية رسمية</strong><span class="muted">اختبارات وتدريبات من IELTS و ETS وBBC وغيرها</span></span><span class="go">‹</span></a><a class="lcard" href="#" data-v="tools"><span class="lnum">⏱</span><span class="lbody"><strong>أدوات التدريب</strong><span class="muted">مؤقتات الاختبار ومعايير التقييم الذاتي</span></span><span class="go">‹</span></a></div>';
+    app.innerHTML = h; bind();
+    app.querySelectorAll("a[data-v]").forEach(function (a) { a.addEventListener("click", function (e) { e.preventDefault(); }); });
+  }
+
+  function weeksView() {
+    var h = '<h1>📅 أسابيع الدورة</h1>' + nav(); var by = {};
+    weeks.forEach(function (w) { (by[w.stage] = by[w.stage] || []).push(w); });
+    Object.keys(by).forEach(function (k) {
+      h += '<h2 style="margin-top:20px">' + (STN[k] || "المرحلة " + k) + '</h2><div class="lgrid">' + by[k].map(function (w) {
+        return '<a class="lcard" href="#" data-w="' + w.id + '"><span class="lnum">' + (w.week || "•") + '</span><span class="lbody"><strong>' + esc(w.title) + '</strong><span class="lchips">' + (done[w.id] ? '<span class="badge ok">أنهيته ✔</span>' : '<span class="badge gold">جديد</span>') + '</span></span><span class="go" aria-hidden="true">‹</span></a>';
+      }).join("") + "</div>";
+    });
+    if (!weeks.length) h += '<div class="tile"><p class="muted" style="margin:0">لا توجد أسابيع منشورة بعد.</p></div>';
+    app.innerHTML = h; bind();
+  }
+
+  function weekView() {
+    var w = weeks.filter(function (x) { return x.id === S.id; })[0]; if (!w) { S.view = "weeks"; render(); return; }
+    var idx = weeks.indexOf(w), nx = weeks[idx + 1], pv = weeks[idx - 1];
+    var h = '<p><button class="btn btn-ghost sm" data-v="weeks" type="button">› رجوع</button></p><h1>' + esc(w.title) + '</h1><div class="btns"><button class="btn btn-ghost sm" id="epListen" type="button">🔊 استمع للنص المحدد</button><button class="btn ' + (done[w.id] ? "btn-ghost" : "btn-primary") + ' sm" id="epDone" type="button">' + (done[w.id] ? "✔ أنهيته (إلغاء)" : "أنهيت هذا الأسبوع") + '</button></div>' +
+      '<div class="tile ep-md" id="epMd">' + md(w.content) + '</div><div class="btns" style="margin-top:12px">' + (pv ? '<button class="btn btn-ghost" data-w="' + pv.id + '" type="button">‹ السابق</button>' : "") + (nx ? '<button class="btn btn-primary" data-w="' + nx.id + '" type="button">التالي ›</button>' : "") + "</div>";
+    app.innerHTML = h; bind();
+    document.getElementById("epListen").addEventListener("click", function () { var t = String(window.getSelection ? window.getSelection() : "").trim(); if (!t) { KZ.toast("حدّد نصاً إنجليزياً بالماوس أو بإصبعك ثم اضغط.", true); return; } speak(t.slice(0, 600)); });
+    document.getElementById("epDone").addEventListener("click", function () { if (done[w.id]) delete done[w.id]; else done[w.id] = 1; try { localStorage.setItem(doneKey, JSON.stringify(done)); } catch (e) {} if (done[w.id] && KZ.confetti) { try { KZ.confetti(); } catch (e) {} } render(); });
+  }
+
+  function resView() {
+    var h = '<h1>🆓 مصادر مجانية رسمية</h1>' + nav() + '<p class="muted">كلها مجانية ومن جهات معروفة. تفتح في صفحة جديدة. استخدمها بعد أن تنهي درس الأسبوع، وسجّل ما تتعلمه.</p>' +
+      '<div class="agroups">' + [["all", "الكل"], ["ielts", "IELTS"], ["toefl", "TOEFL"]].map(function (t) { return '<button type="button" data-tr="' + t[0] + '" aria-selected="' + (S.track === t[0]) + '">' + t[1] + "</button>"; }).join("") + "</div>";
+    var list = res.filter(function (r) { return S.track === "all" || r.track === S.track || r.track === "both"; });
+    var SK = { all: "عام", writing: "كتابة", listening: "استماع", reading: "قراءة", speaking: "محادثة" };
+    h += list.length ? '<div class="lgrid">' + list.map(function (r) { return '<a class="lcard" href="' + esc(r.url) + '" target="_blank" rel="noopener noreferrer"><span class="lnum">🔗</span><span class="lbody"><strong>' + esc(r.title) + '</strong><span class="muted">' + esc(r.note || "") + '</span><span class="lchips"><span class="badge">' + (r.track === "both" ? "IELTS + TOEFL" : r.track.toUpperCase()) + '</span> <span class="badge gold">' + (SK[r.skill] || esc(r.skill)) + '</span></span></span><span class="go" aria-hidden="true">↗</span></a>'; }).join("") + "</div>" : '<div class="tile"><p class="muted" style="margin:0">لا مصادر بعد.</p></div>';
+    h += '<p class="muted" style="margin-top:14px">ملاحظة: مواقع الاختبارات الرسمية تحدّث محتواها وأسعارها، فتأكد دائماً من التفاصيل على موقع IELTS أو ETS قبل التسجيل.</p>';
+    app.innerHTML = h; bind();
+  }
+
+  var timerId = null;
+  function toolsView() {
+    var T = [["IELTS Writing Task 1", 20 * 60], ["IELTS Writing Task 2", 40 * 60], ["IELTS Speaking Part 2: تحضير", 60], ["IELTS Speaking Part 2: حديث", 120], ["TOEFL Academic Discussion", 10 * 60], ["TOEFL Write an Email", 7 * 60], ["قراءة: قسم واحد", 20 * 60]];
+    var h = '<h1>⏱ أدوات التدريب</h1>' + nav() + '<div class="tile"><h2 style="margin-top:0">مؤقت الامتحان</h2><p class="muted">اختر مهمة وابدأ. تدرّب بالوقت الحقيقي لتتعوّد.</p><div class="btns">' + T.map(function (t, i) { return '<button class="btn btn-ghost sm" data-t="' + i + '" type="button">' + esc(t[0]) + " (" + Math.round(t[1] / 60) + " د)</button>"; }).join("") + '</div><div class="ep-clock" id="epClock" aria-live="off">--:--</div><div class="btns" style="justify-content:center"><button class="btn btn-primary" id="epStart" type="button" disabled>ابدأ</button><button class="btn btn-ghost" id="epStop" type="button">إيقاف</button></div></div>';
+    h += ["writing", "speaking"].map(function (k) { return '<div class="tile" style="margin-top:14px"><h2 style="margin-top:0">' + (k === "writing" ? "✍️ قائمة التقييم الذاتي للكتابة" : "🎤 قائمة التقييم الذاتي للمحادثة") + '</h2><p class="muted">بعد كل تدريب علّم على ما حققته، وركّز على نقطة واحدة في المرة القادمة.</p>' + RUBRIC[k].map(function (r, i) { return '<label class="ep-ck"><input type="checkbox" data-ck="' + k + i + '"> ' + esc(r) + "</label>"; }).join("") + '<p class="muted" id="ep-' + k + '"></p></div>'; }).join("");
+    app.innerHTML = h; bind();
+    var sel = null, clk = document.getElementById("epClock"), st = document.getElementById("epStart");
+    function fmt(s) { return ("0" + Math.floor(s / 60)).slice(-2) + ":" + ("0" + (s % 60)).slice(-2); }
+    app.querySelectorAll("[data-t]").forEach(function (b) { b.addEventListener("click", function () { if (timerId) { clearInterval(timerId); timerId = null; } sel = T[Number(b.getAttribute("data-t"))]; clk.textContent = fmt(sel[1]); st.disabled = false; }); });
+    st.addEventListener("click", function () { if (!sel) return; if (timerId) clearInterval(timerId); var left = sel[1]; st.disabled = true; timerId = setInterval(function () { left--; clk.textContent = fmt(Math.max(0, left)); if (left === 60) KZ.toast("باقي دقيقة واحدة!"); if (left <= 0) { clearInterval(timerId); timerId = null; clk.textContent = "00:00 ⏰"; st.disabled = false; KZ.toast("انتهى الوقت!"); } }, 1000); });
+    document.getElementById("epStop").addEventListener("click", function () { if (timerId) { clearInterval(timerId); timerId = null; } st.disabled = !sel; });
+    ["writing", "speaking"].forEach(function (k) { function upd() { var n = app.querySelectorAll('[data-ck^="' + k + '"]:checked').length; document.getElementById("ep-" + k).textContent = n + " / " + RUBRIC[k].length; } app.querySelectorAll('[data-ck^="' + k + '"]').forEach(function (c) { c.addEventListener("change", upd); }); });
+  }
+
+  function render() {
+    if (S.view === "weeks") weeksView(); else if (S.view === "week") weekView(); else if (S.view === "res") resView(); else if (S.view === "tools") toolsView(); else home();
+  }
+  render();
+})();
+
+</script>
+</body>
+</html>
