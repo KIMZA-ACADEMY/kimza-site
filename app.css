@@ -90,7 +90,7 @@ table.t th{color:var(--muted);font-size:14px}
 .speedbar select{width:auto;min-height:0;padding:4px 10px}
 .audiobar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}
 .audiobar select{width:auto;min-height:0;padding:4px 10px}
-.lcard.locked{opacity:.55;filter:grayscale(.3);cursor:default;box-shadow:none}
+.lcard.locked{opacity:.85;filter:grayscale(.5) brightness(.78);background:rgba(11,31,68,.14);cursor:default;box-shadow:none}
 .lcard.locked:hover{transform:none;border-color:var(--line)}
 
 /* ---- lesson words (big picture cards) and story pictures ---- */
