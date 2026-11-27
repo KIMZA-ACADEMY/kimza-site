@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwz39l9u">
-<link rel="stylesheet" href="app.css?v=mwz39l9u">
+<link rel="stylesheet" href="site.css?v=mwz462l4">
+<link rel="stylesheet" href="app.css?v=mwz462l4">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,9 +24,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwz39l9u"></script>
-<script src="portal-i18n.js?v=mwz39l9u"></script>
-<script src="i18n.js?v=mwz39l9u"></script>
+<script src="app.js?v=mwz462l4"></script>
+<script src="portal-i18n.js?v=mwz462l4"></script>
+<script src="i18n.js?v=mwz462l4"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -115,7 +115,7 @@
     var old = document.getElementById("tnDlg"); if (old) old.remove();
     var ov = document.createElement("div"); ov.id = "tnDlg";
     ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
-    ov.innerHTML = '<div class="tile" style="max-width:560px;width:100%;max-height:88vh;overflow:auto;background:var(--paper,#fff)" role="dialog" aria-label="ملاحظات عن الطالب"><h2 style="margin-top:0">📝 ملاحظاتك عن ' + esc(p.full_name) + '</h2><p class="muted">هذه الملاحظات لك وحدك، لا يراها الطالب.</p><div id="tnList"></div>' +
+    ov.innerHTML = '<div class="tile" style="max-width:560px;width:100%;max-height:88vh;overflow:auto;background:var(--surface,#fff);color:var(--text,#111)" role="dialog" aria-label="ملاحظات عن الطالب"><h2 style="margin-top:0">📝 ملاحظاتك عن ' + esc(p.full_name) + '</h2><p class="muted">هذه الملاحظات لك وحدك، لا يراها الطالب.</p><div id="tnList"></div>' +
       '<div class="form" style="margin-top:12px"><div class="btns" id="tnTags"></div><textarea id="tnText" rows="3" maxlength="2000" placeholder="اكتب ملاحظة جديدة..."></textarea><div class="btns" style="margin-top:8px"><button class="btn btn-primary" id="tnAdd" type="button">إضافة</button><button class="btn btn-ghost" id="tnX" type="button">إغلاق</button></div></div></div>';
     document.body.appendChild(ov);
     $("tnX").addEventListener("click", function () { ov.remove(); }); ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
@@ -141,7 +141,7 @@
     var digits = String(p.username || "").replace(/\D/g, ""); if (digits.length <= 9) digits = "967" + digits.replace(/^0+/, "");
     var ov = document.createElement("div"); ov.id = "waDlg";
     ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
-    ov.innerHTML = '<div class="tile" style="max-width:560px;width:100%;max-height:90vh;overflow:auto;background:var(--paper,#fff)" role="dialog" aria-label="رسالة واتساب"><h2 style="margin-top:0">📲 رسالة واتساب (' + (kind === "accept" ? "قبول" : "رفض") + ')</h2>' +
+    ov.innerHTML = '<div class="tile" style="max-width:560px;width:100%;max-height:90vh;overflow:auto;background:var(--surface,#fff);color:var(--text,#111)" role="dialog" aria-label="رسالة واتساب"><h2 style="margin-top:0">📲 رسالة واتساب (' + (kind === "accept" ? "قبول" : "رفض") + ')</h2>' +
       '<p class="muted">يفتح الزر واتساب ومعه الرسالة جاهزة، وأنت تضغط «إرسال» بنفسك. الإرسال الآلي بالكامل يحتاج حساب واتساب للأعمال الرسمي (مدفوع).</p><div class="form">' +
       '<div class="grid2"><div><label for="waNum">رقم واتساب مع رمز الدولة</label><input id="waNum" dir="ltr" value="' + esc(digits) + '"></div>' + (kind === "accept" ? '<div><label for="waPw">كلمة المرور المؤقتة</label><input id="waPw" dir="ltr" value="' + esc(DEFAULT_PW) + '"></div>' : "") + '</div>' +
       '<div><label for="waTpl">قالب الرسالة (استخدم {name} و{username} و{password})</label><textarea id="waTpl" rows="7"></textarea></div>' +
@@ -163,7 +163,7 @@
     var extra = (p.completed_levels || []).slice();
     var grants = {}; ((await sb.from("lesson_grants").select("lesson_id").eq("user_id", p.id)).data || []).forEach(function (g) { grants[g.lesson_id] = 1; });
     var gl = LEVELS[0];
-    ov.innerHTML = '<div class="tile" style="max-width:560px;width:100%;max-height:88vh;overflow:auto;background:var(--paper,#fff)" role="dialog" aria-label="مستويات ودروس الطالب"><h2 style="margin-top:0">' + esc(p.full_name) + '</h2>' +
+    ov.innerHTML = '<div class="tile" style="max-width:560px;width:100%;max-height:88vh;overflow:auto;background:var(--surface,#fff);color:var(--text,#111)" role="dialog" aria-label="مستويات ودروس الطالب"><h2 style="margin-top:0">' + esc(p.full_name) + '</h2>' +
       '<h3>المستويات التي يدرسها</h3><p class="muted">مستواه الأساسي ' + esc(p.level) + ' (يتغير من الجدول). اختر المستويات الإضافية:</p><div id="acLv" style="display:flex;gap:14px;flex-wrap:wrap"></div>' +
       '<h3 style="margin-top:20px">التصويت على مواعيد الحصص</h3><p class="muted">اختر المستويات التي يمثّلها في التصويت. يصوّت لكل مستوى على حدة. إن لم تختر شيئاً يصوّت لمستواه الأساسي فقط.</p><div id="acVt" style="display:flex;gap:14px;flex-wrap:wrap"></div>' +
       '<h3 style="margin-top:20px">دروس مفتوحة له وحده</h3><p class="muted">الدرس يفتح له بكل أجزائه حتى لو كان مغلقاً على بقية الطلاب.</p>' +
@@ -1923,7 +1923,7 @@
     sb.from("staff_warnings").select("*").is("seen_at", null).order("created_at").then(function (r) {
       var ws = r.data || []; if (!ws.length) return;
       var ov = document.createElement("div"); ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
-      ov.innerHTML = '<div class="tile" style="max-width:480px;width:100%;background:var(--paper,#fff)" role="dialog" aria-label="تحذير من الإدارة"><h2 style="margin-top:0;color:#c62828">⚠️ تحذير من الإدارة</h2>' + ws.map(function (w) { return '<div class="warnbox" style="margin:8px 0">' + esc(w.note) + '<div class="muted" style="font-size:.8rem">' + new Date(w.created_at).toLocaleString("ar") + "</div></div>"; }).join("") + '<div class="btns"><button class="btn btn-primary" id="wAck" type="button">اطلعتُ على التحذير</button></div></div>';
+      ov.innerHTML = '<div class="tile" style="max-width:480px;width:100%;background:var(--surface,#fff);color:var(--text,#111)" role="dialog" aria-label="تحذير من الإدارة"><h2 style="margin-top:0;color:#c62828">⚠️ تحذير من الإدارة</h2>' + ws.map(function (w) { return '<div class="warnbox" style="margin:8px 0">' + esc(w.note) + '<div class="muted" style="font-size:.8rem">' + new Date(w.created_at).toLocaleString("ar") + "</div></div>"; }).join("") + '<div class="btns"><button class="btn btn-primary" id="wAck" type="button">اطلعتُ على التحذير</button></div></div>';
       document.body.appendChild(ov); document.getElementById("wAck").onclick = async function () { await sb.rpc("staff_ack_warnings"); ov.remove(); };
     });
   }
