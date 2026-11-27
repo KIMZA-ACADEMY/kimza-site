@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxf1itj">
-<link rel="stylesheet" href="app.css?v=mwxf1itj">
+<link rel="stylesheet" href="site.css?v=mwzmb3az">
+<link rel="stylesheet" href="app.css?v=mwzmb3az">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,8 +24,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxf1itj"></script>
-<script src="portal-i18n.js?v=mwxf1itj"></script>
+<script src="app.js?v=mwzmb3az"></script>
+<script src="portal-i18n.js?v=mwzmb3az"></script>
 
 <script>
 (async function () {
@@ -85,6 +85,7 @@
     var atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 40;
     var MAP = {}; rows.forEach(function (m) { MAP[m.id] = m; }); fcMap = MAP;
     box.innerHTML = rows.length ? rows.map(function (m) { var mine = m.sender === uid; return '<div data-mid="' + m.id + '" style="touch-action:pan-y;align-self:' + (mine ? "flex-end" : "flex-start") + ';max-width:85%;background:' + (mine ? "var(--gold-soft,#f3e7bd)" : "var(--surface)") + ';border:1px solid var(--line);border-radius:14px;padding:8px 12px"><small class="muted">' + (mine ? "أنت" : esc(f.nickname || "صديقك")) + " · " + when(m.created_at) + KZ.replyBtn(m.id) + '</small>' + KZ.quote(MAP[m.reply_to]) + '<div style="white-space:pre-wrap">' + esc(m.body) + "</div></div>"; }).join("") : '<p class="muted" style="margin:0">ابدأ المحادثة بتحية 👋</p>';
+    KZ.voiceDecorate(box, MAP);
     if (atEnd || !keepText) box.scrollTop = box.scrollHeight;
     try { await sb.rpc("mark_friend_read", { p_id: f.id }); } catch (e) {}
   }
@@ -94,6 +95,12 @@
     document.getElementById("fcBack").addEventListener("click", main);
     await paint(f);
     var RP = KZ.chatReply(document.getElementById("fcBox"), document.getElementById("fcT"), function (id) { return fcMap[id]; });
+    KZ.voiceBarAfter(document.getElementById("fcS"), async function (blob, secs, ext) {
+      var path = await KZ.voiceUpload(blob, ext);
+      var r = await sb.from("friend_messages").insert({ friendship_id: f.id, sender: uid, body: "🎙 رسالة صوتية", audio_path: path, audio_secs: secs, reply_to: RP.get() });
+      if (r.error) throw new Error(/too many/.test(r.error.message) ? "رسائل كثيرة، انتظر قليلاً." : /cannot send/.test(r.error.message) ? "لا يمكنك الإرسال الآن." : r.error.message);
+      RP.clear(); paint(f);
+    });
     document.getElementById("fcS").addEventListener("click", async function (ev) {
       var t = document.getElementById("fcT").value.trim(); if (!t) return; ev.target.disabled = true;
       var r = await sb.from("friend_messages").insert({ friendship_id: f.id, sender: uid, body: t, reply_to: RP.get() });

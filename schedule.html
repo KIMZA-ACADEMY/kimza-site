@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwz3whpn">
-<link rel="stylesheet" href="app.css?v=mwz3whpn">
+<link rel="stylesheet" href="site.css?v=mwzmb3az">
+<link rel="stylesheet" href="app.css?v=mwzmb3az">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,8 +24,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwz3whpn"></script>
-<script src="portal-i18n.js?v=mwz3whpn"></script>
+<script src="app.js?v=mwzmb3az"></script>
+<script src="portal-i18n.js?v=mwzmb3az"></script>
 
 <script>
 (async function () {
@@ -142,6 +142,15 @@
     var all = groupList(slotId), n = all.filter(function (x) { return x.g.grp > 0; }).length;
     return OVER[n % OVER.length];
   }
+  function ovMode(sl) { return (sl && sl.overflow_override) || (state.poll && state.poll.overflow_mode) || "allow"; }
+  // a slot is closed to my level when new teams are not allowed there and my level already filled its teams
+  function slotFull(sl) {
+    if (ovMode(sl) !== "block") return false;
+    var cap = (state.poll && state.poll.capacity) || 11, n = 0;
+    (state.groups[sl.id] || []).forEach(function (g) { if (g.level === MY) n += g.cnt; });
+    if (state.mine.indexOf(sl.id) >= 0) n--;
+    return n >= cap;
+  }
   function showLv() { return IS_T || (state.poll && state.poll.show_levels); }
   function chips(slotId, mineLevel) {
     var gl = groupList(slotId), h = "";
@@ -153,8 +162,8 @@
   }
   function fillTile() {
     var rows = state.slots.map(function (sl) {
-      var gl = groupList(sl.id); if (!gl.length) return "";
-      return "<p><strong>" + esc(slotLabel(sl)) + ":</strong> " + gl.map(function (x) { return '<span class="vt-chip" style="background:' + x.col + '" title="' + (x.full ? "ممتلئ" : "") + '">' + esc(x.g.level || "?") + (x.g.grp ? " #" + (x.g.grp + 1) : "") + " · " + x.g.cnt + "/" + x.g.cap + (x.full ? " ✓" : "") + "</span>"; }).join(" ") + "</p>";
+      var gl = groupList(sl.id); if (!gl.length && !IS_T) return "";
+      return "<p><strong>" + esc(slotLabel(sl)) + ":</strong> " + gl.map(function (x) { return '<span class="vt-chip" style="background:' + x.col + '" title="' + (x.full ? "ممتلئ" : "") + '">' + esc(x.g.level || "?") + (x.g.grp ? " #" + (x.g.grp + 1) : "") + " · " + x.g.cnt + "/" + x.g.cap + (x.full ? " ✓" : "") + "</span>"; }).join(" ") + (IS_T ? ' <select data-ovs="' + sl.id + '" style="font-size:.8rem"><option value=""' + (!sl.overflow_override ? " selected" : "") + '>حسب الإعداد العام</option><option value="allow"' + (sl.overflow_override === "allow" ? " selected" : "") + '>السماح بفريق جديد</option><option value="block"' + (sl.overflow_override === "block" ? " selected" : "") + '>منع الفريق الجديد</option></select>' : "") + "</p>";
     }).join("");
     return '<div class="tile" style="margin-top:14px"><h2 style="margin-top:0">امتلاء الفرق (الحد ' + ((state.poll && state.poll.capacity) || 11) + ' لكل مستوى في الساعة)</h2><p class="muted">الرمادي = فريق امتلأ. من يصوّت بعده من نفس المستوى يدخل مجموعة جديدة بلون جديد.</p>' + (rows || '<p class="muted">لا أصوات بعد.</p>') + "</div>";
   }
@@ -186,8 +195,8 @@
     Object.keys(by).sort(function (a, b) { return a - b; }).forEach(function (d) {
       h += '<div class="vt-day"><h3>' + DAYS[d] + '</h3><div class="vt-slots">';
       by[d].forEach(function (s) {
-        var on = state.sel.indexOf(s.id) >= 0;
-        h += '<button type="button" class="vt-slot' + (on ? " on" : "") + '" data-s="' + s.id + '"' + (on ? ' style="border-color:' + joinColor(s.id) + '"' : "") + (open ? "" : " disabled") + ">" + (on ? '<span class="vt-tick">✅</span>' : "") +
+        var on = state.sel.indexOf(s.id) >= 0, fullS = !on && slotFull(s);
+        h += '<button type="button" class="vt-slot' + (on ? " on" : "") + (fullS ? " vt-full" : "") + '" data-s="' + s.id + '"' + (on ? ' style="border-color:' + joinColor(s.id) + '"' : "") + (open && !fullS ? "" : " disabled") + (fullS ? ' title="الفرق ممتلئة في هذا الموعد"' : "") + ">" + (fullS ? '<span class="vt-tick">🔒</span>' : "") + (on ? '<span class="vt-tick">✅</span>' : "") +
           '<span class="tm">' + esc(s.start_time) + " – " + esc(s.end_time) + '</span><div class="vt-dots">' + chips(s.id, MY) + "</div></button>";
       });
       h += "</div></div>";
@@ -211,7 +220,7 @@
       if (state.sel.length < picks || state.sel.length > mx) { m.textContent = mx > picks ? "اختر من " + picks + " إلى " + mx + " مواعيد." : "يجب اختيار " + picks + " مواعيد بالضبط."; m.style.color = "#c62828"; return; }
       sv.disabled = true; m.textContent = "جارٍ الحفظ...";
       var r = await sb.rpc("cast_votes", { p_poll: p.id, p_slots: state.sel, p_level: MY });
-      if (r.error) { m.textContent = /closed/.test(r.error.message) ? "أُغلق التصويت." : "تعذر الحفظ: " + r.error.message; m.style.color = "#c62828"; sv.disabled = false; return; }
+      if (r.error) { m.textContent = /closed/.test(r.error.message) ? "أُغلق التصويت." : /full for your level/.test(r.error.message) ? "أحد المواعيد امتلأت فرق مستواك فيه. اختر موعداً آخر." : "تعذر الحفظ: " + r.error.message; m.style.color = "#c62828"; sv.disabled = false; return; }
       await loadPoll(); studentView();
       var m2 = document.getElementById("vtMsg"); if (m2) { m2.textContent = "✅ تم حفظ اختيارك. يمكنك تعديله حتى إغلاق التصويت."; m2.style.color = "#2e7d32"; }
     });
@@ -245,7 +254,7 @@
       '<div><label for="tTitle">العنوان</label><input id="tTitle" value="' + esc(p.title) + '"></div>' +
       '<div><label for="tNote">ملاحظة للطلاب (اختياري)</label><textarea id="tNote" rows="2">' + esc(p.note || "") + "</textarea></div>" +
       '<div class="row" style="border:0;padding:0;justify-content:flex-start;gap:18px"><div><label for="tPicks">عدد الأصوات الإجبارية (على الأقل)</label><select id="tPicks">' + [1, 2, 3, 4].map(function (n) { return '<option' + (n === p.picks ? " selected" : "") + ">" + n + "</option>"; }).join("") + '</select></div><div><label for="tExtra">أصوات اختيارية إضافية (يستطيع الطالب تركها)</label><select id="tExtra">' + [0, 1, 2, 3, 4].map(function (n) { return '<option' + (n === (p.extra_picks || 0) ? " selected" : "") + ">" + n + "</option>"; }).join("") + '</select></div>' +
-      '<div><label for="tCap">الحد الأقصى لكل مستوى في الساعة</label><input id="tCap" type="number" min="1" max="500" value="' + (p.capacity || 11) + '" style="width:90px"></div><div><label style="display:block">إظهار أسماء المستويات للطلاب</label><label><input type="checkbox" id="tShow"' + (p.show_levels ? " checked" : "") + '> نعم (وإلا يرون نقاطاً ملوّنة فقط)</label></div><div><label for="tClose">آخر موعد للتصويت</label><input id="tClose" type="datetime-local" value="' + dt + '"></div></div>' +
+      '<div><label for="tCap">الحد الأقصى لكل مستوى في الساعة</label><input id="tCap" type="number" min="1" max="500" value="' + (p.capacity || 11) + '" style="width:90px"></div><div><label style="display:block">إظهار أسماء المستويات للطلاب</label><label><input type="checkbox" id="tShow"' + (p.show_levels ? " checked" : "") + '> نعم (وإلا يرون نقاطاً ملوّنة فقط)</label></div><div><label for="tOv">إذا امتلأ فريق مستوى في ساعة</label><select id="tOv"><option value="allow"' + ((p.overflow_mode || "allow") === "allow" ? " selected" : "") + '>يُفتح فريق جديد على نفس الموعد</option><option value="block"' + (p.overflow_mode === "block" ? " selected" : "") + '>لا يُسمح للفريق الجديد بنفس الموعد</option></select></div><div><label for="tClose">آخر موعد للتصويت</label><input id="tClose" type="datetime-local" value="' + dt + '"></div></div>' +
       '<div class="btns"><button class="btn btn-primary" id="tSave" type="button">حفظ الإعدادات</button>' +
       (p.status !== "open" ? '<button class="btn btn-primary" id="tOpen" type="button" style="background:#2e7d32">▶ فتح التصويت للطلاب</button>' : '<button class="btn btn-ghost" id="tClosePoll" type="button">⏹ إغلاق التصويت</button>') +
       '<button class="btn danger sm" id="tDel" type="button">حذف الاستفتاء</button> <span id="tMsg" class="muted"></span></div></div></div>';
@@ -302,6 +311,9 @@
       sessionStorage.setItem("vtPoll", r.data.id); await loadPolls(); await loadPoll(); teacherView();
     });
     var p = state.poll; if (!p) return;
+    document.querySelectorAll("[data-ovs]").forEach(function (sel) { sel.addEventListener("change", async function () {
+      var r = await sb.from("vote_slots").update({ overflow_override: sel.value || null }).eq("id", Number(sel.getAttribute("data-ovs")));
+      if (r.error) { alert(r.error.message); return; } await loadPoll(); teacherView(); }); });
     document.querySelectorAll("[data-dv]").forEach(function (b) { b.addEventListener("click", async function () {
       var pr = b.getAttribute("data-dv").split("|"); if (!confirm("حذف هذا الصوت؟")) return;
       var r = await sb.rpc("teacher_delete_votes", { p_poll: p.id, p_user: pr[1], p_slot: Number(pr[0]) });
@@ -312,7 +324,7 @@
       if (r.error) { alert("تعذر الحذف: " + r.error.message); return; } await loadPoll(); teacherView(); });
     $("tSave").addEventListener("click", async function () {
       var c = $("tClose").value ? new Date($("tClose").value).toISOString() : null;
-      var r = await sb.from("vote_polls").update({ title: $("tTitle").value.trim(), note: $("tNote").value.trim() || null, picks: Number($("tPicks").value), extra_picks: Number($("tExtra").value), closes_at: c, capacity: Math.max(1, Math.min(500, Number($("tCap").value) || 11)), show_levels: $("tShow").checked }).eq("id", p.id);
+      var r = await sb.from("vote_polls").update({ title: $("tTitle").value.trim(), note: $("tNote").value.trim() || null, picks: Number($("tPicks").value), extra_picks: Number($("tExtra").value), closes_at: c, capacity: Math.max(1, Math.min(500, Number($("tCap").value) || 11)), show_levels: $("tShow").checked, overflow_mode: $("tOv").value }).eq("id", p.id);
       $("tMsg").textContent = r.error ? r.error.message : "✅ تم الحفظ"; if (!r.error) { await loadPolls(); }
     });
     $("tOpen") && $("tOpen").addEventListener("click", async function () {

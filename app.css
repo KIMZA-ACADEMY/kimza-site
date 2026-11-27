@@ -415,3 +415,7 @@ html[data-motion="off"] *{animation:none!important;transition:none!important}
 .ep-t th{background:rgba(212,175,55,.18)}
 .ep-clock{font-size:3rem;font-weight:700;text-align:center;margin:14px 0;font-variant-numeric:tabular-nums;direction:ltr}
 .ep-ck{display:block;padding:7px 0;cursor:pointer}
+
+/* ===== phase 47 ===== */
+.vt-slot.vt-full{opacity:.55;cursor:not-allowed;filter:grayscale(.6)}
+.vt-slot.vt-full:hover{transform:none}

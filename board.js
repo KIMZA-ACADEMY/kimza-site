@@ -61,6 +61,12 @@ var KZBoard = (function () {
     btn("✎", "تسمية السبورة", function () { var b = boards.filter(function (x) { return x.id === boardId; })[0]; if (!b) return; var n = prompt("اسم السبورة:", b.name); if (n) { b.name = n; sb.from(TABLE).update({ name: n }).eq("id", boardId).then(fillBoards); } }, top);
     var saveB = btn("💾", "حفظ السبورة الآن", function () { saveNow(true); }, top);
     btn("📷", "حفظ صورة", function () { var m = prompt("حفظ صورة:\n1 = ما يظهر على الشاشة الآن\n2 = السبورة كاملة", "2"); if (m === "1") exportPng(false); else if (m === "2") exportPng(true); }, top);
+    if (window.KZ && KZ.saveBlobToLesson && KZ.profile && KZ.profile.role === "teacher") btn("📌", "حفظ صورة السبورة داخل درس (تظهر للطلاب في مجلد الدرس)", async function () {
+      var m = prompt("حفظ صورة داخل درس:\n1 = ما يظهر على الشاشة الآن\n2 = السبورة كاملة", "2"); if (m !== "1" && m !== "2") return;
+      var lid = (TABLE === "lesson_boards" && lessonId) ? lessonId : prompt("رقم الدرس (مثال: A1-L03):", ""); if (!lid) return; lid = lid.trim().toUpperCase();
+      var bn = (boards.filter(function (x) { return x.id === boardId; })[0] || {}).name || "سبورة";
+      exportPng(m === "2", async function (bl) { try { await KZ.saveBlobToLesson(bl, lid, "سبورة: " + bn + " (" + new Date().toLocaleDateString("ar") + ")", "png"); flash("تم الحفظ في مجلد الدرس " + lid); } catch (e) { flash("تعذر الحفظ: " + (e.message || e)); } });
+    }, top);
     btn("🗑", "مسح السبورة", function () { if (!objs.length) return; if (confirm("مسح كل محتوى هذه السبورة؟ (يمكنك التراجع بـ Ctrl+Z)")) { push(); objs = []; selId = null; redraw(); changed(); } }, top);
     btn("✕", "حذف هذه السبورة نهائياً", function () { if (!boardId || !confirm("حذف هذه السبورة نهائياً مع كل محتواها؟")) return; sb.from(TABLE).delete().eq("id", boardId).then(function () { boardId = null; init(); }); }, top);
     var bgSel = el("select"); bgSel.title = "لون السبورة"; BGS.forEach(function (b) { var o = el("option"); o.value = b[1]; o.textContent = "🎨 " + b[0]; bgSel.appendChild(o); }); bgSel.addEventListener("change", function () { setBg(bgSel.value); changed(); }); top.appendChild(bgSel);
@@ -305,12 +311,12 @@ var KZBoard = (function () {
     // ---------- fit / export ----------
     function contentBounds() { if (!objs.length) return null; var x0 = 1e18, y0 = 1e18, x1 = -1e18, y1 = -1e18; objs.forEach(function (o) { var b = bounds(o); x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); }); return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }; }
     function fitAll() { var b = contentBounds(); if (!b) { view = { x: W / 2, y: H / 2, k: 1 }; redraw(); return; } var k = Math.min(4, Math.min((W - 80) / Math.max(1, b.w), (H - 160) / Math.max(1, b.h))); view.k = k; view.x = (W - b.w * k) / 2 - b.x * k; view.y = (H - b.h * k) / 2 - b.y * k - 20; redraw(); dirtyView(); }
-    function exportPng(whole) {
+    function exportPng(whole, cb) {
       var c2 = document.createElement("canvas"), x2 = c2.getContext("2d"), v, w, h;
       if (whole) { var b = contentBounds(); if (!b) { flash("السبورة فارغة"); return; } var pad = 40, s = Math.min(3, 4000 / Math.max(b.w + 2 * pad, b.h + 2 * pad)); w = Math.round((b.w + 2 * pad) * s); h = Math.round((b.h + 2 * pad) * s); v = { x: (pad - b.x) * s, y: (pad - b.y) * s, k: s }; }
       else { var f = 2; w = Math.round(W * f); h = Math.round(H * f); v = { x: view.x * f, y: view.y * f, k: view.k * f }; }
       c2.width = w; c2.height = h; drawScene(x2, v, w, h, !whole, bg); objs.forEach(function (o) { drawObj(x2, o); });
-      c2.toBlob(function (bl) { var a = document.createElement("a"); a.href = URL.createObjectURL(bl); a.download = "kimza-board-" + lessonId + (whole ? "" : "-screen") + ".png"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000); flash("تم حفظ الصورة"); }, "image/png");
+      c2.toBlob(function (bl) { if (cb) { cb(bl); return; } var a = document.createElement("a"); a.href = URL.createObjectURL(bl); a.download = "kimza-board-" + lessonId + (whole ? "" : "-screen") + ".png"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000); flash("تم حفظ الصورة"); }, "image/png");
     }
 
     // ---------- persistence ----------

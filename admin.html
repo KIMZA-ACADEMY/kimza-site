@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwz462l4">
-<link rel="stylesheet" href="app.css?v=mwz462l4">
+<link rel="stylesheet" href="site.css?v=mwzmb3az">
+<link rel="stylesheet" href="app.css?v=mwzmb3az">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,9 +24,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwz462l4"></script>
-<script src="portal-i18n.js?v=mwz462l4"></script>
-<script src="i18n.js?v=mwz462l4"></script>
+<script src="app.js?v=mwzmb3az"></script>
+<script src="portal-i18n.js?v=mwzmb3az"></script>
+<script src="i18n.js?v=mwzmb3az"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -1415,6 +1415,14 @@
         if (!confirm("حذف هذه الرسالة نهائياً من النظام؟ (تختفي عند الطالب أيضاً ولا يمكن استرجاعها)")) return;
         var r = await sb.from("direct_messages").delete().eq("id", b.getAttribute("data-dmdel")); KZ.toast(r.error ? "تعذر الحذف." : "حُذفت الرسالة.", !!r.error); VIEWS.messages(); }); });
       var RPT = KZ.chatReply(box.firstElementChild, $("dmB"), function (i) { return MAPT[i]; });
+      KZ.voiceDecorate(box, MAPT);
+      KZ.voiceBarAfter($("dmSend"), async function (blob, secs, ext) {
+        var path = await KZ.voiceUpload(blob, ext);
+        var r = await sb.from("direct_messages").insert({ student_id: id, from_teacher: true, kind: "chat", body: "🎙 رسالة صوتية", audio_path: path, audio_secs: secs, reply_to: RPT.get() });
+        if (r.error) throw new Error(r.error.message);
+        await sb.from("direct_messages").update({ read_at: new Date().toISOString() }).eq("student_id", id).eq("from_teacher", false).is("read_at", null);
+        KZ.toast("أُرسلت الرسالة الصوتية."); VIEWS.messages();
+      });
       var dc = document.getElementById("dmClear");
       if (dc) dc.addEventListener("click", async function () {
         if (!confirm("حذف كل الرسائل بينك وبين هذا الطالب نهائياً؟ لا يمكن التراجع.")) return;
@@ -1440,6 +1448,8 @@
     function who(id) { var p = pr[id] || {}, n = nm.map[id]; return (p.emoji || "🙂") + " " + esc(p.nickname || "بلا اسم مستعار") + ' <span class="muted">(' + esc(n ? n.full_name : "طالب") + ")</span>"; }
     var ST = { pending: "بانتظار الرد", accepted: "أصدقاء", rejected: "مرفوض", blocked: "محظور" };
     var h = '<h2>الأصدقاء (قائمة فقط)</h2><div class="infobox">🔒 محادثات الأصدقاء <strong>خاصة تماماً</strong>: النظام لا يسمح لك بقراءتها. ترى هنا فقط من أضاف من، بالاسم الحقيقي والاسم المستعار. للأمان: يمنع النظام تلقائياً أرقام الهواتف والروابط، ويمكنك كتم طالب أو حظره من «المجتمع».</div>';
+    var pend = fs_.filter(function (f) { return f.status === "pending"; });
+    h += '<div class="tile" style="margin:10px 0"><strong>طلبات الصداقة المعلّقة (' + pend.length + '):</strong> ' + (pend.length ? pend.map(function (f) { return "<div>" + who(f.requester) + " ← " + who(f.addressee) + "</div>"; }).join("") : '<span class="muted">لا يوجد.</span>') + '<p class="muted" style="margin:6px 0 0;font-size:.85rem">الطلب يصل إلى الطالب المُرسَل إليه في صفحة «أصدقائي» عنده، وليس إليك.</p></div>';
     if (!fs_.length) h += '<p class="muted">لا صداقات بعد.</p>';
     h += fs_.map(function (f) { return '<div class="row"><div>' + who(f.requester) + " ⇄ " + who(f.addressee) + ' <span class="badge">' + (ST[f.status] || f.status) + '</span></div><button class="btn btn-ghost sm" data-fsdel="' + f.id + '" type="button">إنهاء الصداقة</button></div>'; }).join("");
     view.innerHTML = h;

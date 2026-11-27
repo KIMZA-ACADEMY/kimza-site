@@ -71,7 +71,7 @@
     } catch (e) {}
     if (prof.role === "student") {
       var page = (location.pathname.split("/").pop() || "").replace(".html", "");
-      var PAGE_FEATURE = { review: "review", flashcards: "flashcards", attendance: "attendance", speaking: "speaking", certificates: "certificates", lesson: "lessons", test: "tests", friends: "friends", tasks: "p_tasks", messages: "p_messages", skills: "p_skills", examprep: "exam_prep", exams: "p_exams", schedule: "p_schedule", account: "p_account", community: "p_community" };
+      var PAGE_FEATURE = { review: "review", flashcards: "flashcards", attendance: "attendance", speaking: "speaking", certificates: "certificates", lesson: "lessons", test: "tests", friends: "friends", tasks: "p_tasks", messages: "p_messages", skills: "p_skills", examprep: "exam_prep", exams: "p_exams", schedule: "p_schedule", live: "p_live", account: "p_account", community: "p_community" };
       var key = !KZ.on("portal") ? "portal" : PAGE_FEATURE[page];
       if (key && !KZ.on(key)) {
         shell("");
@@ -87,10 +87,10 @@
   function shell(active) {
     var prof = KZ.profile;
     var isT = prof && (prof.role === "teacher" || prof.role === "staff");
-    var FOFF = { "review.html": "review", "flashcards.html": "flashcards", "attendance.html": "attendance", "speaking.html": "speaking", "certificates.html": "certificates", "tasks.html": "p_tasks", "messages.html": "p_messages", "skills.html": "p_skills", "examprep.html": "exam_prep", "exams.html": "p_exams", "friends.html": "friends", "schedule.html": "p_schedule", "account.html": "p_account", "community.html": "p_community" };
+    var FOFF = { "review.html": "review", "flashcards.html": "flashcards", "attendance.html": "attendance", "speaking.html": "speaking", "certificates.html": "certificates", "tasks.html": "p_tasks", "messages.html": "p_messages", "skills.html": "p_skills", "examprep.html": "exam_prep", "exams.html": "p_exams", "friends.html": "friends", "schedule.html": "p_schedule", "live.html": "p_live", "account.html": "p_account", "community.html": "p_community" };
     var links = prof && prof.role === "staff" ? [["admin.html", "لوحة المعلم", "admin"]] : isT
-      ? [["admin.html", "لوحة المعلم", "admin"], ["schedule.html", "مواعيد الحصص", "schedule"], ["account.html", "طلبات الأسماء", "account"], ["community.html", "المجتمع", "community"]]
-      : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["tasks.html", "مهامي", "tasks"], ["messages.html", "رسائلي", "messages"], ["skills.html", "الكتابة والمحادثة", "skills"], ["examprep.html", "IELTS / TOEFL", "examprep"], ["exams.html", "الامتحانات", "exams"], ["friends.html", "أصدقائي", "friends"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"], ["schedule.html", "مواعيد الحصص", "schedule"], ["account.html", "حسابي", "account"], ["community.html", "المجتمع", "community"]].filter(function (l) { return !FOFF[l[0]] || KZ.on(FOFF[l[0]]); });
+      ? [["admin.html", "لوحة المعلم", "admin"], ["schedule.html", "مواعيد الحصص", "schedule"], ["live.html", "الحصص المباشرة", "live"], ["account.html", "طلبات الأسماء", "account"], ["community.html", "المجتمع", "community"]]
+      : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["tasks.html", "مهامي", "tasks"], ["messages.html", "رسائلي", "messages"], ["skills.html", "الكتابة والمحادثة", "skills"], ["examprep.html", "IELTS / TOEFL", "examprep"], ["exams.html", "الامتحانات", "exams"], ["friends.html", "أصدقائي", "friends"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"], ["schedule.html", "مواعيد الحصص", "schedule"], ["live.html", "الحصص المباشرة", "live"], ["account.html", "حسابي", "account"], ["community.html", "المجتمع", "community"]].filter(function (l) { return !FOFF[l[0]] || KZ.on(FOFF[l[0]]); });
     var h = '<div class="wrap"><a href="' + (isT ? "admin.html" : "dashboard.html") + '"><img src="kimza-logo-gold.png" alt="KIMZA Academy"></a>' + '' +
       '<nav class="links" aria-label="Main">' + links.map(function (l) { return '<a href="' + l[0] + '"' + (l[2] === active ? ' aria-current="page"' : "") + ">" + l[1] + "</a>"; }).join("") +
       '<button class="btn btn-ghost sm" id="lookBtn" type="button" title="مظهري" aria-label="مظهري" style="color:var(--cream)">🎨</button>' + '<span class="who">' + esc(prof ? prof.full_name : "") + '</span><button class="btn btn-ghost sm" id="logoutBtn" type="button" style="color:var(--cream)">خروج</button></nav></div>';
@@ -118,6 +118,16 @@
       var s = document.createElement("script"); s.src = src; s.onload = function () { res(); }; s.onerror = function () { KZ._bp = null; rej(new Error("board")); }; document.head.appendChild(s);
     });
     return KZ._bp;
+  };
+  // teacher: upload a blob (image / audio) into a lesson folder (visible to students)
+  KZ.saveBlobToLesson = async function (blob, lessonId, title, ext) {
+    var chk = await sb.from("lessons").select("id").eq("id", lessonId).maybeSingle();
+    if (!chk.data) throw new Error("لا يوجد درس بهذا الرقم: " + lessonId);
+    var path = lessonId + "/" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + "." + (ext || "bin");
+    var up = await sb.storage.from("lesson-files").upload(path, blob, { contentType: blob.type || "application/octet-stream" });
+    if (up.error) throw new Error(up.error.message);
+    var ins = await sb.from("lesson_files").insert({ lesson_id: lessonId, title: title, path: path, mime: blob.type || null, size: blob.size, is_open: true, downloadable: false, sort: 900 });
+    if (ins.error) throw new Error(ins.error.message);
   };
   KZ.openBoard = async function () {
     try { await KZ.loadBoard(); } catch (e) { toast("تعذر تحميل السبورة.", true); return; }
@@ -382,6 +392,10 @@
         try {
           var an = (await sb.from("announcements").select("id,title,created_at").order("created_at", { ascending: false }).limit(6)).data || [], sn = seen(), cut = sn || new Date(Date.now() - 7 * 864e5).toISOString();
           an.filter(function (a) { return a.created_at > cut; }).forEach(function (a) { out.push({ n: 1, icon: "📢", text: "إعلان من المعلم: " + a.title, href: "dashboard.html" }); });
+        } catch (e) {}
+        try {
+          var lv = (await sb.from("live_sessions").select("id,title,starts_at,duration_min").eq("cancelled", false).gte("starts_at", new Date(Date.now() - 60 * 60000).toISOString()).lte("starts_at", new Date(Date.now() + 60 * 60000).toISOString()).limit(5)).data || [];
+          lv.forEach(function (x) { var st = new Date(x.starts_at).getTime(), en = st + x.duration_min * 60000, now = Date.now(); if (now > en) return; out.push({ n: 1, icon: "🎥", text: now >= st ? "حصة مباشرة الآن: " + x.title : "حصة مباشرة بعد " + Math.max(1, Math.ceil((st - now) / 60000)) + " دقيقة: " + x.title, href: "live.html" }); });
         } catch (e) {}
         try {
           var pl = (await sb.from("vote_polls").select("id,title,closes_at").eq("status", "open").limit(5)).data || [];
@@ -813,4 +827,66 @@
       .then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; })
       .then(function (rows) { rows.forEach(function (f) { flags[f.key] = f.enabled; }); run(); });
   });
+})();
+
+/* ===== voice notes (record, upload, play) ===== */
+(function () {
+  var KZ = window.KZ; if (!KZ) return;
+  var sb = KZ.sb;
+  function extOf(m) { return /mp4/.test(m) ? "m4a" : /ogg/.test(m) ? "ogg" : "webm"; }
+  // host: element to put the controls in. onBlob(blob, secs, ext) must return a promise (upload + send)
+  KZ.voiceBar = function (host, onBlob, label) {
+    var mr = null, stream = null, chunks = [], t0 = 0, tm = null, mime = "audio/webm", url = null, secs = 0, blob = null;
+    host.style.cssText = "display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;vertical-align:middle";
+    function clean() { try { if (tm) clearInterval(tm); } catch (e) {} tm = null; try { if (stream) stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} stream = null; if (url) { try { URL.revokeObjectURL(url); } catch (e) {} url = null; } chunks = []; blob = null; }
+    function btn(txt, cls) { return '<button type="button" class="btn ' + (cls || "btn-ghost") + ' sm">' + txt + "</button>"; }
+    function draw(st, msg) {
+      if (st === "idle") { host.innerHTML = btn("🎙 " + (label || "رسالة صوتية")); host.firstChild.onclick = start; if (msg) host.insertAdjacentHTML("beforeend", '<span class="muted" style="font-size:.85rem">' + msg + "</span>"); }
+      else if (st === "rec") { host.innerHTML = '<span style="color:#c62828;font-weight:700">● <span id="kzvT">0:00</span></span>' + btn("⏹ إيقاف", "btn-primary") + btn("✕"); host.children[1].onclick = function () { try { mr.stop(); } catch (e) {} }; host.children[2].onclick = function () { mr.onstop = null; try { mr.stop(); } catch (e) {} clean(); draw("idle"); }; }
+      else if (st === "done") { host.innerHTML = '<audio controls src="' + url + '" style="height:34px;max-width:200px"></audio>' + btn("إرسال ✔", "btn-primary") + btn("حذف"); host.children[1].onclick = send; host.children[2].onclick = function () { clean(); draw("idle"); }; }
+      else if (st === "sending") host.innerHTML = '<span class="muted">جارٍ الإرسال...</span>';
+    }
+    async function send() {
+      if (!blob) return; var b = blob, s = secs, ex = extOf(mime); draw("sending");
+      try { await onBlob(b, s, ex); clean(); draw("idle"); } catch (e) { KZ.toast("تعذر إرسال التسجيل: " + (e && e.message || ""), true); draw("done"); }
+    }
+    async function start() {
+      try {
+        clean(); stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        var o = {}; ["audio/webm;codecs=opus", "audio/mp4", "audio/ogg"].some(function (m) { if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) { o.mimeType = m; return true; } return false; });
+        mr = new MediaRecorder(stream, o); mime = mr.mimeType || o.mimeType || "audio/webm";
+        mr.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+        mr.onstop = function () { secs = Math.round((Date.now() - t0) / 1000); try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} if (tm) clearInterval(tm); if (chunks.length) { blob = new Blob(chunks, { type: mime }); url = URL.createObjectURL(blob); draw("done"); } else draw("idle"); };
+        mr.start(); t0 = Date.now(); draw("rec");
+        tm = setInterval(function () { var s = Math.floor((Date.now() - t0) / 1000), el = document.getElementById("kzvT"); if (el) el.textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); if (s >= 120) { try { mr.stop(); } catch (e) {} } }, 400);
+      } catch (e) { clean(); draw("idle", "تعذر الوصول للميكروفون. اسمح للمتصفح ثم أعد المحاولة."); }
+    }
+    draw("idle");
+    return { clean: clean };
+  };
+  KZ.voiceBarAfter = function (anchorBtn, onBlob, label) { var sp = document.createElement("span"); sp.style.marginInlineStart = "8px"; anchorBtn.parentNode.insertBefore(sp, anchorBtn.nextSibling); return KZ.voiceBar(sp, onBlob, label); };
+  // chat voice: upload to voice-notes/<uid>/..., returns the path
+  KZ.voiceUpload = async function (blob, ext) {
+    var path = KZ.user.id + "/" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) + "." + ext;
+    var up = await sb.storage.from("voice-notes").upload(path, blob, { contentType: blob.type || "audio/webm" });
+    if (up.error) throw new Error(up.error.message);
+    return path;
+  };
+  // under every message element (data-mid) whose row has audio_path, add a play button
+  KZ.voiceDecorate = function (root, map) {
+    if (!root) return;
+    root.querySelectorAll("[data-mid]").forEach(function (el) {
+      var m = map[el.getAttribute("data-mid")]; if (!m || !m.audio_path || el.querySelector(".kz-vn")) return;
+      var d = document.createElement("div"); d.className = "kz-vn"; d.style.marginTop = "6px";
+      var s = m.audio_secs ? " (" + Math.floor(m.audio_secs / 60) + ":" + String(m.audio_secs % 60).padStart(2, "0") + ")" : "";
+      d.innerHTML = '<button type="button" class="btn btn-ghost sm">▶ استماع' + s + "</button>";
+      d.firstChild.onclick = async function () {
+        var b = d.firstChild; b.disabled = true; b.textContent = "جارٍ التحميل...";
+        var r = await sb.storage.from("voice-notes").createSignedUrl(m.audio_path, 3600);
+        if (r.error) { b.disabled = false; b.textContent = "تعذر التحميل. أعد المحاولة"; return; }
+        d.innerHTML = '<audio controls autoplay controlsList="nodownload" src="' + r.data.signedUrl + '" style="width:100%;max-width:260px;height:36px"></audio>';
+      };
+      el.appendChild(d);
+    });
+  };
 })();

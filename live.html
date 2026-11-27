@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>الحصص المباشرة · KIMZA Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
+<script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
+<link rel="stylesheet" href="site.css?v=mwzmb3az">
+<link rel="stylesheet" href="app.css?v=mwzmb3az">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B1F44">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<script>if("serviceWorker"in navigator&&location.protocol!=="file:")addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})</script>
+<script>(function(){var shown=false;function show(){if(shown||window.KZ)return;shown=true;var d=document.createElement("div");d.id="kzGuard";d.style.cssText="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#0B1F44;color:#fff;padding:12px 16px;text-align:center;font:15px/1.6 Tahoma,Arial,sans-serif";d.innerHTML='الصفحة لا تكتمل التحميل؟ قد يكون الاتصال ضعيفاً أو متصفحك قديماً. <a href="check.html" style="color:#D4AF37;font-weight:bold">اضغط هنا لاختبار الاتصال</a>';(document.body||document.documentElement).appendChild(d)}function hide(){var e=document.getElementById("kzGuard");if(e&&e.parentNode)e.parentNode.removeChild(e)}addEventListener("error",function(e){var t=e.target;if(t&&t.tagName==="SCRIPT")setTimeout(show,300)},true);setTimeout(function(){show();var i=setInterval(function(){if(window.KZ){hide();clearInterval(i)}},1000)},9000)})()</script>
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="supabase-lib.js"></script>
+<script src="config.js"></script>
+<script src="app.js?v=mwzmb3az"></script>
+<script src="portal-i18n.js?v=mwzmb3az"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("any");
+  if (!prof) return;
+  KZ.shell("live");
+  var sb = KZ.sb, esc = KZ.esc, IS_T = prof.role === "teacher";
+  var app = document.getElementById("app");
+  var LEVELS = ["A1", "A2", "B1", "B2", "C1"];
+  var timer = null;
+
+  function jitsiUrl(s) {
+    var nm = encodeURIComponent((prof.full_name || "KIMZA").replace(/"/g, ""));
+    return "https://meet.jit.si/" + encodeURIComponent(s.room) + "#userInfo.displayName=%22" + nm + "%22&config.prejoinPageEnabled=false";
+  }
+  function joinUrl(s) { return s.provider === "link" && s.link ? s.link : jitsiUrl(s); }
+  function fmt(d) { try { return new Date(d).toLocaleString("ar", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }); } catch (e) { return String(d); } }
+  function left(ms) {
+    if (ms <= 0) return "";
+    var m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60); m = m % 60;
+    return (d ? d + " يوم " : "") + (h ? h + " ساعة " : "") + (m || (!d && !h) ? m + " دقيقة" : "");
+  }
+  function state(s) {
+    var now = Date.now(), st = new Date(s.starts_at).getTime(), en = st + s.duration_min * 60000;
+    if (s.cancelled) return "cancelled";
+    if (now > en) return "past";
+    if (now >= st - 10 * 60000) return "live";
+    return "soon";
+  }
+
+  async function load() {
+    var q = sb.from("live_sessions").select("*").order("starts_at");
+    var r = await q;
+    var list = r.data || [];
+    var groups = {};
+    if (IS_T) ((await sb.from("student_groups").select("id,name")).data || []).forEach(function (g) { groups[g.id] = g.name; });
+    paint(list, groups);
+  }
+
+  function card(s, groups) {
+    var st = state(s), aud = s.group_id ? "مجموعة: " + esc(groups[s.group_id] || "") : s.level ? "مستوى " + esc(s.level) : "كل الطلاب";
+    var h = '<div class="tile" data-sid="' + s.id + '" style="margin-top:12px' + (st === "live" ? ";border:2px solid var(--gold)" : st === "past" || st === "cancelled" ? ";opacity:.6" : "") + '">' +
+      '<div class="row" style="border:0;padding:0"><div><h3 style="margin:0">🎥 ' + esc(s.title) + '</h3><div class="muted">' + esc(fmt(s.starts_at)) + " · " + s.duration_min + " دقيقة · " + aud + (s.provider === "link" ? " · رابط خارجي" : " · داخل الموقع (Jitsi)") + "</div>" + (s.note ? '<p style="margin:6px 0 0">' + esc(s.note) + "</p>" : "") + "</div>" +
+      '<div class="btns">';
+    if (st === "cancelled") h += '<span class="badge">أُلغيت</span>';
+    else if (st === "past") h += '<span class="badge">انتهت</span>';
+    else if (st === "live") h += '<a class="btn btn-primary" href="' + esc(joinUrl(s)) + '" target="_blank" rel="noopener">▶ انضم الآن</a>';
+    else h += '<span class="badge" data-cd="' + s.id + '">بعد ' + esc(left(new Date(s.starts_at).getTime() - Date.now())) + "</span>";
+    if (IS_T && st !== "past") h += '<button class="btn btn-ghost sm" data-copy="' + s.id + '" type="button">📋 نسخ الدعوة</button>';
+    if (IS_T && st === "soon") h += '<a class="btn btn-ghost sm" href="' + esc(joinUrl(s)) + '" target="_blank" rel="noopener">فتح الغرفة</a>';
+    if (IS_T) h += '<button class="btn btn-ghost sm" data-edit="' + s.id + '" type="button">تعديل</button><button class="btn btn-ghost sm" data-cancel="' + s.id + '" type="button">' + (s.cancelled ? "إعادة" : "إلغاء") + '</button><button class="btn danger sm" data-del="' + s.id + '" type="button">حذف</button>';
+    h += "</div></div>" + (IS_T ? '<div class="muted" style="font-size:.85rem;margin-top:6px">تذكيرات: قبل ' + s.reminders.join(" و ") + " دقيقة</div>" : "") + "</div>";
+    return h;
+  }
+
+  function paint(list, groups) {
+    var up = list.filter(function (s) { var t = state(s); return t === "live" || t === "soon"; });
+    var other = list.filter(function (s) { var t = state(s); return t === "past" || t === "cancelled"; }).reverse().slice(0, IS_T ? 15 : 5);
+    var h = '<h1>🎥 الحصص المباشرة</h1>';
+    if (!IS_T) h += '<p class="muted">تفتح الغرفة قبل موعد الحصة بـ 10 دقائق. اضغط «انضم الآن» وسيفتح الاجتماع في صفحة جديدة. اسمح للمتصفح باستخدام الميكروفون (والكاميرا إن طلب المعلم).</p>';
+    if (IS_T) {
+      var lv = '<option value="">كل الطلاب</option>' + LEVELS.map(function (l) { return '<option value="L:' + l + '">مستوى ' + l + "</option>"; }).join("") + Object.keys(groups).map(function (g) { return '<option value="G:' + g + '">مجموعة: ' + esc(groups[g]) + "</option>"; }).join("");
+      h += '<div class="tile"><h2 style="margin-top:0" id="lvFormT">جدولة حصة جديدة</h2><div class="form" id="lvForm">' +
+        '<div><label for="lvTitle">عنوان الحصة</label><input id="lvTitle" placeholder="مثال: حصة A1 - الدرس 5"></div>' +
+        '<div class="row" style="border:0;padding:0;justify-content:flex-start;gap:16px;flex-wrap:wrap"><div><label for="lvAud">لمن؟</label><select id="lvAud">' + lv + "</select></div>" +
+        '<div><label for="lvAt">الموعد (توقيتك)</label><input id="lvAt" type="datetime-local"></div>' +
+        '<div><label for="lvDur">المدة (دقيقة)</label><input id="lvDur" type="number" min="10" max="360" step="5" value="90" style="width:90px"></div>' +
+        '<div><label for="lvRep">تكرار أسبوعي (عدد المرات)</label><input id="lvRep" type="number" min="1" max="20" value="1" style="width:90px"></div></div>' +
+        '<div class="row" style="border:0;padding:0;justify-content:flex-start;gap:16px;flex-wrap:wrap"><div><label for="lvProv">المنصة</label><select id="lvProv"><option value="jitsi">Jitsi Meet (مجاني، يفتح في صفحة جديدة)</option><option value="link">رابط خارجي (Zoom / Google Meet ...)</option></select></div>' +
+        '<div id="lvLinkW" hidden><label for="lvLink">رابط الاجتماع</label><input id="lvLink" dir="ltr" placeholder="https://..."></div>' +
+        '<div><label for="lvRem">التذكيرات قبل الحصة بالدقائق (افصل بفاصلة)</label><input id="lvRem" value="15,10" dir="ltr" style="width:140px"></div></div>' +
+        '<div><label for="lvNote">ملاحظة للطلاب (اختياري)</label><input id="lvNote"></div>' +
+        '<div class="btns"><button class="btn btn-primary" id="lvSave" type="button">حفظ وإرسال إشعار للطلاب</button><button class="btn btn-ghost" id="lvReset" type="button" hidden>إلغاء التعديل</button> <span id="lvMsg" class="muted"></span></div></div>' +
+        '<p class="muted" style="margin:8px 0 0;font-size:.85rem">Jitsi: أول من يدخل الغرفة (أنت) قد يُطلب منه تسجيل الدخول بحساب Google ليصير مشرفاً، ثم يدخل الطلاب مباشرة. التذكيرات تصل الطلاب إشعاراً على الجوال (لمن فعّل 🔔) وتظهر في الصفحة.</p></div>';
+    }
+    h += '<h2>القادمة</h2>' + (up.length ? up.map(function (s) { return card(s, groups); }).join("") : '<p class="muted">لا توجد حصص مجدولة حالياً.</p>');
+    if (other.length) h += '<h2 style="margin-top:22px">السابقة</h2>' + other.map(function (s) { return card(s, groups); }).join("");
+    app.innerHTML = h;
+    if (IS_T) bindT(list, groups);
+    clearInterval(timer);
+    timer = setInterval(function () {
+      if (!document.querySelector("[data-cd]") && !up.length) return;
+      var need = false;
+      up.forEach(function (s) { var el = document.querySelector('[data-cd="' + s.id + '"]'); if (el) { if (state(s) === "live") need = true; else el.textContent = "بعد " + left(new Date(s.starts_at).getTime() - Date.now()); } });
+      if (need) { clearInterval(timer); paint(list, groups); }
+    }, 20000);
+  }
+
+  function bindT(list, groups) {
+    var $ = function (id) { return document.getElementById(id); }, editing = null;
+    function toLocal(d) { var x = new Date(d); return new Date(x.getTime() - x.getTimezoneOffset() * 60000).toISOString().slice(0, 16); }
+    $("lvProv").addEventListener("change", function () { $("lvLinkW").hidden = $("lvProv").value !== "link"; });
+    $("lvReset").addEventListener("click", function () { load(); });
+    $("lvSave").addEventListener("click", async function () {
+      var t = $("lvTitle").value.trim(), at = $("lvAt").value, m = $("lvMsg");
+      if (!t || !at) { m.textContent = "اكتب العنوان وحدد الموعد."; return; }
+      var rem = $("lvRem").value.split(/[,،\s]+/).map(Number).filter(function (n) { return n > 0 && n <= 1440; });
+      var aud = $("lvAud").value, lv = null, gid = null; if (aud.indexOf("L:") === 0) lv = aud.slice(2); else if (aud.indexOf("G:") === 0) gid = Number(aud.slice(2));
+      var prov = $("lvProv").value, link = $("lvLink").value.trim();
+      if (prov === "link" && !/^https:\/\//i.test(link)) { m.textContent = "الرابط يجب أن يبدأ بـ https://"; return; }
+      var base = { title: t, note: $("lvNote").value.trim() || null, level: lv, group_id: gid, duration_min: Math.max(10, Math.min(360, Number($("lvDur").value) || 90)), provider: prov, link: prov === "link" ? link : null, reminders: rem };
+      $("lvSave").disabled = true;
+      var err = null;
+      if (editing) { var r = await sb.from("live_sessions").update(Object.assign({ starts_at: new Date(at).toISOString() }, base)).eq("id", editing); err = r.error; }
+      else {
+        var n = Math.max(1, Math.min(20, Number($("lvRep").value) || 1)), rows = [];
+        for (var i = 0; i < n; i++) rows.push(Object.assign({ starts_at: new Date(new Date(at).getTime() + i * 7 * 86400000).toISOString() }, base));
+        var r2 = await sb.from("live_sessions").insert(rows); err = r2.error;
+      }
+      $("lvSave").disabled = false;
+      if (err) { m.textContent = "تعذر الحفظ: " + err.message; return; }
+      KZ.toast("تم الحفظ."); load();
+    });
+    app.querySelectorAll("[data-edit]").forEach(function (b) { b.addEventListener("click", function () {
+      var s = list.filter(function (x) { return String(x.id) === b.getAttribute("data-edit"); })[0]; if (!s) return; editing = s.id;
+      $("lvFormT").textContent = "تعديل الحصة"; $("lvTitle").value = s.title; $("lvAt").value = toLocal(s.starts_at); $("lvDur").value = s.duration_min;
+      $("lvAud").value = s.group_id ? "G:" + s.group_id : s.level ? "L:" + s.level : ""; $("lvProv").value = s.provider; $("lvLink").value = s.link || ""; $("lvLinkW").hidden = s.provider !== "link";
+      $("lvRem").value = s.reminders.join(","); $("lvNote").value = s.note || ""; $("lvRep").value = 1; $("lvRep").disabled = true; $("lvReset").hidden = false; window.scrollTo({ top: 0, behavior: "smooth" });
+    }); });
+    app.querySelectorAll("[data-cancel]").forEach(function (b) { b.addEventListener("click", async function () {
+      var id = b.getAttribute("data-cancel"), s = list.filter(function (x) { return String(x.id) === id; })[0];
+      await sb.from("live_sessions").update({ cancelled: !s.cancelled }).eq("id", id); load(); }); });
+    app.querySelectorAll("[data-del]").forEach(function (b) { b.addEventListener("click", async function () {
+      if (!confirm("حذف هذه الحصة نهائياً؟")) return; await sb.from("live_sessions").delete().eq("id", b.getAttribute("data-del")); load(); }); });
+    app.querySelectorAll("[data-copy]").forEach(function (b) { b.addEventListener("click", function () {
+      var s = list.filter(function (x) { return String(x.id) === b.getAttribute("data-copy"); })[0]; if (!s) return;
+      var txt = "🎥 " + s.title + "\n" + fmt(s.starts_at) + " (" + s.duration_min + " دقيقة)\nادخل من صفحة «الحصص المباشرة» في الموقع: " + location.origin + "/live.html";
+      (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { KZ.toast("نُسخت الدعوة."); }, function () { prompt("انسخ الدعوة:", txt); }); }); });
+  }
+
+  await load();
+})();
+
+</script>
+</body>
+</html>
