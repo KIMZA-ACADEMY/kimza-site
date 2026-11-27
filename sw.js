@@ -1,6 +1,6 @@
 /* KIMZA service worker: serves our own files from the cache instantly and refreshes them in the background
    (fast on slow networks in Yemen). Never touches Supabase or other sites, so data and logins are always live. */
-var CACHE = "kimza-v3";
+var CACHE = "kimza-v4";
 self.addEventListener("install", function () { self.skipWaiting(); });
 self.addEventListener("activate", function (e) {
   e.waitUntil(caches.keys().then(function (ks) { return Promise.all(ks.filter(function (k) { return k !== CACHE; }).map(function (k) { return caches.delete(k); })); }).then(function () { return self.clients.claim(); }));

@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxe0g5o">
-<link rel="stylesheet" href="app.css?v=mwxe0g5o">
+<link rel="stylesheet" href="site.css?v=mwz39l9u">
+<link rel="stylesheet" href="app.css?v=mwz39l9u">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,8 +24,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxe0g5o"></script>
-<script src="portal-i18n.js?v=mwxe0g5o"></script>
+<script src="app.js?v=mwz39l9u"></script>
+<script src="portal-i18n.js?v=mwz39l9u"></script>
 
 <script>
 (async function () {
@@ -38,6 +38,24 @@
   var ST = { pending: "بانتظار موافقة المعلم", approved: "تمت الموافقة", rejected: "رُفض" };
   function when(d) { return d ? new Date(d).toLocaleString("ar", { dateStyle: "medium", timeStyle: "short" }) : ""; }
 
+  function pwTile() {
+    return '<div class="tile" style="margin-top:14px"><h2 style="margin-top:0">🔑 تغيير كلمة المرور</h2><p class="muted">أذن لك المعلم بتغيير كلمة مرورك. اختر كلمة قوية لا يعرفها غيرك (8 أحرف على الأقل).</p><div class="form"><div><label for="pw1">كلمة المرور الجديدة</label><input id="pw1" type="password" dir="ltr" autocomplete="new-password"></div><div><label for="pw2">أعد كتابتها</label><input id="pw2" type="password" dir="ltr" autocomplete="new-password"></div><div id="pwm" class="msg" role="alert" hidden></div><div class="btns"><button class="btn btn-primary" id="pwgo" type="button">تغيير كلمة المرور</button></div></div></div>';
+  }
+  function wirePw() {
+    var go = document.getElementById("pwgo"); if (!go) return;
+    go.addEventListener("click", async function () {
+      var a = document.getElementById("pw1").value, b = document.getElementById("pw2").value, m = document.getElementById("pwm");
+      function say(t, ok) { m.textContent = t; m.className = "msg " + (ok ? "ok" : "bad"); m.hidden = false; }
+      if (a.length < 8) { say("كلمة المرور أقل من 8 أحرف."); return; }
+      if (a !== b) { say("الكلمتان غير متطابقتين."); return; }
+      go.disabled = true;
+      var r = await sb.auth.updateUser({ password: a });
+      if (r.error) { go.disabled = false; say(/same/i.test(r.error.message) ? "اختر كلمة مرور مختلفة عن الحالية." : "تعذر التغيير: " + r.error.message); return; }
+      try { await sb.rpc("log_pw_change"); } catch (e) {}
+      document.getElementById("pw1").value = ""; document.getElementById("pw2").value = ""; go.disabled = false;
+      say("تم تغيير كلمة المرور ✅ استخدمها في دخولك القادم.", true);
+    });
+  }
   async function student() {
     var me = (await sb.from("profiles").select("full_name,level").eq("id", uid).single()).data || {};
     var rs = (await sb.from("name_requests").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(5)).data || [];
@@ -50,7 +68,9 @@
     h += "</div>";
     var old = rs.filter(function (r) { return r.status !== "pending"; });
     if (old.length) h += "<div class=\"tile\" style=\"margin-top:14px\"><h3 style=\"margin-top:0\">طلبات سابقة</h3>" + old.map(function (r) { return "<p>" + esc(r.new_name) + " — <strong>" + ST[r.status] + "</strong> <span class=\"muted\">" + when(r.decided_at) + "</span></p>"; }).join("") + "</div>";
+    if (KZ.on("pw_change")) h += pwTile();
     app.innerHTML = h;
+    wirePw();
     var b = document.getElementById("nsend");
     if (b) b.addEventListener("click", async function () {
       var v = document.getElementById("nn").value.trim().replace(/\s+/g, " "), m = document.getElementById("nm");

@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxk4kr8">
-<link rel="stylesheet" href="app.css?v=mwxk4kr8">
+<link rel="stylesheet" href="site.css?v=mwz39l9u">
+<link rel="stylesheet" href="app.css?v=mwz39l9u">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,8 +24,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxk4kr8"></script>
-<script src="portal-i18n.js?v=mwxk4kr8"></script>
+<script src="app.js?v=mwz39l9u"></script>
+<script src="portal-i18n.js?v=mwz39l9u"></script>
 
 <script>
 (async function () {
@@ -58,7 +58,8 @@
   var seenIds = {}; prog.forEach(function (p) { seenIds[p.card_id] = 1; });
   var unseen = allCards.filter(function (c) { return !seenIds[c.id]; }).length;
   var newToday = prog.filter(function (p) { return cardIds[p.card_id] && new Date(p.first_seen) >= startToday; }).length;
-  var newAvail = Math.min(unseen, Math.max(0, 10 - newToday));
+  var NL = 10; try { var cfgD = (await sb.from("student_card_cfg").select("new_per_day").maybeSingle()).data; if (cfgD && cfgD.new_per_day != null) NL = cfgD.new_per_day; } catch (e) {}
+  var newAvail = Math.min(unseen, Math.max(0, NL - newToday));
   var learnedCards = prog.filter(function (p) { return cardIds[p.card_id] && p.state === "review"; }).length;
   var allLessons = (res[0].data || []).map(function (l) { return KZ.applyGrant(l, GR); }), tests = res[1].data || [], attempts = res[2].data || [], hw = res[3].data || [];
   var news = res[4].data || [], info = res[5].data, att = res[6].data || [];
@@ -109,6 +110,7 @@
     ["🎯", "أول تحدٍّ يومي", chDays, 1], ["🏅", "7 تحديات", chDays, 7], ["✅", "أنهيت اختباراً", testsDone, 1]
   ];
   var got = BADGES.filter(function (b) { return b[2] >= b[3]; }).length;
+  if (KZ.on("w_notes") && prof.role === "student") html += '<div id="myNotes"></div>';
   if (KZ.on("w_achievements")) html += '<div class="tile" style="margin-bottom:22px"><div class="row" style="border:0;padding:0 0 10px"><h2 style="margin:0">🏅 إنجازاتي</h2><span class="badge gold">' + got + " / " + BADGES.length + '</span></div><div class="bdg-grid">' +
     BADGES.map(function (b) { var on = b[2] >= b[3]; return '<div class="bdg' + (on ? " on" : "") + '" title="' + esc(b[1]) + '"><span class="e">' + b[0] + "</span><b>" + esc(b[1]) + "</b><small>" + (on ? "مكتمل ✓" : Math.min(b[2], b[3]) + " / " + b[3]) + "</small></div>"; }).join("") + "</div></div>";
   var doneToday = chLog[today] != null;
@@ -248,6 +250,54 @@
     : '<p class="muted">🔒 ستُفتح الحزمة عندما يقرر المعلم ذلك.</p>') + "</div>";
   html += "</div>";
   app.innerHTML = html;
+  // ----- my notes and goals (private, customisable) -----
+  async function initNotes() {
+    var box = document.getElementById("myNotes"); if (!box) return;
+    var FONTS = { tajawal: ["Tajawal, sans-serif", "عصري"], classic: ["Georgia, serif", "كلاسيكي"], typewriter: ["'Courier New', monospace", "آلة كاتبة"], fun: ["'Comic Sans MS', cursive", "مرح"], elegant: ["'Playfair Display', Georgia, serif", "أنيق"] };
+    var PRESET = [["#FFF4C2", "#0B1F44"], ["#D9F2E6", "#0B3D2E"], ["#FFD9DE", "#5A0F1F"], ["#DCE8FF", "#0B1F44"], ["#0B1F44", "#F8F4E9"], ["#D4AF37", "#0B1F44"]];
+    var notes = (await sb.from("student_notes").select("*").order("created_at", { ascending: false })).data || [];
+    function okc(c, d) { return /^#[0-9a-fA-F]{6}$/.test(c || "") ? c : d; }
+    function draw() {
+      box.innerHTML = '<div class="tile" style="margin-bottom:22px"><div class="row" style="border:0;padding:0 0 10px"><h2 style="margin:0">📝 ملاحظاتي وأهدافي</h2><button class="btn btn-primary sm" id="nAdd" type="button">+ ملاحظة</button></div>' +
+        (notes.length ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">' + notes.map(function (n) {
+          var f = (FONTS[n.font] || FONTS.tajawal)[0];
+          return '<div style="background:' + okc(n.bg, "#FFF4C2") + ';color:' + okc(n.color, "#0B1F44") + ';font-family:' + f + ';font-size:' + (Number(n.size) || 18) + 'px;border-radius:14px;padding:14px;min-height:110px;box-shadow:0 4px 14px rgba(0,0,0,.12);position:relative;white-space:pre-wrap;word-break:break-word">' + esc(n.body) +
+            '<div style="position:absolute;top:6px;inset-inline-end:8px;display:flex;gap:4px"><button type="button" data-ne="' + n.id + '" aria-label="تعديل" style="border:0;background:rgba(0,0,0,.12);border-radius:8px;cursor:pointer;color:inherit">✎</button><button type="button" data-nd="' + n.id + '" aria-label="حذف" style="border:0;background:rgba(0,0,0,.12);border-radius:8px;cursor:pointer;color:inherit">🗑</button></div></div>';
+        }).join("") + "</div>" : '<p class="muted" style="margin:0">اكتب هنا هدفك من تعلّم الإنجليزية، وما يحمّسك: «أريد منحة دراسية»، «أريد وظيفة أفضل»… ستراه كل مرة تدخل. هذه الملاحظات لك وحدك.</p>') + "</div>";
+      document.getElementById("nAdd").addEventListener("click", function () { editor(null); });
+      box.querySelectorAll("[data-ne]").forEach(function (b) { b.addEventListener("click", function () { editor(notes.filter(function (x) { return String(x.id) === b.getAttribute("data-ne"); })[0]); }); });
+      box.querySelectorAll("[data-nd]").forEach(function (b) { b.addEventListener("click", async function () { if (!confirm("حذف هذه الملاحظة؟")) return; await sb.from("student_notes").delete().eq("id", b.getAttribute("data-nd")); notes = notes.filter(function (x) { return String(x.id) !== b.getAttribute("data-nd"); }); draw(); }); });
+    }
+    function editor(n) {
+      var st = n ? { body: n.body, color: okc(n.color, "#0B1F44"), bg: okc(n.bg, "#FFF4C2"), font: FONTS[n.font] ? n.font : "tajawal", size: Number(n.size) || 18 } : { body: "", color: "#0B1F44", bg: "#FFF4C2", font: "tajawal", size: 18 };
+      var ov = document.createElement("div"); ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:14px";
+      ov.innerHTML = '<div class="tile" style="max-width:480px;width:100%;max-height:92vh;overflow:auto;background:var(--paper,#fff)" role="dialog" aria-label="ملاحظة"><h2 style="margin-top:0">' + (n ? "تعديل الملاحظة" : "ملاحظة جديدة") + '</h2><div class="form"><textarea id="nBody" rows="4" maxlength="600" placeholder="اكتب هدفك أو ما يحمّسك..."></textarea>' +
+        '<div style="margin-top:10px"><label>ألوان جاهزة</label><div id="nPre" style="display:flex;gap:8px;flex-wrap:wrap"></div></div>' +
+        '<div class="grid2" style="margin-top:8px"><div><label for="nBg">لون الخلفية</label><input id="nBg" type="color" style="width:70px;min-height:0;padding:0"></div><div><label for="nCo">لون الخط</label><input id="nCo" type="color" style="width:70px;min-height:0;padding:0"></div></div>' +
+        '<div class="grid2" style="margin-top:8px"><div><label for="nFo">شكل الخط</label><select id="nFo">' + Object.keys(FONTS).map(function (k) { return '<option value="' + k + '">' + FONTS[k][1] + "</option>"; }).join("") + '</select></div><div><label for="nSz">حجم الخط</label><input id="nSz" type="range" min="14" max="34" step="2"></div></div>' +
+        '<label style="margin-top:8px">معاينة</label><div id="nPv" style="border-radius:14px;padding:14px;min-height:80px;white-space:pre-wrap;word-break:break-word"></div>' +
+        '<div class="btns" style="margin-top:12px"><button class="btn btn-primary" id="nSave" type="button">حفظ</button><button class="btn btn-ghost" id="nX" type="button">إلغاء</button></div></div></div>';
+      document.body.appendChild(ov);
+      var $n = function (i) { return document.getElementById(i); };
+      $n("nBody").value = st.body; $n("nBg").value = st.bg; $n("nCo").value = st.color; $n("nFo").value = st.font; $n("nSz").value = st.size;
+      $n("nPre").innerHTML = PRESET.map(function (p, i) { return '<button type="button" data-pr="' + i + '" aria-label="لون جاهز" style="width:34px;height:34px;border-radius:50%;border:2px solid #999;background:' + p[0] + ';color:' + p[1] + ';cursor:pointer;font-weight:700">أ</button>'; }).join("");
+      function pv() { var p = $n("nPv"); p.style.background = $n("nBg").value; p.style.color = $n("nCo").value; p.style.fontFamily = FONTS[$n("nFo").value][0]; p.style.fontSize = $n("nSz").value + "px"; p.textContent = $n("nBody").value || "هكذا ستظهر ملاحظتك"; }
+      ["nBody", "nBg", "nCo", "nFo", "nSz"].forEach(function (i) { $n(i).addEventListener("input", pv); });
+      ov.querySelectorAll("[data-pr]").forEach(function (b) { b.addEventListener("click", function () { var p = PRESET[Number(b.getAttribute("data-pr"))]; $n("nBg").value = p[0]; $n("nCo").value = p[1]; pv(); }); });
+      pv();
+      $n("nX").addEventListener("click", function () { ov.remove(); }); ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+      $n("nSave").addEventListener("click", async function () {
+        var body = $n("nBody").value.trim(); if (!body) { KZ.toast("اكتب شيئاً أولاً.", true); return; }
+        var row = { body: body, bg: $n("nBg").value, color: $n("nCo").value, font: $n("nFo").value, size: Number($n("nSz").value) };
+        var r = n ? await sb.from("student_notes").update(row).eq("id", n.id).select().single() : await sb.from("student_notes").insert(row).select().single();
+        if (r.error) { KZ.toast(/too many/.test(r.error.message) ? "وصلت إلى 30 ملاحظة. احذف بعضها." : "تعذر الحفظ.", true); return; }
+        if (n) notes = notes.map(function (x) { return x.id === n.id ? r.data : x; }); else notes.unshift(r.data);
+        ov.remove(); draw(); KZ.toast("تم الحفظ ✅");
+      });
+    }
+    draw();
+  }
+  try { await initNotes(); } catch (e) {}
   // celebrate newly unlocked badges (not on the very first visit)
   try {
     var bk = "kz-badges-" + KZ.user.id, braw = localStorage.getItem(bk), bseen = braw ? JSON.parse(braw) : null;

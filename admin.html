@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxz6wdz">
-<link rel="stylesheet" href="app.css?v=mwxz6wdz">
+<link rel="stylesheet" href="site.css?v=mwz39l9u">
+<link rel="stylesheet" href="app.css?v=mwz39l9u">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,9 +24,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxz6wdz"></script>
-<script src="portal-i18n.js?v=mwxz6wdz"></script>
-<script src="i18n.js?v=mwxz6wdz"></script>
+<script src="app.js?v=mwz39l9u"></script>
+<script src="portal-i18n.js?v=mwz39l9u"></script>
+<script src="i18n.js?v=mwz39l9u"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -78,7 +78,7 @@
   var GROUPS = [
     ["👥", "الطلاب", ["perf", "students", "applications", "groups", "attendance", "follow"]],
     ["📚", "الدروس والاختبارات", ["lessons", "tests", "results", "lsearch", "cardextra", "skillcourse", "skillexams", "skillgrade", "examprep"]],
-    ["💬", "التواصل والمهام", ["dtasks", "bookings", "messages", "news", "tasks", "speaking", "ideas", "fluency", "friends"]],
+    ["💬", "التواصل والمهام", ["dtasks", "bookings", "events", "messages", "news", "tasks", "speaking", "ideas", "fluency", "friends"]],
     ["🎓", "الشهادات والمدفوعات", ["certs", "payments"]],
     ["🎨", "الموقع والتصميم", ["designer", "texts", "courses", "themes", "features"]],
     ["⚙️", "الإعدادات", ["settings", "staff", "audit"]]
@@ -88,7 +88,7 @@
   TNAME.dtasks = "✅ مهام الطلاب اليومية"; TNAME.skillcourse = "✍️🎤 دورتا الكتابة والمحادثة"; TNAME.skillexams = "امتحانات المهارات"; TNAME.skillgrade = "تصحيح التمارين";
   if (!TNAME.perf) TNAME.perf = "📈 أداء الطلاب";
   if (!TNAME.friends) TNAME.friends = "الأصدقاء";
-  TNAME.bookings = "📅 حجوزات المحادثة"; TNAME.staff = "👩‍🏫 المعلمون والصلاحيات"; TNAME.cardextra = "🃏 كلمات إضافية"; TNAME.audit = "🕵️ مراقبة المراسلات";
+  TNAME.bookings = "📅 حجوزات المحادثة"; TNAME.events = "🔔 أحداث الطلاب"; TNAME.staff = "👩‍🏫 المعلمون والصلاحيات"; TNAME.cardextra = "🃏 كلمات إضافية"; TNAME.audit = "🕵️ مراقبة المراسلات";
   function groupOf(name) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i][2].indexOf(name) >= 0) return i; return 0; }
   app.innerHTML = '<h1>لوحة المعلم</h1><div class="agroups" id="agroups" role="tablist">' +
     GROUPS.map(function (g, i) { return g[2].some(canTab) ? '<button type="button" data-g="' + i + '" aria-selected="false"><span aria-hidden="true">' + g[0] + "</span> " + g[1] + "</button>" : ""; }).join("") +
@@ -110,6 +110,52 @@
   document.querySelectorAll("#agroups button").forEach(function (b) { b.addEventListener("click", function () { var g = GROUPS[Number(b.getAttribute("data-g"))][2].filter(function (k) { return VIEWS[k] && canTab(k); }); if (g.length) go(g[0]); }); });
 
   // ----- per-student access: extra levels + lessons opened for this student only -----
+  // ----- private notes about a student (only the owner sees them) -----
+  async function notesDialog(p) {
+    var old = document.getElementById("tnDlg"); if (old) old.remove();
+    var ov = document.createElement("div"); ov.id = "tnDlg";
+    ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
+    ov.innerHTML = '<div class="tile" style="max-width:560px;width:100%;max-height:88vh;overflow:auto;background:var(--paper,#fff)" role="dialog" aria-label="ملاحظات عن الطالب"><h2 style="margin-top:0">📝 ملاحظاتك عن ' + esc(p.full_name) + '</h2><p class="muted">هذه الملاحظات لك وحدك، لا يراها الطالب.</p><div id="tnList"></div>' +
+      '<div class="form" style="margin-top:12px"><div class="btns" id="tnTags"></div><textarea id="tnText" rows="3" maxlength="2000" placeholder="اكتب ملاحظة جديدة..."></textarea><div class="btns" style="margin-top:8px"><button class="btn btn-primary" id="tnAdd" type="button">إضافة</button><button class="btn btn-ghost" id="tnX" type="button">إغلاق</button></div></div></div>';
+    document.body.appendChild(ov);
+    $("tnX").addEventListener("click", function () { ov.remove(); }); ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    $("tnTags").innerHTML = ["✅ تم الدفع", "⏳ لم يدفع بعد", "📞 تواصلتُ معه", "⚠️ غياب متكرر", "⭐ متميّز"].map(function (t) { return '<button class="btn btn-ghost sm" data-tg="' + esc(t) + '" type="button">' + esc(t) + "</button>"; }).join("");
+    $("tnTags").querySelectorAll("[data-tg]").forEach(function (b) { b.addEventListener("click", function () { var t = $("tnText"); t.value = (t.value ? t.value + " " : "") + b.getAttribute("data-tg"); t.focus(); }); });
+    async function draw() {
+      var rows = (await sb.from("teacher_notes").select("*").eq("student_id", p.id).order("created_at", { ascending: false })).data || [];
+      $("tnList").innerHTML = rows.length ? rows.map(function (n) { return '<div class="row" style="align-items:flex-start"><div style="white-space:pre-wrap;flex:1">' + esc(n.body) + '<div class="muted" style="font-size:.8rem">' + new Date(n.created_at).toLocaleString("ar", { dateStyle: "medium", timeStyle: "short" }) + '</div></div><button class="btn btn-ghost sm" data-nd="' + n.id + '" type="button" aria-label="حذف">🗑</button></div>'; }).join("") : '<p class="muted">لا ملاحظات بعد.</p>';
+      $("tnList").querySelectorAll("[data-nd]").forEach(function (b) { b.addEventListener("click", async function () { if (!confirm("حذف هذه الملاحظة؟")) return; await sb.from("teacher_notes").delete().eq("id", b.getAttribute("data-nd")); draw(); }); });
+    }
+    $("tnAdd").addEventListener("click", async function () {
+      var t = $("tnText").value.trim(); if (!t) { KZ.toast("اكتب الملاحظة أولاً.", true); return; }
+      var r = await sb.from("teacher_notes").insert({ student_id: p.id, body: t });
+      if (r.error) { KZ.toast("تعذر الحفظ.", true); return; } $("tnText").value = ""; KZ.toast("تم الحفظ ✅"); draw();
+    });
+    draw();
+  }
+  // ----- WhatsApp message after accepting / rejecting (opens WhatsApp with the text ready; you press send) -----
+  async function waDialog(p, kind) {
+    var key = kind === "accept" ? "wa_accept" : "wa_reject";
+    var old = document.getElementById("waDlg"); if (old) old.remove();
+    var tpl = ((await sb.from("teacher_settings").select("value").eq("key", key).maybeSingle()).data || {}).value || "";
+    var digits = String(p.username || "").replace(/\D/g, ""); if (digits.length <= 9) digits = "967" + digits.replace(/^0+/, "");
+    var ov = document.createElement("div"); ov.id = "waDlg";
+    ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
+    ov.innerHTML = '<div class="tile" style="max-width:560px;width:100%;max-height:90vh;overflow:auto;background:var(--paper,#fff)" role="dialog" aria-label="رسالة واتساب"><h2 style="margin-top:0">📲 رسالة واتساب (' + (kind === "accept" ? "قبول" : "رفض") + ')</h2>' +
+      '<p class="muted">يفتح الزر واتساب ومعه الرسالة جاهزة، وأنت تضغط «إرسال» بنفسك. الإرسال الآلي بالكامل يحتاج حساب واتساب للأعمال الرسمي (مدفوع).</p><div class="form">' +
+      '<div class="grid2"><div><label for="waNum">رقم واتساب مع رمز الدولة</label><input id="waNum" dir="ltr" value="' + esc(digits) + '"></div>' + (kind === "accept" ? '<div><label for="waPw">كلمة المرور المؤقتة</label><input id="waPw" dir="ltr" value="' + esc(DEFAULT_PW) + '"></div>' : "") + '</div>' +
+      '<div><label for="waTpl">قالب الرسالة (استخدم {name} و{username} و{password})</label><textarea id="waTpl" rows="7"></textarea></div>' +
+      '<label>الرسالة كما ستُرسل</label><div id="waPv" style="white-space:pre-wrap;background:#e7f7e3;color:#0b3d1c;border-radius:12px;padding:12px;min-height:60px"></div>' +
+      '<div class="btns" style="margin-top:10px"><button class="btn btn-primary" id="waGo" type="button">📲 فتح واتساب</button><button class="btn btn-ghost" id="waSave" type="button">حفظ هذا القالب</button><button class="btn btn-ghost" id="waX" type="button">إغلاق</button></div></div></div>';
+    document.body.appendChild(ov);
+    $("waTpl").value = tpl;
+    function fill() { return $("waTpl").value.split("{name}").join(p.full_name || "").split("{username}").join(p.username || "").split("{password}").join($("waPw") ? $("waPw").value : ""); }
+    function pv() { $("waPv").textContent = fill(); }
+    $("waTpl").addEventListener("input", pv); if ($("waPw")) $("waPw").addEventListener("input", pv); pv();
+    $("waX").addEventListener("click", function () { ov.remove(); }); ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    $("waSave").addEventListener("click", async function () { var r = await sb.from("teacher_settings").upsert({ key: key, value: $("waTpl").value }, { onConflict: "key" }); KZ.toast(r.error ? "تعذر الحفظ." : "حُفظ القالب.", !!r.error); });
+    $("waGo").addEventListener("click", function () { var n = $("waNum").value.replace(/\D/g, ""); if (n.length < 8) { KZ.toast("رقم غير صحيح.", true); return; } window.open("https://wa.me/" + n + "?text=" + encodeURIComponent(fill()), "_blank", "noopener"); });
+  }
   async function accessDialog(p) {
     var old = document.getElementById("acDlg"); if (old) old.remove();
     var ov = document.createElement("div"); ov.id = "acDlg";
@@ -122,6 +168,7 @@
       '<h3 style="margin-top:20px">التصويت على مواعيد الحصص</h3><p class="muted">اختر المستويات التي يمثّلها في التصويت. يصوّت لكل مستوى على حدة. إن لم تختر شيئاً يصوّت لمستواه الأساسي فقط.</p><div id="acVt" style="display:flex;gap:14px;flex-wrap:wrap"></div>' +
       '<h3 style="margin-top:20px">دروس مفتوحة له وحده</h3><p class="muted">الدرس يفتح له بكل أجزائه حتى لو كان مغلقاً على بقية الطلاب.</p>' +
       '<div class="form"><div><label for="acL">المستوى</label><select id="acL">' + opts(LEVELS, gl) + '</select></div></div><div id="acList" style="margin-top:10px"></div>' +
+      '<h3 style="margin-top:20px">🃏 كلمات المراجعة لهذا الطالب</h3><p class="muted">إن بدأ من درس متأخر فأخفِ عنه كلمات أول الدروس حتى لا تتراكم عليه (كل درس نحو 7 كلمات). وحدّد كم كلمة جديدة تظهر له كل يوم.</p><div id="acCards"></div>' +
       '<div class="btns" style="margin-top:16px"><button class="btn btn-primary" id="acX" type="button">إغلاق</button></div></div>';
     document.body.appendChild(ov);
     $("acX").addEventListener("click", function () { ov.remove(); VIEWS.students(); });
@@ -168,7 +215,24 @@
         if (r.error) c.checked = !c.checked;
       }); });
     }
-    drawLv(); drawVt(); $("acL").addEventListener("change", drawLs); drawLs();
+    async function drawCards() {
+      var hide = {}; ((await sb.from("card_hide").select("level,upto").eq("user_id", p.id)).data || []).forEach(function (x) { hide[x.level] = x.upto; });
+      var cfg = (await sb.from("student_card_cfg").select("new_per_day").eq("user_id", p.id).maybeSingle()).data;
+      var set = [p.level].concat(extra).filter(function (x, i, arr) { return arr.indexOf(x) === i; }).sort();
+      $("acCards").innerHTML = set.map(function (lv) { return '<div class="grid2" style="align-items:end;margin-bottom:6px"><div><label for="hd' + lv + '">إخفاء كلمات أول ... دروس من ' + lv + '</label><input id="hd' + lv + '" type="number" min="0" max="200" data-hd="' + lv + '" value="' + (hide[lv] || 0) + '" style="width:110px"></div><div class="muted">0 = لا إخفاء</div></div>'; }).join("") +
+        '<div class="grid2" style="align-items:end"><div><label for="npd">كلمات جديدة في اليوم</label><input id="npd" type="number" min="0" max="100" placeholder="10" value="' + (cfg && cfg.new_per_day != null ? cfg.new_per_day : "") + '" style="width:110px"></div><div class="muted">اتركه فارغاً = 10 (الافتراضي)</div></div>';
+      $("acCards").querySelectorAll("[data-hd]").forEach(function (i) { i.addEventListener("change", async function () {
+        var n = Math.max(0, Math.min(200, Number(i.value) || 0)), lv = i.getAttribute("data-hd"), r;
+        r = n > 0 ? await sb.from("card_hide").upsert({ user_id: p.id, level: lv, upto: n }, { onConflict: "user_id,level" }) : await sb.from("card_hide").delete().eq("user_id", p.id).eq("level", lv);
+        KZ.toast(r.error ? "تعذر الحفظ." : (n > 0 ? "أُخفيت كلمات أول " + n + " دروس من " + lv + " عنه." : "عادت كل الكلمات له."), !!r.error);
+      }); });
+      $("npd").addEventListener("change", async function () {
+        var v = $("npd").value.trim(), r;
+        r = v === "" ? await sb.from("student_card_cfg").delete().eq("user_id", p.id) : await sb.from("student_card_cfg").upsert({ user_id: p.id, new_per_day: Math.max(0, Math.min(100, Number(v) || 0)) }, { onConflict: "user_id" });
+        KZ.toast(r.error ? "تعذر الحفظ." : "تم الحفظ.", !!r.error);
+      });
+    }
+    drawLv(); drawVt(); drawCards(); $("acL").addEventListener("change", drawLs); drawLs();
   }
 
   // ================= Students =================
@@ -190,7 +254,7 @@
       '<div id="creds"></div>';
     var pend = nm.list.filter(function (p) { return p.status === "pending"; });
     if (pend.length) h += '<div class="tile" style="margin-top:24px;border:2px solid var(--gold)"><h2 style="margin-top:0">🆕 طلبات انضمام جديدة (' + pend.length + ')</h2><p class="muted">أنهى هؤلاء اختبار تحديد المستوى وسُجّلوا تلقائياً. اسم الدخول رقمهم، وكلمة المرور المؤقتة Kimza2026Demo. اقبل من تريد ليدخل ويدرس.</p>' +
-      pend.map(function (p) { return '<div class="row"><div><strong>' + esc(p.full_name) + '</strong> <span class="muted en">' + esc(p.username || "") + '</span></div><div class="btns"><select data-pl="' + p.id + '" aria-label="المستوى">' + opts(LEVELS, p.level) + '</select> <button class="btn btn-primary sm" data-pok="' + p.id + '" type="button">✅ قبول</button> <button class="btn danger sm" data-pno="' + p.id + '" type="button">رفض</button></div></div>'; }).join("") + "</div>";
+      pend.map(function (p) { return '<div class="row"><div><strong>' + esc(p.full_name) + '</strong> <span class="muted en">' + esc(p.username || "") + '</span></div><div class="btns"><select data-pl="' + p.id + '" aria-label="المستوى">' + opts(LEVELS, p.level) + '</select> <button class="btn btn-primary sm" data-pok="' + p.id + '" type="button">✅ قبول</button> <button class="btn btn-ghost sm" data-wa="' + p.id + '|accept" type="button">📲 رسالة قبول</button> <button class="btn btn-ghost sm" data-wa="' + p.id + '|reject" type="button">📲 رسالة رفض</button> <button class="btn danger sm" data-pno="' + p.id + '" type="button">رفض</button></div></div>'; }).join("") + "</div>";
     h += '<div class="tile form" style="margin-top:24px"><div><label for="stQ">🔎 بحث عن طالب (الاسم أو اسم المستخدم أو الرقم أو المستوى)</label><input id="stQ" dir="auto" autocomplete="off" placeholder="اكتب جزءاً من الاسم أو الرقم..."></div></div>';
     h += '<h2 style="margin-top:24px">الطلاب (' + nm.list.length + ')</h2><div class="tile tablewrap"><table class="t"><thead><tr><th>الاسم</th><th>المستخدم</th><th>المستوى</th><th>الحالة</th><th>مستويات إضافية</th><th>غياب</th><th></th></tr></thead><tbody>';
     nm.list.forEach(function (p) {
@@ -198,14 +262,14 @@
         '<td><select data-lv="' + p.id + '">' + opts(LEVELS, p.level) + '</select></td>' +
         '<td><select data-st="' + p.id + '">' + opts(Object.keys(ST).map(function (k) { return [k, ST[k]]; }), p.status) + '</select></td>' +
         '<td class="en">' + ((p.completed_levels || []).join(" ") || "—") + '</td><td>' + (abs[p.id] || 0) + (abs[p.id] > 3 ? ' <span class="badge bad">!</span>' : "") + '</td>' +
-        '<td><button class="btn btn-ghost sm" data-ac="' + p.id + '" type="button">المستويات والدروس</button> <button class="btn btn-ghost sm" data-rs="' + p.id + '" type="button">كلمة مرور جديدة</button> ' + (p.status === "stopped" ? '<button class="btn ok sm" data-react="' + p.id + '" type="button">♻️ إعادة التفعيل</button> <button class="btn danger sm" data-del="' + p.id + '" type="button">🗑 حذف نهائي</button>' : '<button class="btn btn-ghost sm" data-arch="' + p.id + '" type="button" title="يوقف الحساب ويخفيه عن الطالب وتبقى كل بياناته وتقدمه محفوظة">📦 أرشفة (حفظ التقدم)</button>') + '</td></tr>';
+        '<td><button class="btn btn-ghost sm" data-ac="' + p.id + '" type="button">المستويات والدروس</button> <button class="btn btn-ghost sm" data-tn="' + p.id + '" type="button">📝 ملاحظات</button> <button class="btn btn-ghost sm" data-rs="' + p.id + '" type="button">كلمة مرور جديدة</button> ' + (p.status === "stopped" ? '<button class="btn ok sm" data-react="' + p.id + '" type="button">♻️ إعادة التفعيل</button> <button class="btn danger sm" data-del="' + p.id + '" type="button">🗑 حذف نهائي</button>' : '<button class="btn btn-ghost sm" data-arch="' + p.id + '" type="button" title="يوقف الحساب ويخفيه عن الطالب وتبقى كل بياناته وتقدمه محفوظة">📦 أرشفة (حفظ التقدم)</button>') + '</td></tr>';
     });
     h += "</tbody></table></div>";
     view.innerHTML = h;
     view.querySelectorAll("[data-pok]").forEach(function (b) { b.addEventListener("click", async function () {
       var id = b.getAttribute("data-pok"), lv = view.querySelector('[data-pl="' + id + '"]').value;
       var r = await sb.from("profiles").update({ status: "active", level: lv }).eq("id", id);
-      KZ.toast(r.error ? "تعذر القبول." : "تم القبول. يستطيع الدخول والدراسة الآن.", !!r.error); VIEWS.students(); }); });
+      KZ.toast(r.error ? "تعذر القبول." : "تم القبول. يستطيع الدخول والدراسة الآن.", !!r.error); await VIEWS.students(); if (!r.error && nm.map[id]) waDialog(nm.map[id], "accept"); }); });
     view.querySelectorAll("[data-pno]").forEach(function (b) { b.addEventListener("click", async function () {
       var id = b.getAttribute("data-pno"), p = nm.map[id];
       if (!confirm("رفض " + (p ? p.full_name : "الطلب") + " وحذف حسابه؟")) return;
@@ -256,6 +320,8 @@
     view.querySelectorAll("[data-st]").forEach(function (s) { s.addEventListener("change", async function () {
       var r = await sb.from("profiles").update({ status: s.value }).eq("id", s.getAttribute("data-st")); KZ.toast(r.error ? "تعذر الحفظ." : "تم تغيير الحالة.", !!r.error); }); });
     view.querySelectorAll("[data-ac]").forEach(function (b) { b.addEventListener("click", function () { accessDialog(nm.map[b.getAttribute("data-ac")]); }); });
+    view.querySelectorAll("[data-tn]").forEach(function (b) { b.addEventListener("click", function () { notesDialog(nm.map[b.getAttribute("data-tn")]); }); });
+    view.querySelectorAll("[data-wa]").forEach(function (b) { b.addEventListener("click", function () { waDialog(nm.map[b.getAttribute("data-wa").split("|")[0]], b.getAttribute("data-wa").split("|")[1]); }); });
     view.querySelectorAll("[data-rs]").forEach(function (b) { b.addEventListener("click", async function () {
       var id = b.getAttribute("data-rs"), pw = genPw(), p = nm.map[id];
       try { await fn({ action: "reset_password", user_id: id, password: pw }); showCreds([{ name: p.full_name, user: p.username, pw: pw }]); } catch (er) { KZ.toast("تعذر التغيير.", true); } }); });
@@ -1831,6 +1897,18 @@
     view.querySelectorAll("[data-dn]").forEach(function (b) { b.addEventListener("click", function () { upd(b.getAttribute("data-dn"), { status: "done" }); }); });
     view.querySelectorAll("[data-rj]").forEach(function (b) { b.addEventListener("click", function () { var id = b.getAttribute("data-rj"); upd(id, { status: "rejected", teacher_note: view.querySelector('[data-nt="' + id + '"]').value.trim() || null }); }); });
     view.querySelectorAll("[data-bd]").forEach(function (b) { b.addEventListener("click", async function () { if (!confirm("حذف الحجز؟")) return; await sb.from("speaking_bookings").delete().eq("id", b.getAttribute("data-bd")); VIEWS.bookings(); }); });
+  };
+
+  // ---------- events for the teacher (students who changed their password, ...) ----------
+  VIEWS.events = async function () {
+    var nm = await nameMap();
+    var rows = (await sb.from("teacher_events").select("*").order("created_at", { ascending: false }).limit(100)).data || [];
+    var KI = { pw: "🔑 غيّر كلمة المرور" };
+    var h = '<h2>🔔 أحداث الطلاب</h2><p class="muted">تظهر هنا أحداث مثل تغيير الطالب لكلمة مروره. تتحكم في هذا التنبيه من الميزات (مفتاح «إشعاري عندما يغيّر طالب كلمة مروره»).</p><div class="btns" style="margin-bottom:10px"><button class="btn btn-primary sm" id="evAll" type="button">تم الاطلاع على الكل</button><button class="btn btn-ghost sm" id="evDel" type="button">حذف المقروء</button></div>';
+    h += rows.length ? rows.map(function (e) { var who = nm.map[e.student_id] ? nm.map[e.student_id].full_name : (e.note || "طالب"); return '<div class="row" style="' + (e.seen ? "opacity:.6" : "") + '"><span><strong>' + esc(who) + '</strong> ' + (KI[e.kind] || esc(e.kind)) + ' <span class="muted">· ' + new Date(e.created_at).toLocaleString("ar", { dateStyle: "medium", timeStyle: "short" }) + "</span></span>" + (e.seen ? "" : '<span class="badge gold">جديد</span>') + "</div>"; }).join("") : '<p class="muted">لا أحداث بعد.</p>';
+    view.innerHTML = h;
+    $("evAll").addEventListener("click", async function () { await sb.from("teacher_events").update({ seen: true }).eq("seen", false); KZ.toast("تم."); VIEWS.events(); });
+    $("evDel").addEventListener("click", async function () { await sb.from("teacher_events").delete().eq("seen", true); KZ.toast("تم."); VIEWS.events(); });
   };
 
   if (!IS_OWNER) {

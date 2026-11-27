@@ -367,6 +367,7 @@
     KZ.dragFab(b, "kz-fab-bell", 8, function () { return Math.round(innerHeight * 0.42) - 52; });
     var sb = KZ.sb, uid = KZ.user ? KZ.user.id : "", isT = KZ.profile && (KZ.profile.role === "teacher" || KZ.profile.role === "staff"), items = [], panel = null;
     var seenKey = "kz-ann-seen-" + uid;
+    function roomName(r) { return r === "all" ? "المجتمع العام" : /^L:/.test(r) ? "مجتمع " + r.slice(2) : /^G:/.test(r) ? "مجموعة دراسة" : r; }
     function seen() { try { return localStorage.getItem(seenKey) || ""; } catch (e) { return ""; } }
     async function load() {
       var out = [], r = {};
@@ -374,7 +375,7 @@
       var dis = {}; try { dis = JSON.parse(localStorage.getItem("kz-bell-dis-" + uid) || "{}"); } catch (e) {}
       function add(n, icon, text, href) { n = Number(n) || 0; if (isT) { var k = href; if (n <= (dis[k] || 0)) { if (n < (dis[k] || 0)) { dis[k] = n; } n = 0; } else n = n - (dis[k] || 0); } if (n > 0) out.push({ n: n, icon: icon, text: text + (n > 1 ? " (" + n + ")" : ""), href: href, key: href }); }
       if (isT) {
-        add(r.student_msgs, "✉️", "رسائل جديدة من الطلاب", "admin.html#messages"); add(r.name_req, "✏️", "طلبات تغيير اسم", "account.html"); add(r.new_students, "🧑‍🎓", "طلاب جدد ينتظرون القبول", "admin.html#applications");
+        add(r.student_msgs, "✉️", "رسائل جديدة من الطلاب", "admin.html#messages"); add(r.name_req, "✏️", "طلبات تغيير اسم", "account.html"); add(r.new_students, "🧑‍🎓", "طلاب جدد ينتظرون القبول", "admin.html#applications"); add(r.events, "🔑", "طلاب غيّروا كلمة المرور", "admin.html#events");
         if (KZ.profile.role === "teacher") { try { var pb = await sb.from("speaking_bookings").select("id", { count: "exact", head: true }).eq("status", "pending"); add(pb.count, "📅", "طلبات حجز حصص محادثة", "admin.html#bookings"); } catch (e) {} }
       } else {
         add(r.teacher_msgs, "✉️", "رسالة جديدة من معلمك", "messages.html"); add(r.fr_req, "🤝", "طلب صداقة جديد", "friends.html"); add(r.fr_msgs, "💬", "رسالة جديدة من صديق", "friends.html");
@@ -391,6 +392,7 @@
           var pend = dt.filter(function (t) { return !dn[t.id]; }); if (pend.length) out.push({ n: pend.length, icon: "✅", text: "مهام جديدة لك" + (pend.length > 1 ? " (" + pend.length + ")" : ""), href: "dashboard.html" });
         } catch (e) {}
       }
+      try { var ru = (await sb.rpc("room_unread")).data || []; ru.forEach(function (x) { add(x.n, "💬", "رسائل جديدة في " + roomName(x.room), "community.html#room=" + encodeURIComponent(x.room)); }); } catch (e) {}
       if (isT) { try { localStorage.setItem("kz-bell-dis-" + uid, JSON.stringify(dis)); } catch (e) {} KZ._bellRaw = r; }
       items = out;
       var total = out.reduce(function (s, x) { return s + x.n; }, 0), nb = document.getElementById("kzBellN");
@@ -405,7 +407,7 @@
       panel.querySelector("[data-x]").onclick = function () { panel.remove(); panel = null; };
       panel.querySelectorAll("[data-i]").forEach(function (a) { a.addEventListener("click", function () { try { localStorage.setItem(seenKey, new Date().toISOString()); } catch (e) {} }); });
       panel.querySelectorAll("[data-d]").forEach(function (d) { d.addEventListener("click", function () {
-        var it = items[Number(d.getAttribute("data-d"))], raw = Number((KZ._bellRaw || {})[({ "admin.html#messages": "student_msgs", "account.html": "name_req", "admin.html#applications": "new_students" })[it.key]]) || it.n;
+        var it = items[Number(d.getAttribute("data-d"))], raw = Number((KZ._bellRaw || {})[({ "admin.html#messages": "student_msgs", "account.html": "name_req", "admin.html#applications": "new_students", "admin.html#events": "events" })[it.key]]) || (it.n + ((function () { try { return JSON.parse(localStorage.getItem("kz-bell-dis-" + uid) || "{}")[it.key] || 0; } catch (e) { return 0; } })()));
         try { var m = JSON.parse(localStorage.getItem("kz-bell-dis-" + uid) || "{}"); m[it.key] = raw; localStorage.setItem("kz-bell-dis-" + uid, JSON.stringify(m)); } catch (e) {}
         load(); }); });
       var pb = panel.querySelector("[data-push]");

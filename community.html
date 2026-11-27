@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxe0g5o">
-<link rel="stylesheet" href="app.css?v=mwxe0g5o">
+<link rel="stylesheet" href="site.css?v=mwz39l9u">
+<link rel="stylesheet" href="app.css?v=mwz39l9u">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,8 +24,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxe0g5o"></script>
-<script src="portal-i18n.js?v=mwxe0g5o"></script>
+<script src="app.js?v=mwz39l9u"></script>
+<script src="portal-i18n.js?v=mwz39l9u"></script>
 
 <script>
 (async function () {
@@ -74,6 +74,8 @@
   } catch (e) {}
   var realName = {};
   room = rooms[0][0];
+  var subs = {}; try { ((await sb.from("room_subs").select("room")).data || []).forEach(function (r) { subs[r.room] = 1; }); } catch (e) {}
+  (function () { var hm = /room=([^&]+)/.exec(location.hash); if (hm) { var want = decodeURIComponent(hm[1]); if (rooms.some(function (r) { return r[0] === want; })) room = want; } })();
 
   var css = document.createElement("style");
   css.textContent = ".cm-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.cm-tabs button{font:inherit;font-weight:700;border:1px solid var(--line,#456);background:transparent;color:inherit;border-radius:12px;padding:8px 14px;cursor:pointer}.cm-tabs button[aria-selected=true]{background:#D4AF37;color:#0B1F44;border-color:#D4AF37}" +
@@ -183,12 +185,21 @@
   }
   async function viewChat() {
     var b = document.getElementById("cmBody"), bl = blocked();
-    b.innerHTML = '<div class="form" style="max-width:360px;margin-bottom:8px"><select id="rm">' + rooms.map(function (r) { return '<option value="' + esc(r[0]) + '"' + (r[0] === room ? " selected" : "") + ">" + esc(r[1]) + "</option>"; }).join("") + "</select></div>" +
+    b.innerHTML = '<div class="form" style="max-width:360px;margin-bottom:8px"><select id="rm">' + rooms.map(function (r) { return '<option value="' + esc(r[0]) + '"' + (r[0] === room ? " selected" : "") + ">" + (subs[r[0]] ? "🔔 " : "") + esc(r[1]) + "</option>"; }).join("") + "</select><div class=\"btns\" style=\"margin-top:6px\"><button class=\"btn " + (subs[room] ? "btn-ghost" : "btn-primary") + " sm\" id=\"rsub\" type=\"button\">" + (subs[room] ? "🔕 إلغاء متابعة هذه الغرفة" : "🔔 تابع هذه الغرفة (تنبيهات)") + "</button></div></div>" +
       '<div class="cm-room"><div><div class="cm-seats" id="seats"><span class="muted">جارٍ التحميل...</span></div><div class="msgs" id="msgs" aria-live="polite"></div><div id="rq"></div>' +
       (bl ? '<div class="infobox" style="margin-top:8px">' + esc(bl) + "</div>" : (prefs && prefs.muted_until && new Date(prefs.muted_until) > new Date() ? '<div class="infobox">أنت مكتوم مؤقتاً حتى ' + esc(new Date(prefs.muted_until).toLocaleString("ar")) + "</div>" :
         '<div class="cm-in"><textarea id="mt" maxlength="500" placeholder="اكتب رسالة (بالإنجليزية إن استطعت)... ولا تنسَ القواعد 🙂"></textarea><button class="btn btn-primary" id="send" type="button">إرسال</button></div><div class="stk" id="stk"></div>')) +
       '</div><div class="tile" style="margin:0"><h3 style="margin-top:0">الأعضاء</h3><p class="muted" id="cnt"></p><div id="mem"></div></div></div>';
     document.getElementById("rm").addEventListener("change", function (e) { stopChat(); room = e.target.value; viewChat(); });
+    var rs = document.getElementById("rsub");
+    if (rs) rs.addEventListener("click", async function () {
+      rs.disabled = true;
+      var r = subs[room] ? await sb.rpc("room_unsubscribe", { p_room: room }) : await sb.rpc("room_subscribe", { p_room: room });
+      if (r.error) { KZ.toast("تعذرت المتابعة.", true); rs.disabled = false; return; }
+      if (subs[room]) delete subs[room]; else { subs[room] = 1; KZ.toast("تمت المتابعة 🔔 سيصلك تنبيه عند كل رسالة جديدة في هذه الغرفة. لتصلك تنبيهات والموقع مغلق فعّل «تنبيهات الجهاز» من زر الجرس."); }
+      stopChat(); viewChat();
+    });
+    if (subs[room]) { try { sb.rpc("room_mark_read", { p_room: room }); } catch (e) {} }
     var stk = document.getElementById("stk"); if (stk) STICKERS.forEach(function (s) { var x = document.createElement("button"); x.type = "button"; x.textContent = s; x.addEventListener("click", function () { var t = document.getElementById("mt"); t.value += s; t.focus(); }); stk.appendChild(x); });
     msgMap = {}; lastId = 0; replyTo = null;
     var cnt = await sb.rpc("community_count", { p_room: room });
@@ -258,6 +269,7 @@
       if (!first) bubble(m);
     });
     if (first || atBottom) box.scrollTop = box.scrollHeight;
+    if (subs[room]) { try { sb.rpc("room_mark_read", { p_room: room }); } catch (e) {} }
   }
   function bubble(m) {
     var seat = document.querySelector('.seat[data-u="' + m.user_id + '"]'); if (!seat) return;
