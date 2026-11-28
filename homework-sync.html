@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>رفع الواجبات وصفحات الحصص الجديدة · KIMZA</title>
+<style>
+body{font-family:Tajawal,Segoe UI,Arial,sans-serif;background:#F8F4E9;color:#0B1F44;margin:0;padding:24px}
+.box{max-width:760px;margin:0 auto;background:#fff;border:1px solid #e3dcc6;border-radius:14px;padding:24px}
+h1{margin:0 0 8px;font-size:1.4rem}p{line-height:1.9}
+.btn{display:inline-block;background:#0B1F44;color:#F8F4E9;border:0;border-radius:10px;padding:12px 20px;font:inherit;font-weight:700;cursor:pointer}
+.btn[disabled]{opacity:.5;cursor:default}
+.bar{height:14px;background:#eee;border-radius:8px;overflow:hidden;margin:14px 0}.bar i{display:block;height:100%;width:0;background:#D4AF37}
+#log{font-size:.95rem;background:#faf7ec;border-radius:8px;padding:10px;max-height:260px;overflow:auto;white-space:pre-wrap}
+label.chk{display:flex;gap:8px;align-items:center;margin:8px 0}
+</style></head><body><div class="box">
+<h1>رفع الواجبات وصفحات الحصص الجديدة إلى الموقع</h1>
+<p id="who">جارٍ التحقق من تسجيل دخولك...</p>
+<p>اضغط الزر واختر مجلد <b>lessons</b> (داخل <b>Claude outputs</b>). تقرأ الصفحة الملفين <b>8-homework-v2.html</b> و <b>7-class-page-v2.html</b> من كل درس، وتضعهما مكان الواجب وصفحة الحصة الحاليين في الموقع. الملفات القديمة تبقى عندك في المجلدات، ويمكنك الرجوع إليها بإعادة رفعها.</p>
+<label class="chk"><input type="checkbox" id="skip1" checked> تخطَّ الدرس 01 في A1 وA2 (دروسك الخاصة)</label>
+<label class="chk"><input type="checkbox" id="hw" checked> الواجبات</label>
+<label class="chk"><input type="checkbox" id="cl" checked> صفحات الحصة</label>
+<label class="btn" id="pick">اختيار المجلد وبدء الرفع<input type="file" id="dir" webkitdirectory multiple style="display:none"></label>
+<div class="bar"><i id="bar"></i></div>
+<p id="st">بعد اختيار المجلد قد يطلب المتصفح تأكيداً. اضغط «رفع/Upload» ثم انتظر.</p>
+<div id="log"></div>
+</div>
+<script src="supabase-lib.js"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var sb = supabase.createClient(window.KIMZA_SUPABASE.url, window.KIMZA_SUPABASE.publishableKey);
+  var $ = function (i) { return document.getElementById(i); }, logEl = $("log"), ok = false;
+  function log(t) { logEl.textContent += t + "\n"; logEl.scrollTop = logEl.scrollHeight; }
+  (async function () {
+    var s = await sb.auth.getSession();
+    if (!s.data.session) { $("who").textContent = "سجّل دخولك كمعلم أولاً من صفحة الدخول، ثم افتح هذه الصفحة."; $("dir").disabled = true; return; }
+    var p = await sb.from("profiles").select("role,full_name").eq("id", s.data.session.user.id).maybeSingle();
+    if (!p.data || p.data.role !== "teacher") { $("who").textContent = "هذه الصفحة للمعلم فقط."; $("dir").disabled = true; return; }
+    ok = true; $("who").textContent = "مسجّل الدخول كمعلم: " + p.data.full_name;
+  })();
+  $("dir").addEventListener("change", async function (e) {
+    if (!ok) return;
+    var files = Array.prototype.slice.call(e.target.files || []), jobs = [];
+    files.forEach(function (f) {
+      var rel = f.webkitRelativePath || "", m = /([A-C][12]) Lesson (\d+)[^\/]*\/(8-homework-v2|7-class-page-v2)\.html$/.exec(rel); if (!m) return;
+      var id = m[1] + "-L" + ("0" + m[2]).slice(-2), kind = m[3] === "8-homework-v2" ? "homework" : "class";
+      if ($("skip1").checked && /^(A1|A2)-L01$/.test(id)) return;
+      if (kind === "homework" && !$("hw").checked) return; if (kind === "class" && !$("cl").checked) return;
+      jobs.push({ id: id, kind: kind, file: f });
+    });
+    if (!jobs.length) { $("st").textContent = "لم أجد ملفات جديدة في هذا المجلد. اختر المجلد lessons نفسه."; return; }
+    $("st").textContent = "سأرفع " + jobs.length + " ملفاً..."; var done = 0, bad = 0;
+    for (var i = 0; i < jobs.length; i++) {
+      var j = jobs[i], body = await j.file.text();
+      var r = await sb.from("lesson_content").upsert({ lesson_id: j.id, kind: j.kind, body: body }, { onConflict: "lesson_id,kind" });
+      if (r.error) { bad++; log("✗ " + j.id + " " + j.kind + ": " + r.error.message); } else done++;
+      $("bar").style.width = Math.round((i + 1) / jobs.length * 100) + "%"; $("st").textContent = "تم " + (i + 1) + " من " + jobs.length;
+    }
+    $("st").textContent = "انتهى: رُفع " + done + " ملفاً" + (bad ? " وتعذّر " + bad : "") + ".";
+  });
+})();
+</script></body></html>
