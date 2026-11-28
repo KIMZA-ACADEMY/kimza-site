@@ -23,6 +23,7 @@ label.chk{display:flex;gap:8px;align-items:center;margin:8px 0}
 <p id="st">بعد اختيار المجلد قد يطلب المتصفح تأكيداً. اضغط «رفع/Upload» ثم انتظر.</p>
 <div id="log"></div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
 <script>
@@ -42,6 +43,15 @@ label.chk{display:flex;gap:8px;align-items:center;margin:8px 0}
   async function run(e) {
     if (!ok) return;
     var files = Array.prototype.slice.call(e.target.files || []), jobs = [];
+    // a zip made by Claude (flat names like A1-L05__homework.html) is opened here
+    var zips = files.filter(function (x) { return /\.zip$/i.test(x.name); });
+    if (zips.length && window.JSZip) {
+      files = files.filter(function (x) { return !/\.zip$/i.test(x.name); });
+      for (var zi = 0; zi < zips.length; zi++) {
+        var zz = await JSZip.loadAsync(zips[zi]), names = Object.keys(zz.files);
+        names.forEach(function (nmx) { var ent = zz.files[nmx]; if (ent.dir) return; files.push({ name: nmx.split("/").pop(), webkitRelativePath: "", text: function () { return ent.async("string"); } }); });
+      }
+    }
     files.forEach(function (f) {
       var id, kind, fm = /^([A-C][12]-L\d\d)__(homework|class)\.html$/.exec(f.name);
       if (fm) { id = fm[1]; kind = fm[2]; }
