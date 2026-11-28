@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mx0c02am">
-<link rel="stylesheet" href="app.css?v=mx0c02am">
+<link rel="stylesheet" href="site.css?v=mx0d5235">
+<link rel="stylesheet" href="app.css?v=mx0d5235">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,9 +24,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mx0c02am"></script>
-<script src="portal-i18n.js?v=mx0c02am"></script>
-<script src="i18n.js?v=mx0c02am"></script>
+<script src="app.js?v=mx0d5235"></script>
+<script src="portal-i18n.js?v=mx0d5235"></script>
+<script src="i18n.js?v=mx0d5235"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -163,9 +163,10 @@
       '<div><label for="bwGr">المجموعة</label><select id="bwGr" data-nosearch><option value="">كل الطلاب</option>' + groups.map(function (g) { return '<option value="' + g.id + '">' + esc(g.name) + "</option>"; }).join("") + "</select></div></div>" +
       '<div class="btns"><button class="btn btn-ghost sm" id="bwAll" type="button">تحديد كل الظاهرين</button><button class="btn btn-ghost sm" id="bwNone" type="button">إلغاء التحديد</button> <span id="bwCnt" class="muted"></span></div>' +
       '<div id="bwList" style="max-height:34vh;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:6px"></div>' +
+      '<div><label for="bwCn">اسم جهة الاتصال في هاتفك (استخدم {level} و{name})</label><input id="bwCn" dir="auto" value="{level} {name}"><div class="muted" style="font-size:.85rem">مثال: «A1 أحمد علي». عند البحث في واتساب بكلمة A1 تظهر كل جهات هذا المستوى. حمّل الملف ثم افتحه على هاتفك لإضافتهم لجهات الاتصال.</div></div>' +
       '<div><label for="bwTpl">الرسالة (استخدم {name} لاسم الطالب)</label><textarea id="bwTpl" rows="5" maxlength="1500"></textarea></div>' +
       '<label style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" id="bwSys" checked> أرسل نفس الرسالة أيضاً داخل الموقع (تظهر في «رسائلي» عند الطالب وتصله إشعاراً)</label>' +
-      '<div class="btns"><button class="btn btn-primary" id="bwGo" type="button">▶ ابدأ الإرسال للمحدّدين</button><button class="btn btn-ghost" id="bwSave" type="button">حفظ هذه الرسالة كقالب</button><button class="btn btn-ghost" id="bwX" type="button">إغلاق</button></div>' +
+      '<div class="btns"><button class="btn btn-primary" id="bwGo" type="button">▶ ابدأ الإرسال للمحدّدين</button><button class="btn btn-ghost" id="bwSave" type="button">حفظ هذه الرسالة كقالب</button><button class="btn btn-ghost" id="bwVc" type="button">📇 تصدير جهات الاتصال للمحدّدين</button><button class="btn btn-ghost" id="bwX" type="button">إغلاق</button></div>' +
       '<div id="bwQ"></div></div></div>';
     document.body.appendChild(ov);
     var G = function (id) { return document.getElementById(id); }, sel = {};
@@ -199,6 +200,19 @@
     G("bwNone").addEventListener("click", function () { sel = {}; draw(); });
     G("bwX").addEventListener("click", function () { ov.remove(); });
     G("bwSave").addEventListener("click", async function () { var r = await sb.from("teacher_settings").upsert({ key: "wa_bulk", value: G("bwTpl").value }); KZ.toast(r.error ? "تعذر الحفظ." : "حُفظ القالب ✅", !!r.error); });
+    G("bwVc").addEventListener("click", function () {
+      var q = nm.list.filter(function (p) { return sel[p.id]; }); if (!q.length) { KZ.toast("اختر طالباً واحداً على الأقل.", true); return; }
+      var fmt = G("bwCn").value.trim() || "{level} {name}";
+      function vesc(t) { return String(t).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n"); }
+      var out = [];
+      q.forEach(function (p) {
+        var nmx = fmt.split("{level}").join(p.level || "").split("{name}").join(p.full_name || "").replace(/\s+/g, " ").trim();
+        out.push("BEGIN:VCARD", "VERSION:3.0", "FN:" + vesc(nmx), "N:" + vesc(nmx) + ";;;;", "TEL;TYPE=CELL:+" + waNum(p), "ORG:KIMZA Academy " + vesc(p.level || ""), "NOTE:" + vesc("KIMZA Academy · " + (p.level || "")), "END:VCARD");
+      });
+      var blob = new Blob([out.join("\r\n") + "\r\n"], { type: "text/vcard;charset=utf-8" }), a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = "kimza-contacts-" + new Date().toISOString().slice(0, 10) + ".vcf"; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000); KZ.toast("نُزّل ملف جهات الاتصال (" + q.length + "). افتحه على هاتفك.");
+    });
     G("bwGo").addEventListener("click", async function () {
       var tp = G("bwTpl").value.trim(); if (!tp) { KZ.toast("اكتب الرسالة أولاً.", true); return; }
       var q = nm.list.filter(function (p) { return sel[p.id]; }); if (!q.length) { KZ.toast("اختر طالباً واحداً على الأقل.", true); return; }
