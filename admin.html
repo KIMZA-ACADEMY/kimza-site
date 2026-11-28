@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mx0d5235">
-<link rel="stylesheet" href="app.css?v=mx0d5235">
+<link rel="stylesheet" href="site.css?v=mx0fg5mo">
+<link rel="stylesheet" href="app.css?v=mx0fg5mo">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,9 +24,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mx0d5235"></script>
-<script src="portal-i18n.js?v=mx0d5235"></script>
-<script src="i18n.js?v=mx0d5235"></script>
+<script src="app.js?v=mx0fg5mo"></script>
+<script src="portal-i18n.js?v=mx0fg5mo"></script>
+<script src="i18n.js?v=mx0fg5mo"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -78,17 +78,17 @@
   var GROUPS = [
     ["👥", "الطلاب", ["perf", "students", "applications", "groups", "attendance", "follow"]],
     ["📚", "الدروس والاختبارات", ["lessons", "tests", "results", "lsearch", "cardextra", "skillcourse", "skillexams", "skillgrade", "examprep"]],
-    ["💬", "التواصل والمهام", ["dtasks", "bookings", "events", "messages", "news", "tasks", "speaking", "ideas", "fluency", "friends"]],
+    ["💬", "التواصل والمهام", ["dtasks", "bookings", "events", "feedback", "messages", "news", "tasks", "speaking", "ideas", "fluency", "friends"]],
     ["🎓", "الشهادات والمدفوعات", ["certs", "payments"]],
     ["🎨", "الموقع والتصميم", ["designer", "texts", "courses", "themes", "features"]],
-    ["⚙️", "الإعدادات", ["settings", "staff", "audit"]]
+    ["⚙️", "الإعدادات", ["settings", "devices", "staff", "audit"]]
   ];
   var TNAME = {}; TABS.forEach(function (t) { TNAME[t[0]] = t[1]; });
   if (!TNAME.examprep) TNAME.examprep = "IELTS / TOEFL";
   TNAME.dtasks = "✅ مهام الطلاب اليومية"; TNAME.skillcourse = "✍️🎤 دورتا الكتابة والمحادثة"; TNAME.skillexams = "امتحانات المهارات"; TNAME.skillgrade = "تصحيح التمارين";
   if (!TNAME.perf) TNAME.perf = "📈 أداء الطلاب";
   if (!TNAME.friends) TNAME.friends = "الأصدقاء";
-  TNAME.bookings = "📅 حجوزات المحادثة"; TNAME.events = "🔔 أحداث الطلاب"; TNAME.staff = "👩‍🏫 المعلمون والصلاحيات"; TNAME.cardextra = "🃏 كلمات إضافية"; TNAME.audit = "🕵️ مراقبة المراسلات";
+  TNAME.bookings = "📅 حجوزات المحادثة"; TNAME.feedback = "📝 تقييمات الدروس"; TNAME.devices = "📱 الأجهزة المسموحة"; TNAME.events = "🔔 أحداث الطلاب"; TNAME.staff = "👩‍🏫 المعلمون والصلاحيات"; TNAME.cardextra = "🃏 كلمات إضافية"; TNAME.audit = "🕵️ مراقبة المراسلات";
   function groupOf(name) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i][2].indexOf(name) >= 0) return i; return 0; }
   app.innerHTML = '<h1>لوحة المعلم</h1><div class="agroups" id="agroups" role="tablist">' +
     GROUPS.map(function (g, i) { return g[2].some(canTab) ? '<button type="button" data-g="' + i + '" aria-selected="false"><span aria-hidden="true">' + g[0] + "</span> " + g[1] + "</button>" : ""; }).join("") +
@@ -2045,6 +2045,52 @@
   };
 
   // ---------- events for the teacher (students who changed their password, ...) ----------
+  // ---------- lesson feedback (survey) analysis ----------
+  VIEWS.feedback = async function () {
+    var nm = await nameMap();
+    var ls = (await sb.rpc("feedback_lessons")).data || [], st = (await sb.rpc("feedback_students")).data || [];
+    var notes = (await sb.from("lesson_feedback").select("user_id,lesson_id,note,wants,created_at").order("created_at", { ascending: false }).limit(40)).data || [];
+    var SUG = { struggling: ["😟 يعانون من الصعوبة", "مرحباً {name} 🌟\nلاحظنا أن الدروس صعبة عليك قليلاً، ونريد أن نساعدك. هل تحب مراجعة إضافية أو تخفيف المستوى؟ اكتب لنا رأيك."],
+      too_easy: ["🚀 الدروس سهلة عليهم", "مرحباً {name} 🌟\nلاحظنا أن الدروس سهلة عليك. هل تحب أن تجرّب اختبارات الأسابيع لنرى إن كنت مستعداً للانتقال لمرحلة أعلى في المستوى؟ اكتب لنا «نعم» إن رغبت."],
+      left_out: ["🙋 يشعرون أنهم خارج الحصة", "مرحباً {name} 🌟\nنريدك أن تشارك أكثر في الحصص. سنمنحك فرصاً أكثر للمشاركة. هل هناك ما يُشعرك بالحرج أو ما نستطيع تغييره؟"],
+      unhappy: ["😐 غير مستمتعين", "مرحباً {name} 🌟\nشكراً لصراحتك. نريد أن تستمتع بالدروس أكثر. ما الذي تحب أن نغيّره؟"] };
+    var WL = { speed: "شرح أبطأ", examples: "أمثلة أكثر", practice: "تمارين أكثر", turns: "فرص مشاركة", fun: "أنشطة أمتع", review: "مراجعة أكثر" };
+    var h = '<h2>📝 تقييمات الدروس</h2><p class="muted">يجيب الطالب بعد كل درس على أسئلة قصيرة: الصعوبة (1 سهل جداً إلى 4 صعب جداً)، الاستمتاع (1 إلى 4)، المشاركة (1 خارج الحصة إلى 3 مشارك تماماً)، وكل 3 دروس يُسأل عن مناسبة المستوى.</p>';
+    h += '<div class="tile"><h3 style="margin-top:0">الدروس</h3>' + (ls.length ? '<div class="tablewrap"><table class="t"><thead><tr><th>الدرس</th><th>عدد التقييمات</th><th>الصعوبة</th><th>الاستمتاع</th><th>المشاركة</th></tr></thead><tbody>' + ls.map(function (l) { return "<tr><td class=\"en\">" + esc(l.lesson_id) + "</td><td>" + l.n + "</td><td>" + l.diff_avg + "</td><td>" + l.enjoy_avg + "</td><td>" + l.involved_avg + "</td></tr>"; }).join("") + "</tbody></table></div>" : '<p class="muted">لا تقييمات بعد.</p>') + "</div>";
+    Object.keys(SUG).forEach(function (k) {
+      var g = st.filter(function (x) { return x.suggestion === k; }); if (!g.length) return;
+      h += '<div class="tile" style="margin-top:14px"><h3 style="margin-top:0">' + SUG[k][0] + " (" + g.length + ')</h3><div>' + g.map(function (x) { var n = nm.map[x.user_id]; return '<label class="row" style="gap:8px;align-items:center"><input type="checkbox" data-fb="' + k + '" value="' + x.user_id + '" checked> <span>' + esc(n ? n.full_name : "—") + ' <span class="muted en">' + esc(n ? n.level : "") + " · صعوبة " + x.diff_avg + " · استمتاع " + x.enjoy_avg + " · مشاركة " + x.involved_avg + "</span></span></label>"; }).join("") + '</div><textarea data-ft="' + k + '" rows="3" style="width:100%;margin-top:8px">' + esc(SUG[k][1]) + '</textarea><div class="btns" style="margin-top:8px"><button class="btn btn-primary sm" data-fsend="' + k + '" type="button">إرسال هذه الرسالة للمحدّدين (رسائلي داخل الموقع)</button></div></div>';
+    });
+    h += '<div class="tile" style="margin-top:14px"><h3 style="margin-top:0">آخر الملاحظات</h3>' + (notes.filter(function (n) { return n.note || (n.wants && n.wants.length); }).length ? notes.filter(function (n) { return n.note || (n.wants && n.wants.length); }).map(function (n) { var p = nm.map[n.user_id]; return '<div class="row" style="display:block"><b>' + esc(p ? p.full_name : "—") + '</b> <span class="muted en">' + esc(n.lesson_id) + "</span>" + (n.wants && n.wants.length ? '<div class="muted">يريد: ' + n.wants.map(function (w) { return esc(WL[w] || w); }).join("، ") + "</div>" : "") + (n.note ? "<div>" + esc(n.note) + "</div>" : "") + "</div>"; }).join("") : '<p class="muted">لا ملاحظات.</p>') + "</div>";
+    view.innerHTML = h;
+    view.querySelectorAll("[data-fsend]").forEach(function (b) { b.addEventListener("click", async function () {
+      var k = b.getAttribute("data-fsend"), ids = Array.prototype.slice.call(view.querySelectorAll('[data-fb="' + k + '"]:checked')).map(function (c) { return c.value; }), tp = view.querySelector('[data-ft="' + k + '"]').value.trim();
+      if (!ids.length || !tp) { KZ.toast("اختر طلاباً واكتب الرسالة.", true); return; }
+      if (!confirm("إرسال الرسالة إلى " + ids.length + " طالباً؟")) return;
+      var rows = ids.map(function (id) { var p = nm.map[id]; return { student_id: id, from_teacher: true, kind: "chat", body: tp.split("{name}").join(p ? p.full_name : "").slice(0, 1500) }; }), bad = 0;
+      for (var i = 0; i < rows.length; i += 20) { var r = await sb.from("direct_messages").insert(rows.slice(i, i + 20)); if (r.error) bad += Math.min(20, rows.length - i); }
+      KZ.toast(bad ? "أُرسلت إلى " + (rows.length - bad) + " وتعذر " + bad : "أُرسلت إلى " + rows.length + " ✅", !!bad); }); });
+  };
+
+  // ---------- devices per student ----------
+  VIEWS.devices = async function () {
+    var nm = await nameMap();
+    var dflt = Number(((await sb.from("teacher_settings").select("value").eq("key", "max_devices").maybeSingle()).data || {}).value);
+    if (isNaN(dflt)) dflt = 2;
+    var dv = (await sb.rpc("teacher_devices")).data || [], by = {}; dv.forEach(function (x) { by[x.user_id] = x; });
+    var h = '<h2>📱 الأجهزة المسموحة</h2><p class="muted">يحدّد عدد الأجهزة التي يستطيع الطالب فتح حسابه عليها في الوقت نفسه. إن بلغ الحد، يظهر للطالب على الجهاز الجديد خيار «إخراج» أحد أجهزته القديمة. الجهاز الذي أُغلق دون خروج يُحرَّر بعد 10 دقائق. (0 = بلا حد.) حسابك أنت والمعلمون المساعدون غير محدودين. التحقق يتم من صفحات الموقع، فهو كافٍ للاستخدام العادي.</p>' +
+      '<div class="tile form"><div class="row" style="border:0;padding:0;justify-content:flex-start;gap:12px;align-items:flex-end"><div><label for="dvDef">الحد الافتراضي لكل الطلاب</label><input id="dvDef" type="number" min="0" max="10" value="' + dflt + '" style="width:90px"></div><button class="btn btn-primary" id="dvSave" type="button">حفظ</button></div></div>' +
+      '<div class="tile tablewrap" style="margin-top:14px"><table class="t"><thead><tr><th>الطالب</th><th>الأجهزة الآن</th><th>الحد الخاص</th><th></th></tr></thead><tbody>' +
+      nm.list.filter(function (p) { return p.status === "active" || p.status === "graduated"; }).map(function (p) {
+        var x = by[p.id] || { n: 0, max_devices: null };
+        return "<tr><td>" + esc(p.full_name) + "</td><td>" + x.n + '</td><td><select data-dm="' + p.id + '"><option value="">الافتراضي (' + dflt + ')</option>' + [0, 1, 2, 3, 4, 5].map(function (n) { return '<option value="' + n + '"' + (x.max_devices === n ? " selected" : "") + ">" + (n === 0 ? "بلا حد" : n) + "</option>"; }).join("") + '</select></td><td><button class="btn btn-ghost sm" data-dc="' + p.id + '" type="button">إخراجه من كل أجهزته</button></td></tr>';
+      }).join("") + "</tbody></table></div>";
+    view.innerHTML = h;
+    $("dvSave").addEventListener("click", async function () { var r = await sb.rpc("teacher_set_default_devices", { p_max: Number($("dvDef").value) || 0 }); KZ.toast(r.error ? "تعذر الحفظ." : "حُفظ ✅", !!r.error); VIEWS.devices(); });
+    view.querySelectorAll("[data-dm]").forEach(function (s) { s.addEventListener("change", async function () { var r = await sb.rpc("teacher_set_devices", { p_user: s.getAttribute("data-dm"), p_max: s.value === "" ? null : Number(s.value), p_clear: false }); KZ.toast(r.error ? "تعذر الحفظ." : "تم.", !!r.error); }); });
+    view.querySelectorAll("[data-dc]").forEach(function (b) { b.addEventListener("click", async function () { if (!confirm("إخراج الطالب من كل أجهزته؟")) return; var id = b.getAttribute("data-dc"), cur = by[id] ? by[id].max_devices : null; var r = await sb.rpc("teacher_set_devices", { p_user: id, p_max: cur === undefined ? null : cur, p_clear: true }); KZ.toast(r.error ? "تعذر." : "أُخرج الطالب من أجهزته.", !!r.error); VIEWS.devices(); }); });
+  };
+
   VIEWS.events = async function () {
     var nm = await nameMap();
     var rows = (await sb.from("teacher_events").select("*").order("created_at", { ascending: false }).limit(100)).data || [];

@@ -986,3 +986,96 @@
   KZ.pageSkin = function () { return "<style id='kzUnify'>" + KZ.pageSkinCss() + "</style>"; };
   KZ.skinHtml = function (html) { var st = KZ.pageSkin(); return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, function () { return st + "</body>"; }) : html + st; };
 })();
+
+/* ===== device limit (students only) + lesson survey ===== */
+(function () {
+  var KZ = window.KZ; if (!KZ) return;
+  var sb = KZ.sb;
+  function devId() { var id = ""; try { id = localStorage.getItem("kz-device-id"); if (!id) { id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now(); localStorage.setItem("kz-device-id", id); } } catch (e) { id = "nolocal-" + navigator.userAgent.length; } return id; }
+  function devLabel() {
+    var u = navigator.userAgent, os = /Android/i.test(u) ? "Android" : /iPhone|iPad|iOS/i.test(u) ? "iPhone/iPad" : /Windows/i.test(u) ? "Windows" : /Mac/i.test(u) ? "Mac" : /Linux/i.test(u) ? "Linux" : "جهاز";
+    var br = /Edg\//.test(u) ? "Edge" : /OPR\//.test(u) ? "Opera" : /Chrome\//.test(u) ? "Chrome" : /Firefox\//.test(u) ? "Firefox" : /Safari\//.test(u) ? "Safari" : "";
+    return (os + " · " + br).replace(/ · $/, "");
+  }
+  var pinging = false;
+  function startPing() {
+    if (pinging) return; pinging = true;
+    async function ping() {
+      try { var r = await sb.rpc("ping_device", { p_device: devId() }); if (!r.error && r.data === false) { alert("تم تسجيل خروجك لأن حسابك فُتح على جهاز آخر (الحد المسموح للأجهزة وصل)."); try { await sb.auth.signOut(); } catch (e) {} location.href = "login.html"; } } catch (e) {}
+    }
+    setInterval(ping, 60000); document.addEventListener("visibilitychange", function () { if (!document.hidden) ping(); });
+  }
+  function fmtAgo(t) { var m = Math.max(0, Math.round((Date.now() - new Date(t).getTime()) / 60000)); return m < 1 ? "الآن" : "قبل " + m + " دقيقة"; }
+  function block(d) {
+    return new Promise(function (resolve) {
+      var ov = document.createElement("div"); ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px";
+      function draw(dd) {
+        ov.innerHTML = '<div style="max-width:460px;width:100%;background:var(--surface,#fff);color:var(--text,#111);border:2px solid #D4AF37;border-radius:18px;padding:20px;line-height:1.8" role="dialog"><h2 style="margin:0 0 6px">📱 حسابك مفتوح على أجهزة أخرى</h2>' +
+          '<p>المسموح لك <b>' + dd.limit + '</b> ' + (dd.limit === 1 ? "جهاز" : "أجهزة") + ' في الوقت نفسه. اخرج من أحدها ليعمل هذا الجهاز:</p>' +
+          (dd.devices || []).map(function (x) { return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--line,#ddd);border-radius:12px;padding:8px 12px;margin:6px 0"><span><b>' + KZ.esc(x.label || "جهاز") + '</b><br><small>آخر نشاط: ' + fmtAgo(x.last_seen) + '</small></span><button class="btn btn-primary sm" data-k="' + x.id + '" type="button">إخراجه</button></div>'; }).join("") +
+          '<p style="font-size:.85rem;opacity:.8">إن أغلقتَ الجهاز الآخر دون تسجيل خروج فسيُحرَّر تلقائياً بعد 10 دقائق من آخر نشاط.</p><div class="btns"><button class="btn btn-ghost" id="dvOut" type="button">الخروج من هنا</button></div></div>';
+        ov.querySelectorAll("[data-k]").forEach(function (b) { b.onclick = async function () {
+          b.disabled = true; await sb.rpc("kick_device", { p_id: Number(b.getAttribute("data-k")) });
+          var r = await sb.rpc("claim_device", { p_device: devId(), p_label: devLabel() });
+          if (r.data && r.data.ok) { ov.remove(); resolve(true); } else if (r.data) draw(r.data); }; });
+        ov.querySelector("#dvOut").onclick = async function () { try { await sb.auth.signOut(); } catch (e) {} location.href = "login.html"; };
+      }
+      draw(d); document.body.appendChild(ov);
+    });
+  }
+  KZ.deviceGuard = async function () {
+    try {
+      var r = await sb.rpc("claim_device", { p_device: devId(), p_label: devLabel() });
+      if (r.error) return true;                       // a technical problem must never lock a student out
+      var d = r.data || {};
+      if (d.ok) { startPing(); return true; }
+      var ok = await block(d); if (ok) startPing(); return ok;
+    } catch (e) { return true; }
+  };
+  var _ra = KZ.requireAuth;
+  KZ.requireAuth = async function (role) {
+    var prof = await _ra.apply(KZ, arguments);
+    if (prof && prof.role === "student") { var ok = await KZ.deviceGuard(); if (!ok) return null; }
+    return prof;
+  };
+  try { var _so = sb.auth.signOut.bind(sb.auth); sb.auth.signOut = async function () { try { await sb.rpc("release_device", { p_device: devId() }); } catch (e) {} return _so.apply(null, arguments); }; } catch (e) {}
+
+  // ----- survey after a lesson (shown on the dashboard, once a day at most) -----
+  var Q = {
+    difficulty: ["كيف كان مستوى الدرس؟", [[1, "سهل جداً"], [2, "مناسب"], [3, "صعب"], [4, "صعب جداً"]]],
+    enjoy: ["هل استمتعتَ بالدرس؟", [[1, "😞"], [2, "😐"], [3, "🙂"], [4, "😍"]]],
+    involved: ["هل شعرتَ أنك مشارك في الحصة؟", [[3, "نعم تماماً"], [2, "أحياناً"], [1, "شعرتُ أنني خارج الحصة"]]],
+    level_fit: ["بالنسبة لمستواك الحالي، الدروس:", [[1, "سهلة جداً عليّ وأريد الأصعب"], [2, "مناسبة لي"], [3, "صعبة وأحتاج تخفيفاً"]]]
+  };
+  var WANTS = [["speed", "شرح أبطأ"], ["examples", "أمثلة أكثر"], ["practice", "تمارين أكثر"], ["turns", "فرص مشاركة أكثر"], ["fun", "أنشطة أمتع"], ["review", "مراجعة أكثر"]];
+  KZ.surveyCheck = async function () {
+    try {
+      if (!KZ.profile || KZ.profile.role !== "student") return;
+      var today = new Date().toISOString().slice(0, 10); try { if (localStorage.getItem("kz-survey-skip") === today) return; } catch (e) {}
+      var mine = (await sb.from("lesson_feedback").select("lesson_id,level_fit").eq("user_id", KZ.user.id)).data || [];
+      var done = {}; mine.forEach(function (x) { done[x.lesson_id] = 1; });
+      var ls = (await sb.from("lessons").select("id,level,num,title,open_exercises,open_homework").or("open_exercises.eq.true,open_homework.eq.true").order("num", { ascending: false }).limit(60)).data || [];
+      var lv = KZ.levelsOf ? KZ.levelsOf(KZ.profile) : [KZ.profile.level];
+      var cand = ls.filter(function (l) { return !done[l.id] && lv.indexOf(l.level) >= 0; })[0]; if (!cand) return;
+      var withFit = mine.length % 3 === 2;
+      var ov = document.createElement("div"); ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto";
+      var ans = { wants: [] };
+      function chips(key) { return '<div class="btns" style="display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px">' + Q[key][1].map(function (o) { return '<button type="button" class="btn btn-ghost sm" data-q="' + key + '" data-v="' + o[0] + '">' + o[1] + "</button>"; }).join("") + "</div>"; }
+      ov.innerHTML = '<div style="max-width:520px;width:100%;background:var(--surface,#fff);color:var(--text,#111);border:2px solid #D4AF37;border-radius:18px;padding:20px;line-height:1.7" role="dialog" aria-label="تقييم الدرس"><h2 style="margin:0 0 4px">💬 كيف كان درس اليوم؟</h2><p class="muted" style="margin:0 0 12px">«' + KZ.esc(cand.title || cand.id) + '» — رأيك يساعدنا نطوّر الدروس. نصف دقيقة فقط.</p>' +
+        "<strong>" + Q.difficulty[0] + "</strong>" + chips("difficulty") + "<strong>" + Q.enjoy[0] + "</strong>" + chips("enjoy") + "<strong>" + Q.involved[0] + "</strong>" + chips("involved") +
+        (withFit ? "<strong>" + Q.level_fit[0] + "</strong>" + chips("level_fit") : "") +
+        '<strong>ماذا تريدنا أن نحسّن؟ (اختياري)</strong><div style="display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px">' + WANTS.map(function (w) { return '<button type="button" class="btn btn-ghost sm" data-w="' + w[0] + '">' + w[1] + "</button>"; }).join("") + '</div><textarea id="svNote" rows="2" maxlength="400" placeholder="أي ملاحظة أخرى..." style="width:100%"></textarea>' +
+        '<div class="btns" style="margin-top:12px"><button class="btn btn-primary" id="svGo" type="button" disabled>إرسال</button><button class="btn btn-ghost" id="svLater" type="button">ليس الآن</button> <span id="svMsg" class="muted"></span></div></div>';
+      document.body.appendChild(ov);
+      function ready() { var ok = ans.difficulty && ans.enjoy && ans.involved && (!withFit || ans.level_fit); ov.querySelector("#svGo").disabled = !ok; }
+      ov.querySelectorAll("[data-q]").forEach(function (b) { b.onclick = function () { var k = b.getAttribute("data-q"); ans[k] = Number(b.getAttribute("data-v")); ov.querySelectorAll('[data-q="' + k + '"]').forEach(function (x) { x.className = "btn btn-ghost sm"; }); b.className = "btn btn-primary sm"; ready(); }; });
+      ov.querySelectorAll("[data-w]").forEach(function (b) { b.onclick = function () { var k = b.getAttribute("data-w"), i = ans.wants.indexOf(k); if (i >= 0) { ans.wants.splice(i, 1); b.className = "btn btn-ghost sm"; } else { ans.wants.push(k); b.className = "btn btn-primary sm"; } }; });
+      ov.querySelector("#svLater").onclick = function () { try { localStorage.setItem("kz-survey-skip", today); } catch (e) {} ov.remove(); };
+      ov.querySelector("#svGo").onclick = async function () {
+        this.disabled = true; var r = await sb.from("lesson_feedback").insert({ lesson_id: cand.id, difficulty: ans.difficulty, enjoy: ans.enjoy, involved: ans.involved, level_fit: withFit ? ans.level_fit : null, wants: ans.wants, note: ov.querySelector("#svNote").value.trim() || null });
+        if (r.error) { ov.querySelector("#svMsg").textContent = "تعذر الإرسال، حاول لاحقاً."; this.disabled = false; return; }
+        KZ.toast("شكراً لك 🌟 رأيك وصلنا."); ov.remove();
+      };
+    } catch (e) {}
+  };
+})();
