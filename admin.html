@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mx0fg5mo">
-<link rel="stylesheet" href="app.css?v=mx0fg5mo">
+<link rel="stylesheet" href="site.css?v=mx0fyc0l">
+<link rel="stylesheet" href="app.css?v=mx0fyc0l">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,9 +24,9 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mx0fg5mo"></script>
-<script src="portal-i18n.js?v=mx0fg5mo"></script>
-<script src="i18n.js?v=mx0fg5mo"></script>
+<script src="app.js?v=mx0fyc0l"></script>
+<script src="portal-i18n.js?v=mx0fyc0l"></script>
+<script src="i18n.js?v=mx0fyc0l"></script>
 <script>
 (async function () {
   var prof = await KZ.requireAuth("teacher");
@@ -77,8 +77,8 @@
   // ----- shell: 6 groups, each with its own tabs -----
   var GROUPS = [
     ["👥", "الطلاب", ["perf", "students", "applications", "groups", "attendance", "follow"]],
-    ["📚", "الدروس والاختبارات", ["lessons", "tests", "results", "lsearch", "cardextra", "skillcourse", "skillexams", "skillgrade", "examprep"]],
-    ["💬", "التواصل والمهام", ["dtasks", "bookings", "events", "feedback", "messages", "news", "tasks", "speaking", "ideas", "fluency", "friends"]],
+    ["📚", "الدروس والاختبارات", ["lessons", "tests", "results", "lsearch", "cardextra", "cardlayout", "skillcourse", "skillexams", "skillgrade", "examprep"]],
+    ["💬", "التواصل والمهام", ["dtasks", "bookings", "events", "feedback", "upgrades", "leaderboard", "messages", "news", "tasks", "speaking", "ideas", "fluency", "friends"]],
     ["🎓", "الشهادات والمدفوعات", ["certs", "payments"]],
     ["🎨", "الموقع والتصميم", ["designer", "texts", "courses", "themes", "features"]],
     ["⚙️", "الإعدادات", ["settings", "devices", "staff", "audit"]]
@@ -88,7 +88,7 @@
   TNAME.dtasks = "✅ مهام الطلاب اليومية"; TNAME.skillcourse = "✍️🎤 دورتا الكتابة والمحادثة"; TNAME.skillexams = "امتحانات المهارات"; TNAME.skillgrade = "تصحيح التمارين";
   if (!TNAME.perf) TNAME.perf = "📈 أداء الطلاب";
   if (!TNAME.friends) TNAME.friends = "الأصدقاء";
-  TNAME.bookings = "📅 حجوزات المحادثة"; TNAME.feedback = "📝 تقييمات الدروس"; TNAME.devices = "📱 الأجهزة المسموحة"; TNAME.events = "🔔 أحداث الطلاب"; TNAME.staff = "👩‍🏫 المعلمون والصلاحيات"; TNAME.cardextra = "🃏 كلمات إضافية"; TNAME.audit = "🕵️ مراقبة المراسلات";
+  TNAME.bookings = "📅 حجوزات المحادثة"; TNAME.feedback = "📝 تقييمات الدروس"; TNAME.upgrades = "🚀 طلبات الترقية"; TNAME.leaderboard = "🏆 لوحة المتميزين"; TNAME.cardlayout = "🃏 شكل البطاقات"; TNAME.devices = "📱 الأجهزة المسموحة"; TNAME.events = "🔔 أحداث الطلاب"; TNAME.staff = "👩‍🏫 المعلمون والصلاحيات"; TNAME.cardextra = "🃏 كلمات إضافية"; TNAME.audit = "🕵️ مراقبة المراسلات";
   function groupOf(name) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i][2].indexOf(name) >= 0) return i; return 0; }
   app.innerHTML = '<h1>لوحة المعلم</h1><div class="agroups" id="agroups" role="tablist">' +
     GROUPS.map(function (g, i) { return g[2].some(canTab) ? '<button type="button" data-g="' + i + '" aria-selected="false"><span aria-hidden="true">' + g[0] + "</span> " + g[1] + "</button>" : ""; }).join("") +
@@ -2045,6 +2045,81 @@
   };
 
   // ---------- events for the teacher (students who changed their password, ...) ----------
+  // ---------- upgrade requests (offer -> agree -> tests -> decision) ----------
+  VIEWS.upgrades = async function () {
+    var nm = await nameMap();
+    var rq = (await sb.from("upgrade_requests").select("*").order("created_at", { ascending: false }).limit(200)).data || [];
+    var tests = (await sb.from("tests").select("id,level,kind,minutes,is_open").order("id")).data || [];
+    var fb = (await sb.rpc("feedback_students")).data || [], easy = fb.filter(function (x) { return x.suggestion === "too_easy"; });
+    var active = {}; rq.forEach(function (r) { if (["offered", "accepted", "testing"].indexOf(r.status) >= 0) active[r.user_id] = 1; });
+    var ST = { offered: "عُرض عليه", accepted: "وافق، بانتظار فتح الاختبارات", declined: "رفض", testing: "يؤدي الاختبارات", approved: "تمت الموافقة على الترقية", kept: "يبقى في مكانه" };
+    function who(id) { var n = nm.map[id]; return esc(n ? n.full_name : "—") + ' <span class="muted en">' + esc(n ? n.level : "") + "</span>"; }
+    var h = '<h2>🚀 طلبات الترقية داخل المستوى</h2><p class="muted">تعرض فرصة «جرّب اختبارات التقدّم» على من ترى أن الدروس سهلة عليه. إذا وافق تصلك إشعار، فتفتح له اختبارات المستوى (الأسابيع) وحده، ثم تقرر. بعد الموافقة اجمع المرقّين وأنشئ لهم استفتاء موعد من «مواعيد الحصص».</p>';
+    h += '<div class="tile"><h3 style="margin-top:0">اعرض الفرصة على</h3>' +
+      (easy.length ? '<p class="muted">اقتراح تلقائي (من تقييماتهم: الدروس سهلة عليهم):</p>' + easy.filter(function (x) { return !active[x.user_id]; }).map(function (x) { return '<label class="row" style="gap:8px;align-items:center"><input type="checkbox" data-offer value="' + x.user_id + '" checked> ' + who(x.user_id) + "</label>"; }).join("") : '<p class="muted">لا اقتراحات تلقائية بعد. اختر طلاباً يدوياً:</p>') +
+      '<div style="margin-top:8px"><label for="upSel">أضف طالباً</label><select id="upSel"><option value="">— اختر —</option>' + nm.list.filter(function (p) { return (p.status === "active") && !active[p.id]; }).map(function (p) { return '<option value="' + p.id + '">' + esc(p.full_name) + " · " + esc(p.level || "") + "</option>"; }).join("") + '</select> <button class="btn btn-ghost sm" id="upAdd" type="button">إضافة للقائمة</button></div><div id="upExtra"></div>' +
+      '<div class="btns" style="margin-top:10px"><button class="btn btn-primary" id="upOffer" type="button">أرسل العرض للمحدّدين</button></div></div>';
+    ["accepted", "testing", "offered"].forEach(function (k) {
+      var l = rq.filter(function (r) { return r.status === k; }); if (!l.length) return;
+      h += '<div class="tile" style="margin-top:14px"><h3 style="margin-top:0">' + ST[k] + " (" + l.length + ")</h3>" + l.map(function (r) {
+        var n = nm.map[r.user_id], lt = tests.filter(function (t) { return n && t.level === n.level; });
+        return '<div class="row" style="display:block"><b>' + who(r.user_id) + "</b>" +
+          (k === "accepted" ? '<div class="muted" style="margin:6px 0">اختر الاختبارات التي تفتحها له وحده:</div><div style="display:flex;flex-wrap:wrap;gap:8px">' + lt.map(function (t) { return '<label><input type="checkbox" data-gt="' + r.user_id + '" value="' + esc(t.id) + '"> ' + esc(t.id) + "</label>"; }).join("") + '</div><button class="btn btn-primary sm" data-grant="' + r.user_id + '" type="button" style="margin-top:8px">افتح الاختبارات المحدّدة له</button>' : "") +
+          (k === "testing" ? '<div class="btns" style="margin-top:6px"><button class="btn btn-primary sm" data-dec="' + r.id + '|1" type="button">✅ ترقية</button><button class="btn btn-ghost sm" data-dec="' + r.id + '|0" type="button">يبقى مكانه</button></div>' : "") + "</div>";
+      }).join("") + "</div>";
+    });
+    var fin = rq.filter(function (r) { return ["approved", "kept", "declined"].indexOf(r.status) >= 0; });
+    if (fin.length) h += '<div class="tile" style="margin-top:14px"><h3 style="margin-top:0">السجل</h3>' + fin.map(function (r) { return '<div class="row"><span>' + who(r.user_id) + "</span><span class=\"badge\">" + ST[r.status] + "</span></div>"; }).join("") + "</div>";
+    view.innerHTML = h;
+    var extra = [];
+    $("upAdd").addEventListener("click", function () { var v = $("upSel").value; if (!v || extra.indexOf(v) >= 0) return; extra.push(v); $("upExtra").innerHTML = extra.map(function (id) { return "<div>➕ " + who(id) + "</div>"; }).join(""); });
+    $("upOffer").addEventListener("click", async function () {
+      var ids = Array.prototype.slice.call(view.querySelectorAll("[data-offer]:checked")).map(function (c) { return c.value; }).concat(extra);
+      if (!ids.length) { KZ.toast("اختر طلاباً أولاً.", true); return; }
+      var r = await sb.rpc("teacher_offer_upgrade", { p_users: ids }); KZ.toast(r.error ? "تعذر الإرسال." : "أُرسل العرض إلى " + r.data + " طالباً ✅", !!r.error); VIEWS.upgrades(); });
+    view.querySelectorAll("[data-grant]").forEach(function (b) { b.addEventListener("click", async function () {
+      var id = b.getAttribute("data-grant"), ts = Array.prototype.slice.call(view.querySelectorAll('[data-gt="' + id + '"]:checked')).map(function (c) { return c.value; });
+      if (!ts.length) { KZ.toast("اختر اختباراً واحداً على الأقل.", true); return; }
+      var r = await sb.rpc("teacher_grant_tests", { p_user: id, p_tests: ts }); KZ.toast(r.error ? "تعذر." : "فُتحت له الاختبارات ✅", !!r.error); VIEWS.upgrades(); }); });
+    view.querySelectorAll("[data-dec]").forEach(function (b) { b.addEventListener("click", async function () {
+      var p = b.getAttribute("data-dec").split("|"), ok = p[1] === "1", note = ok ? prompt("رسالة للطالب (اختياري):", "تهانينا! نجحتَ في اختبارات التقدّم وسننقلك لمرحلة أعلى.") : prompt("رسالة للطالب (اختياري):", "شكراً لمحاولتك. الأفضل أن تكمل في مكانك الآن وسنعيد التقييم قريباً.");
+      if (note === null) return; var r = await sb.rpc("teacher_decide_upgrade", { p_id: Number(p[0]), p_ok: ok, p_note: note || null }); KZ.toast(r.error ? "تعذر." : "تم ✅", !!r.error); VIEWS.upgrades(); }); });
+  };
+
+  // ---------- achievers board settings ----------
+  VIEWS.leaderboard = async function () {
+    var st = ((await sb.rpc("lb_settings")).data || [])[0] || { scope: "level", days: 7 };
+    var rows = (await sb.rpc("leaderboard")).data || [];
+    var h = '<h2>🏆 لوحة المتميزين</h2><p class="muted">تظهر للطلاب في صفحتهم الرئيسية: إيموجي الطالب ولقبه فقط (بلا أسماء حقيقية). النقاط: تكرار القصة ×2، مراجعة بطاقة ×1، واجب ×5، يوم دراسة ×3 خلال المدة. يجب أن يكون للطالب إيموجي ولقب ومفعّلاً «إظهار في المجتمع».</p>' +
+      '<div class="tile form"><div class="row" style="border:0;padding:0;justify-content:flex-start;gap:14px;align-items:flex-end"><div><label for="lbS">من يرى اللوحة؟</label><select id="lbS"><option value="off">لا أحد (مخفية)</option><option value="level">كل طالب يرى مستواه فقط</option><option value="all">الجميع يرون كل الأكاديمية</option></select></div>' +
+      '<div><label for="lbD">المدة بالأيام</label><input id="lbD" type="number" min="1" max="90" value="' + st.days + '" style="width:90px"></div><button class="btn btn-primary" id="lbSave" type="button">حفظ</button></div></div>' +
+      '<div class="tile" style="margin-top:14px"><h3 style="margin-top:0">المتصدرون الآن (كما تراهم أنت: كل الأكاديمية)</h3>' + (rows.length ? rows.map(function (r, i) { return '<div class="row"><span style="font-size:1.4rem">' + (i + 1) + ". " + esc(r.emoji) + " " + esc(r.nickname) + ' <span class="muted en">' + esc(r.level) + "</span></span><span>" + r.score + " نقطة · قصة " + r.reps + " · بطاقات " + r.reviews + " · واجبات " + r.homework + " · أيام " + r.days + "</span></div>"; }).join("") : '<p class="muted">لا متصدرين بعد (يلزم إيموجي ولقب).</p>') + "</div>";
+    view.innerHTML = h; $("lbS").value = st.scope;
+    $("lbSave").addEventListener("click", async function () { var r = await sb.rpc("teacher_set_lb", { p_scope: $("lbS").value, p_days: Number($("lbD").value) || 7 }); KZ.toast(r.error ? "تعذر الحفظ." : "حُفظ ✅", !!r.error); });
+  };
+
+  // ---------- flashcard layout ----------
+  VIEWS.cardlayout = async function () {
+    var nm = await nameMap();
+    var rows = (await sb.from("card_layout").select("*").order("id")).data || [];
+    var PARTS = [["image", "الصورة"], ["english", "الكلمة بالإنجليزية"], ["arabic", "الكلمة بالعربية"], ["example_en", "المثال بالإنجليزية"], ["example_ar", "المثال بالعربية"], ["audio", "أزرار الصوت (ظهر البطاقة)"]];
+    var LV = ["A1", "A2", "B1", "B2", "C1"];
+    function box(name, arr) { return PARTS.map(function (p) { return '<label style="margin-inline-end:12px;white-space:nowrap"><input type="checkbox" data-' + name + '="' + p[0] + '"' + (arr.indexOf(p[0]) >= 0 ? " checked" : "") + "> " + p[1] + "</label>"; }).join(""); }
+    var h = '<h2>🃏 شكل بطاقات المراجعة</h2><p class="muted">اختر ما يظهر على <b>وجه</b> البطاقة وما يظهر على <b>ظهرها</b>. للجميع، أو لمستوى، أو لطالب معيّن (الأخص يغلب الأعم: طالب ثم مستوى ثم الجميع). الافتراضي: وجه = صورة + عربي، ظهر = كل شيء.</p>' +
+      '<div class="tile form"><div class="row" style="border:0;padding:0;justify-content:flex-start;gap:12px;flex-wrap:wrap"><div><label for="clScope">ينطبق على</label><select id="clScope"><option value="all">كل الطلاب</option><option value="level">مستوى</option><option value="user">طالب معيّن</option></select></div><div id="clKeyW" hidden><label for="clKey">اختر</label><select id="clKey"></select></div></div>' +
+      '<div style="margin-top:8px"><strong>الوجه (الأمامي):</strong><div id="clFront" style="margin:6px 0">' + box("f", ["image", "arabic"]) + '</div></div><div><strong>الظهر:</strong><div id="clBack" style="margin:6px 0">' + box("b", ["image", "english", "arabic", "example_en", "example_ar", "audio"]) + '</div></div><div class="btns"><button class="btn btn-primary" id="clSave" type="button">حفظ الشكل</button></div></div>' +
+      '<div class="tile" style="margin-top:14px"><h3 style="margin-top:0">الأشكال المحفوظة</h3>' + (rows.length ? rows.map(function (r) { var n = r.scope === "user" ? nm.map[r.skey] : null; return '<div class="row"><span><b>' + (r.scope === "all" ? "الجميع" : r.scope === "level" ? "مستوى " + esc(r.skey) : esc(n ? n.full_name : r.skey)) + "</b> — وجه: " + esc(r.front.join("، ")) + " · ظهر: " + esc(r.back.join("، ")) + '</span><button class="btn danger sm" data-cld="' + r.id + '" type="button">حذف</button></div>'; }).join("") : '<p class="muted">لا أشكال خاصة (الافتراضي يعمل).</p>') + "</div>";
+    view.innerHTML = h;
+    function fillKey() { var sc = $("clScope").value, w = $("clKeyW"), k = $("clKey"); w.hidden = sc === "all"; k.innerHTML = sc === "level" ? LV.map(function (l) { return "<option>" + l + "</option>"; }).join("") : nm.list.filter(function (p) { return p.status === "active"; }).map(function (p) { return '<option value="' + p.id + '">' + esc(p.full_name) + "</option>"; }).join(""); }
+    $("clScope").addEventListener("change", fillKey); fillKey();
+    $("clSave").addEventListener("click", async function () {
+      var sc = $("clScope").value, key = sc === "all" ? "" : $("clKey").value, fr = [], bk = [];
+      view.querySelectorAll("[data-f]:checked").forEach(function (c) { fr.push(c.getAttribute("data-f")); }); view.querySelectorAll("[data-b]:checked").forEach(function (c) { bk.push(c.getAttribute("data-b")); });
+      if (!fr.length) { KZ.toast("اختر شيئاً واحداً على الأقل للوجه.", true); return; }
+      var r = await sb.from("card_layout").upsert({ scope: sc, skey: key, front: fr, back: bk }, { onConflict: "scope,skey" }); KZ.toast(r.error ? "تعذر الحفظ." : "حُفظ ✅", !!r.error); VIEWS.cardlayout(); });
+    view.querySelectorAll("[data-cld]").forEach(function (b) { b.addEventListener("click", async function () { await sb.from("card_layout").delete().eq("id", b.getAttribute("data-cld")); VIEWS.cardlayout(); }); });
+  };
+
   // ---------- lesson feedback (survey) analysis ----------
   VIEWS.feedback = async function () {
     var nm = await nameMap();

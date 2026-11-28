@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mx0fg5mo">
-<link rel="stylesheet" href="app.css?v=mx0fg5mo">
+<link rel="stylesheet" href="site.css?v=mx0fyc0l">
+<link rel="stylesheet" href="app.css?v=mx0fyc0l">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,8 +24,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mx0fg5mo"></script>
-<script src="portal-i18n.js?v=mx0fg5mo"></script>
+<script src="app.js?v=mx0fyc0l"></script>
+<script src="portal-i18n.js?v=mx0fyc0l"></script>
 
 <script>
 (async function () {
@@ -68,6 +68,7 @@
   // The student only sees lessons the teacher has opened (any part)
   var lessons = allLessons.filter(function (l) { return l.is_open; });
   // ...and only tests that are open now or that he already started
+  try { var tg = (await sb.from("test_grants").select("test_id")).data || []; tg.forEach(function (g) { tests.forEach(function (t) { if (t.id === g.test_id) t.is_open = true; }); }); } catch (e) {}
   var myTests = tests.filter(function (t) { return t.is_open || atMap[t.id]; });
 
   var absences = att.filter(function (a) { return a.status === "absent"; }).length;
@@ -420,6 +421,32 @@
   })();
   document.querySelectorAll("[data-dtdone]").forEach(function (b) { b.addEventListener("click", async function () { var r = await sb.from("dtask_done").insert({ task_id: Number(b.getAttribute("data-dtdone")), user_id: KZ.user.id }); KZ.toast(r.error ? "تعذر الحفظ." : "أحسنت! سُجّلت المهمة ✅", !!r.error); if (!r.error) location.reload(); }); });
   try { if (KZ.surveyCheck) setTimeout(KZ.surveyCheck, 1200); } catch (e) {}
+  // ----- achievers board + upgrade offer (shown near the top) -----
+  (async function () {
+    try {
+      var host = document.querySelector(".dhero"); if (!host) return;
+      var box = document.createElement("div"); box.id = "dashExtra"; box.style.cssText = "display:grid;gap:14px;margin:14px 0";
+      var any = false;
+      var up = (await sb.from("upgrade_requests").select("id,status").eq("user_id", KZ.user.id).in("status", ["offered", "testing"]).order("id", { ascending: false }).limit(1)).data || [];
+      if (up[0] && up[0].status === "offered") {
+        any = true;
+        box.insertAdjacentHTML("beforeend", '<div class="tile" style="border:2px solid var(--gold)"><h2 style="margin-top:0">🚀 فرصة لك</h2><p>لاحظنا أن دروسك سهلة عليك. هل تحب أن تجرّب اختبارات التقدّم لنرى إن كنت مستعداً لمرحلة أعلى داخل مستواك؟ إن نجحتَ ننقلك مع طلاب مثلك في موعد جديد (ستُخبَر بتغيّر الموعد).</p><div class="btns"><button class="btn btn-primary" id="upYes" type="button">نعم، أريد التجربة</button><button class="btn btn-ghost" id="upNo" type="button">لا، شكراً</button></div></div>');
+        setTimeout(function () {
+          var y = document.getElementById("upYes"), n = document.getElementById("upNo");
+          if (y) y.onclick = async function () { var r = await sb.rpc("student_answer_upgrade", { p_id: up[0].id, p_yes: true }); KZ.toast(r.error ? "تعذر." : "ممتاز! سيفتح لك المعلم الاختبارات قريباً.", !!r.error); box.querySelector(".tile").remove(); };
+          if (n) n.onclick = async function () { await sb.rpc("student_answer_upgrade", { p_id: up[0].id, p_yes: false }); box.querySelector(".tile").remove(); };
+        }, 0);
+      } else if (up[0] && up[0].status === "testing") {
+        any = true; box.insertAdjacentHTML("beforeend", '<div class="tile" style="border:2px solid var(--gold)"><h2 style="margin-top:0">🧪 اختبارات التقدّم</h2><p>فتح لك المعلم اختبارات خاصة. ابدأها من قسم «الاختبارات» في الأسفل. بعد النتيجة يقرر المعلم ويخبرك.</p></div>');
+      }
+      var lb = (await sb.rpc("leaderboard")).data || [], me = lb.filter(function (x) { return x.mine; })[0];
+      if (lb.length) {
+        any = true;
+        box.insertAdjacentHTML("beforeend", '<div class="tile"><h2 style="margin-top:0">🏆 المتميزون</h2><p class="muted" style="margin:0 0 8px">أكثر من يجتهدون هذه الفترة (قصة، بطاقات، واجبات، أيام دراسة).</p>' + lb.slice(0, 5).map(function (x, i) { return '<div class="row" style="align-items:center' + (x.mine ? ";background:rgba(212,175,55,.18);border-radius:10px;padding:2px 8px" : "") + '"><span style="font-size:1.35rem">' + ["🥇", "🥈", "🥉", "4", "5"][i] + " " + KZ.esc(x.emoji) + " " + KZ.esc(x.nickname) + '</span><span class="muted">' + x.score + ' نقطة · ' + KZ.esc(x.level) + "</span></div>"; }).join("") + '<p class="muted" style="margin:8px 0 0;font-size:.85rem">' + (me ? "أنت في القائمة 🎉" : "اختر إيموجي ولقباً من «المجتمع ← شخصيتي» لتظهر هنا.") + "</p></div>");
+      }
+      if (any) host.insertAdjacentElement("afterend", box);
+    } catch (e) {}
+  })();
 })();
 
 </script>

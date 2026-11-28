@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwz39l9u">
-<link rel="stylesheet" href="app.css?v=mwz39l9u">
+<link rel="stylesheet" href="site.css?v=mx0fyc0l">
+<link rel="stylesheet" href="app.css?v=mx0fyc0l">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,8 +24,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwz39l9u"></script>
-<script src="portal-i18n.js?v=mwz39l9u"></script>
+<script src="app.js?v=mx0fyc0l"></script>
+<script src="portal-i18n.js?v=mx0fyc0l"></script>
 
 <script>
 (async function () {
@@ -128,6 +128,7 @@
       '<p><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="pub" ' + (p.show_public !== false ? "checked" : "") + ' style="width:auto;min-height:0"> أظهر اسمي المستعار في قائمة الأعضاء</label></p><p><button class="btn btn-primary" id="saveMe" type="button">حفظ</button></p></div>';
     function prev() { document.getElementById("prev").innerHTML = avatar(st.emoji, st.color) + ' <strong style="font-size:1.2rem">' + esc(document.getElementById("nick").value || "اسمك هنا") + "</strong>"; }
     var eg = document.getElementById("eg"); EMOJIS.forEach(function (e) { var x = document.createElement("button"); x.type = "button"; x.textContent = e; x.setAttribute("aria-pressed", String(e === st.emoji)); x.addEventListener("click", function () { st.emoji = e; eg.querySelectorAll("button").forEach(function (y) { y.setAttribute("aria-pressed", String(y === x)); }); prev(); }); eg.appendChild(x); });
+    try { sb.rpc("taken_emojis").then(function (r) { var taken = (r && r.data) || []; eg.querySelectorAll("button").forEach(function (x) { if (taken.indexOf(x.textContent) >= 0 && x.textContent !== st.emoji) { x.disabled = true; x.title = "أخذه طالب آخر"; x.style.opacity = ".3"; x.style.textDecoration = "line-through"; } }); }); } catch (e) {}
     var cs = document.getElementById("cs"); COLORS.forEach(function (c) { var x = document.createElement("button"); x.type = "button"; x.style.background = c; x.setAttribute("aria-pressed", String(c === st.color)); x.addEventListener("click", function () { st.color = c; cs.querySelectorAll("button").forEach(function (y) { y.setAttribute("aria-pressed", String(y === x)); }); prev(); }); cs.appendChild(x); });
     document.getElementById("nick").addEventListener("input", prev); prev();
     document.getElementById("saveMe").addEventListener("click", async function () {
@@ -135,7 +136,8 @@
       if (n.length < 2) { KZ.toast("اكتب اسماً مستعاراً من حرفين على الأقل.", true); return; }
       var bad = check(n); if (bad) { KZ.toast(bad, true); return; }
       var r = await savePrefs({ nickname: n, emoji: st.emoji, color: st.color, show_public: document.getElementById("pub").checked });
-      if (!r.error) KZ.toast("تم حفظ شخصيتك.");
+      if (r.error) { KZ.toast(/emoji_uq|duplicate|unique/i.test(r.error.message || "") ? "هذا الإيموجي أخذه طالب آخر، اختر غيره." : "تعذر الحفظ.", true); return; }
+      KZ.toast("تم حفظ شخصيتك.");
     });
   }
 

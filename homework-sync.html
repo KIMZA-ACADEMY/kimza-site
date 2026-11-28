@@ -18,6 +18,7 @@ label.chk{display:flex;gap:8px;align-items:center;margin:8px 0}
 <label class="chk"><input type="checkbox" id="hw" checked> الواجبات</label>
 <label class="chk"><input type="checkbox" id="cl" checked> صفحات الحصة</label>
 <label class="btn" id="pick">اختيار المجلد وبدء الرفع<input type="file" id="dir" webkitdirectory multiple style="display:none"></label>
+<input type="file" id="dir2" multiple style="display:none">
 <div class="bar"><i id="bar"></i></div>
 <p id="st">بعد اختيار المجلد قد يطلب المتصفح تأكيداً. اضغط «رفع/Upload» ثم انتظر.</p>
 <div id="log"></div>
@@ -36,12 +37,15 @@ label.chk{display:flex;gap:8px;align-items:center;margin:8px 0}
     if (!p.data || p.data.role !== "teacher") { $("who").textContent = "هذه الصفحة للمعلم فقط."; $("dir").disabled = true; return; }
     ok = true; $("who").textContent = "مسجّل الدخول كمعلم: " + p.data.full_name;
   })();
-  $("dir").addEventListener("change", async function (e) {
+  $("dir2").addEventListener("change", function (e) { run(e); });
+  $("dir").addEventListener("change", run);
+  async function run(e) {
     if (!ok) return;
     var files = Array.prototype.slice.call(e.target.files || []), jobs = [];
     files.forEach(function (f) {
-      var rel = f.webkitRelativePath || "", m = /([A-C][12]) Lesson (\d+)[^\/]*\/(8-homework-v2|7-class-page-v2)\.html$/.exec(rel); if (!m) return;
-      var id = m[1] + "-L" + ("0" + m[2]).slice(-2), kind = m[3] === "8-homework-v2" ? "homework" : "class";
+      var id, kind, fm = /^([A-C][12]-L\d\d)__(homework|class)\.html$/.exec(f.name);
+      if (fm) { id = fm[1]; kind = fm[2]; }
+      else { var rel = f.webkitRelativePath || "", m = /([A-C][12]) Lesson (\d+)[^\/]*\/(8-homework-v2|7-class-page-v2)\.html$/.exec(rel); if (!m) return; id = m[1] + "-L" + ("0" + m[2]).slice(-2); kind = m[3] === "8-homework-v2" ? "homework" : "class"; }
       if ($("skip1").checked && /^(A1|A2)-L01$/.test(id)) return;
       if (kind === "homework" && !$("hw").checked) return; if (kind === "class" && !$("cl").checked) return;
       jobs.push({ id: id, kind: kind, file: f });
@@ -55,6 +59,6 @@ label.chk{display:flex;gap:8px;align-items:center;margin:8px 0}
       $("bar").style.width = Math.round((i + 1) / jobs.length * 100) + "%"; $("st").textContent = "تم " + (i + 1) + " من " + jobs.length;
     }
     $("st").textContent = "انتهى: رُفع " + done + " ملفاً" + (bad ? " وتعذّر " + bad : "") + ".";
-  });
+  }
 })();
 </script></body></html>

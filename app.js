@@ -385,7 +385,7 @@
       var dis = {}; try { dis = JSON.parse(localStorage.getItem("kz-bell-dis-" + uid) || "{}"); } catch (e) {}
       function add(n, icon, text, href) { n = Number(n) || 0; if (isT) { var k = href; if (n <= (dis[k] || 0)) { if (n < (dis[k] || 0)) { dis[k] = n; } n = 0; } else n = n - (dis[k] || 0); } if (n > 0) out.push({ n: n, icon: icon, text: text + (n > 1 ? " (" + n + ")" : ""), href: href, key: href }); }
       if (isT) {
-        add(r.student_msgs, "✉️", "رسائل جديدة من الطلاب", "admin.html#messages"); add(r.name_req, "✏️", "طلبات تغيير اسم", "account.html"); add(r.pay_req, "💳", "إيصالات وطلبات دفع", "admin.html#payments"); add(r.new_students, "🧑‍🎓", "طلاب جدد ينتظرون القبول", "admin.html#applications"); add(r.events, "🔑", "طلاب غيّروا كلمة المرور", "admin.html#events");
+        add(r.student_msgs, "✉️", "رسائل جديدة من الطلاب", "admin.html#messages"); add(r.name_req, "✏️", "طلبات تغيير اسم", "account.html"); add(r.pay_req, "💳", "إيصالات وطلبات دفع", "admin.html#payments"); add(r.up_req, "🚀", "طلاب وافقوا على اختبارات الترقية", "admin.html#upgrades"); add(r.new_students, "🧑‍🎓", "طلاب جدد ينتظرون القبول", "admin.html#applications"); add(r.events, "🔑", "طلاب غيّروا كلمة المرور", "admin.html#events");
         if (KZ.profile.role === "teacher") { try { var pb = await sb.from("speaking_bookings").select("id", { count: "exact", head: true }).eq("status", "pending"); add(pb.count, "📅", "طلبات حجز حصص محادثة", "admin.html#bookings"); } catch (e) {} }
       } else {
         add(r.teacher_msgs, "✉️", "رسالة جديدة من معلمك", "messages.html"); add(r.fr_req, "🤝", "طلب صداقة جديد", "friends.html"); add(r.fr_msgs, "💬", "رسالة جديدة من صديق", "friends.html");
