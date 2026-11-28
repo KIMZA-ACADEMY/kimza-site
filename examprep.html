@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
 <script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=mwxn9iug">
-<link rel="stylesheet" href="app.css?v=mwxn9iug">
+<link rel="stylesheet" href="site.css?v=mx0blcdj">
+<link rel="stylesheet" href="app.css?v=mx0blcdj">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B1F44">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,8 +24,8 @@
 <main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
 <script src="supabase-lib.js"></script>
 <script src="config.js"></script>
-<script src="app.js?v=mwxn9iug"></script>
-<script src="portal-i18n.js?v=mwxn9iug"></script>
+<script src="app.js?v=mx0blcdj"></script>
+<script src="portal-i18n.js?v=mx0blcdj"></script>
 
 <script>
 (async function () {
@@ -106,7 +106,7 @@
     var w = weeks.filter(function (x) { return x.id === S.id; })[0]; if (!w) { S.view = "weeks"; render(); return; }
     var idx = weeks.indexOf(w), nx = weeks[idx + 1], pv = weeks[idx - 1];
     var h = '<p><button class="btn btn-ghost sm" data-v="weeks" type="button">› رجوع</button></p><h1>' + esc(w.title) + '</h1><div class="btns"><button class="btn btn-ghost sm" id="epListen" type="button">🔊 استمع للنص المحدد</button><button class="btn ' + (done[w.id] ? "btn-ghost" : "btn-primary") + ' sm" id="epDone" type="button">' + (done[w.id] ? "✔ أنهيته (إلغاء)" : "أنهيت هذا الأسبوع") + '</button></div>' +
-      '<div class="tile ep-md" id="epMd">' + md(w.content) + '</div><div class="btns" style="margin-top:12px">' + (pv ? '<button class="btn btn-ghost" data-w="' + pv.id + '" type="button">‹ السابق</button>' : "") + (nx ? '<button class="btn btn-primary" data-w="' + nx.id + '" type="button">التالي ›</button>' : "") + "</div>";
+      '<div class="tile ep-md kz-lookup" id="epMd">' + md(w.content) + '</div><div class="btns" style="margin-top:12px">' + (pv ? '<button class="btn btn-ghost" data-w="' + pv.id + '" type="button">‹ السابق</button>' : "") + (nx ? '<button class="btn btn-primary" data-w="' + nx.id + '" type="button">التالي ›</button>' : "") + "</div>";
     app.innerHTML = h; bind();
     document.getElementById("epListen").addEventListener("click", function () { var t = String(window.getSelection ? window.getSelection() : "").trim(); if (!t) { KZ.toast("حدّد نصاً إنجليزياً بالماوس أو بإصبعك ثم اضغط.", true); return; } speak(t.slice(0, 600)); });
     document.getElementById("epDone").addEventListener("click", function () { if (done[w.id]) delete done[w.id]; else done[w.id] = 1; try { localStorage.setItem(doneKey, JSON.stringify(done)); } catch (e) {} if (done[w.id] && KZ.confetti) { try { KZ.confetti(); } catch (e) {} } render(); });

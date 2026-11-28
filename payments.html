@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>الدفع · KIMZA Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600;700&family=Tajawal:wght@400;500;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet"></noscript>
+<script>try{var t=localStorage.getItem("kimza-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);var l=localStorage.getItem("kimza-lang")==="en"?"en":"ar";document.documentElement.setAttribute("lang",l);document.documentElement.setAttribute("dir",l==="en"?"ltr":"rtl")}catch(e){}</script>
+<link rel="stylesheet" href="site.css?v=mx0blcdj">
+<link rel="stylesheet" href="app.css?v=mx0blcdj">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B1F44">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<script>if("serviceWorker"in navigator&&location.protocol!=="file:")addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})</script>
+<script>(function(){var shown=false;function show(){if(shown||window.KZ)return;shown=true;var d=document.createElement("div");d.id="kzGuard";d.style.cssText="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#0B1F44;color:#fff;padding:12px 16px;text-align:center;font:15px/1.6 Tahoma,Arial,sans-serif";d.innerHTML='الصفحة لا تكتمل التحميل؟ قد يكون الاتصال ضعيفاً أو متصفحك قديماً. <a href="check.html" style="color:#D4AF37;font-weight:bold">اضغط هنا لاختبار الاتصال</a>';(document.body||document.documentElement).appendChild(d)}function hide(){var e=document.getElementById("kzGuard");if(e&&e.parentNode)e.parentNode.removeChild(e)}addEventListener("error",function(e){var t=e.target;if(t&&t.tagName==="SCRIPT")setTimeout(show,300)},true);setTimeout(function(){show();var i=setInterval(function(){if(window.KZ){hide();clearInterval(i)}},1000)},9000)})()</script>
+
+</head>
+<body class="app">
+<header class="app-nav" id="appHeader"></header>
+<main class="app-main" id="app"><p class="muted">جارٍ التحميل...</p></main>
+<script src="supabase-lib.js"></script>
+<script src="config.js"></script>
+<script src="app.js?v=mx0blcdj"></script>
+<script src="portal-i18n.js?v=mx0blcdj"></script>
+
+<script>
+(async function () {
+  var prof = await KZ.requireAuth("student");
+  if (!prof) return;
+  KZ.shell("payments");
+  var sb = KZ.sb, esc = KZ.esc, app = document.getElementById("app"), uid = KZ.user.id;
+  var delayOn = KZ.on("pay_delay");
+  var ST = { pending: "قيد المراجعة", approved: "تمت الموافقة ✅", rejected: "لم تُقبل" };
+
+  async function load() {
+    var me = ((await sb.rpc("my_pay")).data || [])[0] || { pay_status: "unpaid" };
+    var rows = (await sb.from("payment_requests").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(30)).data || [];
+    var fmt = function (d) { try { return new Date(d).toLocaleDateString("ar", { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return d; } };
+    var box = me.pay_status === "paid"
+      ? '<div class="infobox" style="border-color:#2e7d32">✅ <strong>اشتراكك مدفوع</strong>' + (me.paid_until ? " حتى " + esc(fmt(me.paid_until)) : "") + ". شكراً لك.</div>"
+      : me.pay_status === "delayed"
+        ? '<div class="infobox" style="border-color:var(--gold)">⏳ <strong>تمت الموافقة على تأجيلك</strong>' + (me.delay_until ? " حتى " + esc(fmt(me.delay_until)) : "") + ". لا تنسَ الدفع في الموعد.</div>"
+        : '<div class="warnbox">لم يُسجَّل دفع اشتراكك بعد. أرسل صورة الإيصال أدناه ليؤكدها المعلم.</div>';
+    var h = "<h1>💳 الدفع</h1>" + box +
+      '<div class="tile" style="margin-top:14px"><h2 style="margin-top:0">📤 أرسلتُ المبلغ (إيصال)</h2><div class="form">' +
+      '<div class="grid2"><div><label for="pyAmt">المبلغ</label><input id="pyAmt" type="number" min="0" step="any" inputmode="decimal"></div>' +
+      '<div><label for="pyMon">الشهر الذي يغطيه (اختياري)</label><input id="pyMon" dir="ltr" placeholder="2026-12" maxlength="10"></div></div>' +
+      '<div><label for="pyImg">صورة الإيصال (مطلوبة)</label><input id="pyImg" type="file" accept="image/*"></div><img id="pyPrev" alt="" style="display:none;max-width:260px;border-radius:12px;margin-top:6px">' +
+      '<div><label for="pyNote">ملاحظة (اختياري)</label><textarea id="pyNote" rows="2" maxlength="800" placeholder="رقم العملية، اسم المرسِل، أي توضيح..."></textarea></div>' +
+      '<div class="btns"><button class="btn btn-primary" id="pySend" type="button">إرسال الإيصال</button> <span id="pyMsg" class="muted"></span></div></div></div>';
+    if (delayOn) h += '<div class="tile" style="margin-top:14px"><h2 style="margin-top:0">🕒 أحتاج تأجيلاً</h2><p class="muted">إن تعذّر الدفع الآن، اكتب الموعد الذي ستدفع فيه. يوافق المعلم أو لا، وستصلك النتيجة.</p><div class="form">' +
+      '<div><label for="dyDate">أستطيع الدفع في تاريخ</label><input id="dyDate" type="date" min="' + new Date().toISOString().slice(0, 10) + '"></div>' +
+      '<div><label for="dyNote">السبب أو ملاحظة (اختياري)</label><textarea id="dyNote" rows="2" maxlength="800"></textarea></div>' +
+      '<div class="btns"><button class="btn btn-ghost" id="dySend" type="button">طلب التأجيل</button> <span id="dyMsg" class="muted"></span></div></div></div>';
+    h += '<h2 style="margin-top:22px">طلباتي</h2>' + (rows.length ? rows.map(function (r) {
+      return '<div class="tile" style="margin-top:8px"><div class="row" style="border:0;padding:0"><div><strong>' + (r.kind === "receipt" ? "إيصال" + (r.amount ? " — " + esc(r.amount) + " " + esc(r.currency) : "") : "طلب تأجيل إلى " + esc(fmt(r.promised_date))) + '</strong><div class="muted" style="font-size:.85rem">' + esc(fmt(r.created_at)) + "</div></div><span class=\"badge " + (r.status === "approved" ? "ok" : r.status === "rejected" ? "bad" : "gold") + '">' + ST[r.status] + "</span></div>" + (r.teacher_note ? '<p style="margin:6px 0 0">💬 ' + esc(r.teacher_note) + "</p>" : "") + "</div>";
+    }).join("") : '<p class="muted">لا طلبات بعد.</p>');
+    app.innerHTML = h;
+    var blob = null;
+    document.getElementById("pyImg").addEventListener("change", async function () {
+      var f = this.files[0]; if (!f) return;
+      try { blob = await KZ.prepImage(f, 1600); var p = document.getElementById("pyPrev"); p.src = URL.createObjectURL(blob); p.style.display = "block"; } catch (e) { blob = null; KZ.toast(e.message, true); }
+    });
+    function errTxt(m) { return /too many/.test(m) ? "لديك 3 طلبات قيد المراجعة. انتظر ردّ المعلم." : /receipt photo/.test(m) ? "أرفق صورة الإيصال." : /not available/.test(m) ? "طلب التأجيل غير متاح حالياً." : /within 60/.test(m) ? "اختر تاريخاً خلال 60 يوماً." : "تعذر الإرسال: " + m; }
+    document.getElementById("pySend").addEventListener("click", async function () {
+      var m = document.getElementById("pyMsg"); if (!blob) { m.textContent = "اختر صورة الإيصال أولاً."; return; }
+      this.disabled = true; m.textContent = "جارٍ الرفع...";
+      try {
+        var path = uid + "/" + Date.now().toString(36) + ".jpg";
+        var up = await sb.storage.from("payment-receipts").upload(path, blob, { contentType: "image/jpeg" }); if (up.error) throw new Error(up.error.message);
+        var r = await sb.rpc("submit_payment", { p_kind: "receipt", p_amount: Number(document.getElementById("pyAmt").value) || null, p_currency: "YER", p_month: document.getElementById("pyMon").value.trim() || null, p_receipt: path, p_note: document.getElementById("pyNote").value.trim() || null, p_date: null });
+        if (r.error) throw new Error(r.error.message);
+        KZ.toast("وصل إيصالك للمعلم ✅"); load();
+      } catch (e) { m.textContent = errTxt(e.message || ""); this.disabled = false; }
+    });
+    var dy = document.getElementById("dySend");
+    if (dy) dy.addEventListener("click", async function () {
+      var m = document.getElementById("dyMsg"), d = document.getElementById("dyDate").value; if (!d) { m.textContent = "اختر التاريخ."; return; }
+      this.disabled = true;
+      var r = await sb.rpc("submit_payment", { p_kind: "delay", p_amount: null, p_currency: "YER", p_month: null, p_receipt: null, p_note: document.getElementById("dyNote").value.trim() || null, p_date: d });
+      if (r.error) { m.textContent = errTxt(r.error.message); this.disabled = false; return; }
+      KZ.toast("أُرسل طلب التأجيل للمعلم."); load();
+    });
+  }
+  await load();
+})();
+
+</script>
+</body>
+</html>

@@ -71,7 +71,7 @@
     } catch (e) {}
     if (prof.role === "student") {
       var page = (location.pathname.split("/").pop() || "").replace(".html", "");
-      var PAGE_FEATURE = { review: "review", flashcards: "flashcards", attendance: "attendance", speaking: "speaking", certificates: "certificates", lesson: "lessons", test: "tests", friends: "friends", tasks: "p_tasks", messages: "p_messages", skills: "p_skills", examprep: "exam_prep", exams: "p_exams", schedule: "p_schedule", live: "p_live", account: "p_account", community: "p_community" };
+      var PAGE_FEATURE = { review: "review", flashcards: "flashcards", attendance: "attendance", speaking: "speaking", certificates: "certificates", lesson: "lessons", test: "tests", friends: "friends", tasks: "p_tasks", messages: "p_messages", skills: "p_skills", examprep: "exam_prep", exams: "p_exams", schedule: "p_schedule", live: "p_live", payments: "p_payments", account: "p_account", community: "p_community" };
       var key = !KZ.on("portal") ? "portal" : PAGE_FEATURE[page];
       if (key && !KZ.on(key)) {
         shell("");
@@ -87,10 +87,10 @@
   function shell(active) {
     var prof = KZ.profile;
     var isT = prof && (prof.role === "teacher" || prof.role === "staff");
-    var FOFF = { "review.html": "review", "flashcards.html": "flashcards", "attendance.html": "attendance", "speaking.html": "speaking", "certificates.html": "certificates", "tasks.html": "p_tasks", "messages.html": "p_messages", "skills.html": "p_skills", "examprep.html": "exam_prep", "exams.html": "p_exams", "friends.html": "friends", "schedule.html": "p_schedule", "live.html": "p_live", "account.html": "p_account", "community.html": "p_community" };
+    var FOFF = { "review.html": "review", "flashcards.html": "flashcards", "attendance.html": "attendance", "speaking.html": "speaking", "certificates.html": "certificates", "tasks.html": "p_tasks", "messages.html": "p_messages", "skills.html": "p_skills", "examprep.html": "exam_prep", "exams.html": "p_exams", "friends.html": "friends", "schedule.html": "p_schedule", "live.html": "p_live", "payments.html": "p_payments", "account.html": "p_account", "community.html": "p_community" };
     var links = prof && prof.role === "staff" ? [["admin.html", "لوحة المعلم", "admin"]] : isT
       ? [["admin.html", "لوحة المعلم", "admin"], ["schedule.html", "مواعيد الحصص", "schedule"], ["live.html", "الحصص المباشرة", "live"], ["account.html", "طلبات الأسماء", "account"], ["community.html", "المجتمع", "community"]]
-      : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["tasks.html", "مهامي", "tasks"], ["messages.html", "رسائلي", "messages"], ["skills.html", "الكتابة والمحادثة", "skills"], ["examprep.html", "IELTS / TOEFL", "examprep"], ["exams.html", "الامتحانات", "exams"], ["friends.html", "أصدقائي", "friends"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"], ["schedule.html", "مواعيد الحصص", "schedule"], ["live.html", "الحصص المباشرة", "live"], ["account.html", "حسابي", "account"], ["community.html", "المجتمع", "community"]].filter(function (l) { return !FOFF[l[0]] || KZ.on(FOFF[l[0]]); });
+      : [["dashboard.html", "الرئيسية", "home"], ["review.html", "المراجعة", "review"], ["flashcards.html", "البطاقات", "cards"], ["attendance.html", "الحضور", "att"], ["tasks.html", "مهامي", "tasks"], ["messages.html", "رسائلي", "messages"], ["skills.html", "الكتابة والمحادثة", "skills"], ["examprep.html", "IELTS / TOEFL", "examprep"], ["exams.html", "الامتحانات", "exams"], ["friends.html", "أصدقائي", "friends"], ["speaking.html", "المحادثة", "speak"], ["certificates.html", "الشهادات", "cert"], ["schedule.html", "مواعيد الحصص", "schedule"], ["live.html", "الحصص المباشرة", "live"], ["payments.html", "الدفع", "payments"], ["account.html", "حسابي", "account"], ["community.html", "المجتمع", "community"]].filter(function (l) { return !FOFF[l[0]] || KZ.on(FOFF[l[0]]); });
     var h = '<div class="wrap"><a href="' + (isT ? "admin.html" : "dashboard.html") + '"><img src="kimza-logo-gold.png" alt="KIMZA Academy"></a>' + '' +
       '<nav class="links" aria-label="Main">' + links.map(function (l) { return '<a href="' + l[0] + '"' + (l[2] === active ? ' aria-current="page"' : "") + ">" + l[1] + "</a>"; }).join("") +
       '<button class="btn btn-ghost sm" id="lookBtn" type="button" title="مظهري" aria-label="مظهري" style="color:var(--cream)">🎨</button>' + '<span class="who">' + esc(prof ? prof.full_name : "") + '</span><button class="btn btn-ghost sm" id="logoutBtn" type="button" style="color:var(--cream)">خروج</button></nav></div>';
@@ -385,7 +385,7 @@
       var dis = {}; try { dis = JSON.parse(localStorage.getItem("kz-bell-dis-" + uid) || "{}"); } catch (e) {}
       function add(n, icon, text, href) { n = Number(n) || 0; if (isT) { var k = href; if (n <= (dis[k] || 0)) { if (n < (dis[k] || 0)) { dis[k] = n; } n = 0; } else n = n - (dis[k] || 0); } if (n > 0) out.push({ n: n, icon: icon, text: text + (n > 1 ? " (" + n + ")" : ""), href: href, key: href }); }
       if (isT) {
-        add(r.student_msgs, "✉️", "رسائل جديدة من الطلاب", "admin.html#messages"); add(r.name_req, "✏️", "طلبات تغيير اسم", "account.html"); add(r.new_students, "🧑‍🎓", "طلاب جدد ينتظرون القبول", "admin.html#applications"); add(r.events, "🔑", "طلاب غيّروا كلمة المرور", "admin.html#events");
+        add(r.student_msgs, "✉️", "رسائل جديدة من الطلاب", "admin.html#messages"); add(r.name_req, "✏️", "طلبات تغيير اسم", "account.html"); add(r.pay_req, "💳", "إيصالات وطلبات دفع", "admin.html#payments"); add(r.new_students, "🧑‍🎓", "طلاب جدد ينتظرون القبول", "admin.html#applications"); add(r.events, "🔑", "طلاب غيّروا كلمة المرور", "admin.html#events");
         if (KZ.profile.role === "teacher") { try { var pb = await sb.from("speaking_bookings").select("id", { count: "exact", head: true }).eq("status", "pending"); add(pb.count, "📅", "طلبات حجز حصص محادثة", "admin.html#bookings"); } catch (e) {} }
       } else {
         add(r.teacher_msgs, "✉️", "رسالة جديدة من معلمك", "messages.html"); add(r.fr_req, "🤝", "طلب صداقة جديد", "friends.html"); add(r.fr_msgs, "💬", "رسالة جديدة من صديق", "friends.html");
@@ -711,6 +711,7 @@
       var t = e.target;
       if (ev === "selectstart" && t && t.nodeType === 1 && /^(INPUT|TEXTAREA)$/.test(t.tagName)) return;
       if (ev === "cut" || ev === "paste") { e.preventDefault(); return; }
+      if (ev === "selectstart") { try { var tt = t && t.nodeType === 1 ? t : (t && t.parentNode); if (tt && tt.closest && tt.closest(".kz-lookup")) return; } catch (x) {} }
       if (ok(t)) return;
       if (ev === "copy") { try { var sel = doc.getSelection(); if (sel && sel.rangeCount && ok(sel.anchorNode) && ok(sel.focusNode)) return; } catch (x) {} }
       e.preventDefault(); }); });
@@ -889,4 +890,56 @@
       el.appendChild(d);
     });
   };
+})();
+
+/* ===== double-click a English word (inside .kz-lookup / .kz-copyok) -> Arabic meaning + simple example ===== */
+(function () {
+  var KZ = window.KZ; if (!KZ) return;
+  var cache = {}; try { cache = JSON.parse(localStorage.getItem("kz-dict") || "{}"); } catch (e) {}
+  function save() { try { var k = Object.keys(cache); if (k.length > 400) k.slice(0, 100).forEach(function (x) { delete cache[x]; }); localStorage.setItem("kz-dict", JSON.stringify(cache)); } catch (e) {} }
+  async function tr(text) {
+    try { var r = await fetch("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) + "&langpair=en|ar"); var j = await r.json(); var t = j && j.responseData && j.responseData.translatedText; return t && !/MYMEMORY|QUERY LENGTH/i.test(t) ? t : ""; } catch (e) { return ""; }
+  }
+  async function lookup(w) {
+    var key = w.toLowerCase(); if (cache[key]) return cache[key];
+    var out = { ar: "", ex: "", exAr: "", def: "" };
+    try { // 1) the academy's own cards
+      var c = await KZ.sb.from("flashcards").select("arabic,example_en,example_ar").ilike("english", key).limit(1);
+      if (c.data && c.data[0]) { out.ar = c.data[0].arabic || ""; out.ex = c.data[0].example_en || ""; out.exAr = c.data[0].example_ar || ""; }
+    } catch (e) {}
+    if (!out.ar) out.ar = await tr(key);
+    try { // 2) simple English example + definition
+      var r = await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(key)); var j = await r.json();
+      if (Array.isArray(j)) { loop: for (var i = 0; i < j.length; i++) for (var m = 0; m < (j[i].meanings || []).length; m++) for (var d = 0; d < (j[i].meanings[m].definitions || []).length; d++) { var df = j[i].meanings[m].definitions[d]; if (!out.def) out.def = df.definition || ""; if (!out.ex && df.example) out.ex = df.example; if (out.def && out.ex) break loop; } }
+    } catch (e) {}
+    if (out.ex && !out.exAr) out.exAr = await tr(out.ex);
+    if (out.ar || out.ex) { cache[key] = out; save(); }
+    return out;
+  }
+  function pop(rect, w) {
+    var old = document.getElementById("kzLk"); if (old) old.remove();
+    var d = document.createElement("div"); d.id = "kzLk"; d.setAttribute("role", "dialog");
+    d.style.cssText = "position:fixed;z-index:10000;max-width:min(340px,calc(100vw - 20px));background:var(--surface,#fff);color:var(--text,#111);border:2px solid #D4AF37;border-radius:14px;box-shadow:0 10px 34px rgba(0,0,0,.35);padding:12px 14px;font-size:.95rem;line-height:1.5";
+    d.innerHTML = '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><strong dir="ltr" style="font-size:1.15rem">' + KZ.esc(w) + '</strong><span><button type="button" id="kzLkS" aria-label="نطق" style="border:0;background:none;cursor:pointer;font-size:1.1rem">🔊</button><button type="button" id="kzLkX" aria-label="إغلاق" style="border:0;background:none;cursor:pointer;font-size:1.1rem">✕</button></span></div><div id="kzLkB" class="muted">جارٍ البحث...</div>';
+    document.body.appendChild(d);
+    var x = Math.min(window.innerWidth - d.offsetWidth - 10, Math.max(10, rect.left)), y = rect.bottom + 8; if (y + d.offsetHeight > window.innerHeight - 10) y = Math.max(10, rect.top - d.offsetHeight - 8);
+    d.style.left = x + "px"; d.style.top = y + "px";
+    document.getElementById("kzLkX").onclick = function () { d.remove(); };
+    document.getElementById("kzLkS").onclick = function () { try { var u = new SpeechSynthesisUtterance(w); u.lang = "en-GB"; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} };
+    lookup(w).then(function (o) {
+      var b = document.getElementById("kzLkB"); if (!b) return;
+      b.className = "";
+      b.innerHTML = (o.ar ? '<div style="font-size:1.25rem;font-weight:800;color:#0B1F44;direction:rtl">' + KZ.esc(o.ar) + "</div>" : '<div class="muted">لم أجد ترجمة لهذه الكلمة.</div>') +
+        (o.def ? '<div dir="ltr" style="margin-top:6px;font-size:.85rem;opacity:.8">' + KZ.esc(o.def) + "</div>" : "") +
+        (o.ex ? '<div style="margin-top:8px;border-top:1px dashed #c9c2ad;padding-top:6px"><div dir="ltr">' + KZ.esc(o.ex) + "</div>" + (o.exAr ? '<div style="direction:rtl;opacity:.85">' + KZ.esc(o.exAr) + "</div>" : "") + "</div>" : "");
+    });
+  }
+  document.addEventListener("dblclick", function (e) {
+    var t = e.target; if (!t || !t.closest || !t.closest(".kz-lookup, .kz-copyok")) return;
+    var sel = window.getSelection && window.getSelection(); if (!sel || !sel.rangeCount) return;
+    var w = sel.toString().trim().replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, ""); if (!/^[A-Za-z][A-Za-z'’-]{0,30}$/.test(w)) return;
+    pop(sel.getRangeAt(0).getBoundingClientRect(), w);
+  });
+  document.addEventListener("mousedown", function (e) { var p = document.getElementById("kzLk"); if (p && !p.contains(e.target)) p.remove(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { var p = document.getElementById("kzLk"); if (p) p.remove(); } });
 })();
