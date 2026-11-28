@@ -419,3 +419,11 @@ html[data-motion="off"] *{animation:none!important;transition:none!important}
 /* ===== phase 47 ===== */
 .vt-slot.vt-full{opacity:.55;cursor:not-allowed;filter:grayscale(.6)}
 .vt-slot.vt-full:hover{transform:none}
+
+/* ===== phone navigation (portal): one swipeable row ===== */
+@media (max-width:900px){
+  .app-nav .wrap{flex-wrap:wrap;row-gap:4px}
+  .app-nav .links{flex-wrap:nowrap!important;overflow-x:auto;overflow-y:hidden;flex:0 0 100%;order:5;margin:0!important;padding:2px 0 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;gap:6px}
+  .app-nav .links::-webkit-scrollbar{display:none}
+  .app-nav .links a,.app-nav .links button,.app-nav .links .who{flex:0 0 auto;white-space:nowrap}
+}

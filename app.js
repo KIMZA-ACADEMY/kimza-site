@@ -944,15 +944,26 @@
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") { var p = document.getElementById("kzLk"); if (p) p.remove(); } });
 })();
 
-/* ===== page skin: lesson pages (class, homework) use the same colours as the site ===== */
+/* ===== page skin: lesson pages (class, homework) use the same colours as the site, unless the student chose his own (kz_hw_pal / kz_hw_mode) ===== */
 (function () {
   var KZ = window.KZ; if (!KZ) return;
-  KZ.pageSkin = function () {
+  function tokens() {
     var cs = getComputedStyle(document.documentElement), g = function (n, d) { return (cs.getPropertyValue(n) || "").trim() || d; };
     var dark = document.documentElement.getAttribute("data-theme") === "dark";
-    var bg = g("--bg", "#07162F"), sf = g("--surface", "#0B1F44"), sf2 = g("--surface-2", sf), tx = g("--text", "#F8F4E9"), mu = g("--muted", "#CBD5E1"), ln = g("--line", "#1F3B6B"), ac = g("--gold", "#D4AF37"), lk = g("--link", "#7A0F2D");
-    var btn = dark ? "#7A0F2D" : lk, hc = dark ? ac : lk;
-    return "<style id='kzUnify'>:root{--navy:" + g("--navy", "#0B1F44") + ";--gold:" + ac + ";--paper:" + sf + ";--line:" + ln + ";--slate:" + mu + ";--burgundy:" + hc + ";--gold-soft:" + sf2 + "}" +
+    var T = { bg: g("--bg", "#07162F"), sf: g("--surface", "#0B1F44"), sf2: g("--surface-2", g("--surface", "#0B1F44")), tx: g("--text", "#F8F4E9"), mu: g("--muted", "#CBD5E1"), ln: g("--line", "#1F3B6B"), ac: g("--gold", "#D4AF37"), lk: g("--link", "#7A0F2D"), navy: g("--navy", "#0B1F44") };
+    var pal = "site", mode = "site"; try { pal = localStorage.getItem("kz_hw_pal") || "site"; mode = localStorage.getItem("kz_hw_mode") || "site"; } catch (e) {}
+    if (pal !== "site" || mode !== "site") {
+      var p = KZ.PALETTES[Number(pal) || 0] || KZ.PALETTES[0], dk = mode === "dark" || (mode === "site" && dark), m = KZ.mix;
+      if (!dk) { T = { bg: p[3], sf: p[4], sf2: p[3], tx: p[5], mu: p[7], ln: p[8], ac: p[2], lk: p[6], navy: p[1] }; dark = false; }
+      else { T = { bg: m(p[1], "#000000", 0.55), sf: m(p[1], "#000000", 0.25), sf2: m(p[1], "#000000", 0.4), tx: p[3], mu: m(p[3], p[1], 0.35), ln: m(p[1], "#ffffff", 0.2), ac: p[2], lk: p[2], navy: p[1] }; dark = true; }
+      T.custom = true;
+    }
+    T.dark = dark; return T;
+  }
+  KZ.pageSkinCss = function () {
+    var T = tokens(), bg = T.bg, sf = T.sf, sf2 = T.sf2, tx = T.tx, mu = T.mu, ln = T.ln, ac = T.ac, lk = T.lk;
+    var btn = T.custom ? (T.dark ? T.ac : T.lk) : (T.dark ? "#7A0F2D" : lk), hc = T.dark ? ac : lk, btnTx = (T.custom && T.dark) ? "#0B1F44" : "#fff";
+    return ":root{--navy:" + T.navy + ";--gold:" + ac + ";--paper:" + sf + ";--line:" + ln + ";--slate:" + mu + ";--burgundy:" + hc + ";--gold-soft:" + sf2 + "}" +
       "html,body{background:" + bg + "!important;color:" + tx + "!important}" +
       ".top,header{background:transparent!important;border:0!important;box-shadow:none!important;padding:8px 8px 0!important}.top:after{display:none!important}.brand{display:none!important}.title,.lesson{color:" + tx + "!important}" +
       ".bar,.card,.section,#result,#score,.plan span{background:" + sf + "!important;border:1px solid " + ln + "!important;color:" + tx + "!important;border-radius:20px!important;box-shadow:0 10px 26px rgba(11,31,68,.12)!important}" +
@@ -960,18 +971,18 @@
       "h1,h2,.card h2,.section h2,.q .text,.reveal,label,.fb,.title{color:" + tx + "!important}h3,#gramPanel h3,.prompt small,.blank{color:" + hc + "!important}.blank{border-bottom-color:" + hc + "!important}" +
       "input,textarea,select,input[type=number]{background:" + bg + "!important;color:" + tx + "!important;border:1.5px solid " + ln + "!important;border-radius:12px!important}input:focus,textarea:focus,select:focus{outline:2px solid " + ac + "!important}" +
       ".opts label,.chip,.btn.ghost{background:" + bg + "!important;color:" + tx + "!important;border:1.5px solid " + ln + "!important;border-radius:12px!important}.opts label:hover,.chip:hover{border-color:" + ac + "!important}" +
-      ".btn,.btn.gold{background:" + btn + "!important;color:#fff!important;border:1px solid " + ac + "!important;border-radius:999px!important;transition:transform .15s,filter .15s!important}.btn:hover{filter:brightness(1.1);transform:translateY(-1px)}" +
-      ".badge{background:" + btn + "!important;color:#F4D98A!important}.note,.hint,.rules,.selfnote,.why,footer{color:" + mu + "!important}.timer{color:" + hc + "!important}" +
-      /* v2 pages */
-      ".card{border-inline-start-color:" + ac + "!important}.map a{background:" + sf + "!important;border-color:" + ln + "!important;color:" + tx + "!important}.map a:hover{border-color:" + ac + "!important}.map b{background:" + btn + "!important;color:#F4D98A!important}" +
+      ".btn,.btn.gold{background:" + btn + "!important;color:" + btnTx + "!important;border:1px solid " + ac + "!important;border-radius:999px!important;transition:transform .15s,filter .15s!important}.btn:hover{filter:brightness(1.1);transform:translateY(-1px)}" +
+      ".badge{background:" + btn + "!important;color:" + (T.custom && T.dark ? "#0B1F44" : "#F4D98A") + "!important}.note,.hint,.rules,.selfnote,.why,footer{color:" + mu + "!important}.timer{color:" + hc + "!important}" +
+      ".card{border-inline-start-color:" + ac + "!important}.map a{background:" + sf + "!important;border-color:" + ln + "!important;color:" + tx + "!important}.map a:hover{border-color:" + ac + "!important}.map b{background:" + btn + "!important;color:" + btnTx + "!important}" +
       ".sticky{background:" + sf + "!important;border-color:" + ac + "!important;color:" + tx + "!important}.sticky .pg{background:" + ln + "!important}.sticky #pgFill{background:" + ac + "!important}.snd{color:" + tx + "!important;border-color:" + ac + "!important}" +
       ".gbtn{background:" + sf2 + "!important;color:" + tx + "!important;border-color:" + ac + "!important}" +
       "#gramPanel .gp{background:" + sf + "!important;color:" + tx + "!important;border-color:" + ac + "!important}#gramPanel .gform{background:" + sf2 + "!important;color:" + tx + "!important}#gramPanel .gl{color:" + hc + "!important}#gramPanel .chip{color:" + tx + "!important;border-color:" + ac + "!important}.gex2{color:" + mu + "!important}" +
       ".advice{background:" + sf2 + "!important;color:" + tx + "!important;border-color:" + ac + "!important}.wrong{background:rgba(185,28,28,.22)!important;color:" + tx + "!important}" +
       ".chip.good,.opts label.good{background:rgba(21,128,61,.25)!important;border-color:#16a34a!important}.chip.bad{background:rgba(185,28,28,.25)!important;border-color:#dc2626!important}" +
-      "#sboard #sbBtns{background:" + sf + "!important;border-color:" + ac + "!important}#sboard #sbBtns button,#sboard #sbBtns label{color:" + tx + "!important;border-color:" + ac + "!important}#sboard #sbTog{background:" + btn + "!important;border-color:" + ac + "!important}" +
+      "#sboard #sbBtns{background:" + sf + "!important;border-color:" + ac + "!important}#sboard #sbBtns button,#sboard #sbBtns label{color:" + tx + "!important;border-color:" + ac + "!important}#sboard #sbTog,#kzSetBtn{background:" + btn + "!important;border-color:" + ac + "!important;color:" + btnTx + "!important}" +
       "#kitBtn,#kitPanel,#themeBtn{display:none!important}" +
-      "main{max-width:880px!important;margin-top:8px!important}</style>";
+      "main{max-width:880px!important;margin-top:8px!important}";
   };
+  KZ.pageSkin = function () { return "<style id='kzUnify'>" + KZ.pageSkinCss() + "</style>"; };
   KZ.skinHtml = function (html) { var st = KZ.pageSkin(); return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, function () { return st + "</body>"; }) : html + st; };
 })();

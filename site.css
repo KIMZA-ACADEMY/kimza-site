@@ -425,3 +425,13 @@ html{scrollbar-color:#B8963A transparent;scrollbar-width:thin}
 .blk-pos-side .blk-video{flex:0 0 48%;max-width:48%}
 .blk-image .blk-video{border-radius:0}
 @media (max-width:700px){.blk-pos-side .blk-video{flex-basis:auto;max-width:100%}}
+
+/* ===== phone navigation: the links stay visible (swipe sideways) instead of hiding behind a menu ===== */
+@media (max-width:1100px){
+  .menu-btn{display:none!important}
+  .nav .wrap{flex-wrap:wrap;row-gap:0;min-height:56px;padding-bottom:0}
+  .nav-links{display:flex!important;position:static!important;inset:auto!important;flex:0 0 100%;order:3;flex-direction:row!important;align-items:center;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;margin:0!important;padding:2px 0 10px!important;background:transparent!important;border:0!important;scrollbar-width:none;gap:6px}
+  .nav-links::-webkit-scrollbar{display:none}
+  .nav-links a{flex:0 0 auto;padding:6px 14px;font-size:14px;border:1px solid rgba(248,244,233,.22);border-radius:999px;white-space:nowrap}
+  .nav-tools{margin-inline-start:auto}
+}
